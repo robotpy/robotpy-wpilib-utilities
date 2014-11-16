@@ -2,7 +2,7 @@ robotpy-wpilib-utilities
 ========================
 
 Useful utility functions/objects for RobotPy. Must have 2015 version of
-RobotPy to use this.
+RobotPy to use this (though, for now 2014 code is accepted).
 
 Contribution guidelines
 =======================
