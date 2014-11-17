@@ -15,11 +15,14 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
     To use this driver, pin 2 on the sensor must be mapped to a dio pin.
     """
 
+    #This code has actually never been run, so it is extra not-verified!
+    verified = False
+
     def __init__(self, channel, output_units=units.inch):
         """Sonar sensor constructor
 
         :param channel: The digital input index which is wired to the pulse-with output pin (pin 2) on the sensor.
-        :param units: The Unit instance specifying the format of value to return
+        :param output_units: The Unit instance specifying the format of value to return
         """
 
         #Save value
@@ -49,11 +52,14 @@ class MaxSonarEZAnalog(wpilib.SensorBase, driver_base.DriverBase):
     To use this driver, pin 3 on the sensor must be mapped to an analog pin, and the sensor must be on a 5v supply.
     """
 
+    #This code has actually never been run, so it is extra not-verified!
+    verified = False
+
     def __init__(self, channel, output_units=units.inch):
         """Sonar sensor constructor
 
         :param channel: The analog input index which is wired to the analog output pin (pin 3) on the sensor.
-        :param units: The Unit instance specifying the format of value to return
+        :param output_units: The Unit instance specifying the format of value to return
         """
 
         #Save value
