@@ -29,7 +29,7 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
         self.output_units = output_units
 
         #Setup the counter
-        self.counter = wpilib.Counter(upChannel=channel)
+        self.counter = wpilib.Counter(channel)
         self.counter.setSemiPeriodMode(highSemiPeriod=False)
 
         #Call the parents
@@ -72,7 +72,7 @@ class MaxSonarEZAnalog(wpilib.SensorBase, driver_base.DriverBase):
         driver_base.DriverBase.__init__(self)
 
     def free(self):
-        """Delete (free) the counter for the sonar sensor"""
+        """Delete (free) the analog input for the sonar sensor"""
         self.analog.free()
 
     def get(self):
