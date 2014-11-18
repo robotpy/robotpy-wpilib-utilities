@@ -1,6 +1,9 @@
 robotpy-wpilib-utilities
 ========================
 
+.. image:: https://travis-ci.org/robotpy/robotpy-wpilib-utilities.svg
+    :target: https://travis-ci.org/robotpy/robotpy-wpilib-utilities
+
 Useful utility functions/objects for RobotPy. Must have 2015 version of
 RobotPy to use this (though, for now 2014 code is accepted).
 
