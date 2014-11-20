@@ -10,7 +10,8 @@ version_file = join(setup_dir, base_package, 'version.py')
 
 packages = [
     base_package,
-    base_package + '.misc'
+    base_package + '.misc',
+    base_package + '.common_drivers'
 ]
 
 # Automatically generate a version.py based on the git version

@@ -4,7 +4,7 @@ class DriverBase(object):
     currently all it does is spit out a warning message if the driver has not been verified.
     """
 
-    #This should be overloaded by the driver,
+    #:This should be overloaded by the driver,
     # It is just a mechanism to ensure code quality for device drivers. Upon creation of a new driver,
     # it will be either left alone, or overloaded to be False. Once the functionality of the driver is verified,
     # this will get overloaded to true by whoever verifies it.

@@ -4,8 +4,9 @@ The devices have a few different ways of reading from them, and the these driver
 some of the methods
 """
 import wpilib
+
 from . import driver_base
-from . import units
+from robotpy_ext.common_drivers import units
 
 
 class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):

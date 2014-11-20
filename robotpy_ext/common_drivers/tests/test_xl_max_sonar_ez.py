@@ -1,4 +1,4 @@
-from .. import xl_max_sonar_ez
+from robotpy_ext.common_drivers import xl_max_sonar_ez
 
 
 def test_digital_sensor():
