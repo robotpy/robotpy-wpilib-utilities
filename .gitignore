@@ -53,5 +53,10 @@ docs/_build/
 # PyBuilder
 target/
 
+#PyCharm Project files
+*.iml
+.idea/*
+.pycharmproject
+
 robotpy_ext/version.py
 
