@@ -1,7 +1,7 @@
 
 import wpilib
 
-class PreciseDelay(object):
+class PreciseDelay:
     '''
         Used to synchronize a timing loop.
     

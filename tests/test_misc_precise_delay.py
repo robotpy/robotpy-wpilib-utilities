@@ -1,13 +1,10 @@
 
 import sys
-from unittest.mock import MagicMock, call
+from unittest.mock import call
 
 # TODO: better tests
 
-def test_precise_delay(monkeypatch):
-
-    wpimock = MagicMock()
-    monkeypatch.setitem(sys.modules, 'wpilib', wpimock)
+def test_precise_delay(wpimock):
 
     from robotpy_ext.misc import PreciseDelay    
 

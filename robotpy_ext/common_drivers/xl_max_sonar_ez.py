@@ -22,7 +22,7 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
     def __init__(self, channel, output_units=units.inch):
         """Sonar sensor constructor
 
-        :param channel: The digital input index which is wired to the pulse-with output pin (pin 2) on the sensor.
+        :param channel: The digital input index which is wired to the pulse-width output pin (pin 2) on the sensor.
         :param output_units: The Unit instance specifying the format of value to return
         """
 
@@ -34,7 +34,7 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
         self.counter.setSemiPeriodMode(highSemiPeriod=False)
 
         #Call the parents
-        driver_base.DriverBase.__init__(self)
+        super().__init__()
 
     def free(self):
         """Delete (free) the counter for the sonar sensor"""
@@ -68,9 +68,9 @@ class MaxSonarEZAnalog(wpilib.SensorBase, driver_base.DriverBase):
 
         #Setup the analog input
         self.analog = wpilib.AnalogInput(channel)
-
+        
         #Call the parents
-        driver_base.DriverBase.__init__(self)
+        super().__init__()
 
     def free(self):
         """Delete (free) the analog input for the sonar sensor"""
