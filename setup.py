@@ -45,7 +45,8 @@ setup(
     long_description=long_description,
     author='Peter Johnson, Dustin Spicuzza',
     author_email='robotpy@googlegroups.com',
-    url='https://github.com/robotpy',
+    url='https://github.com/robotpy/robotpy-wpilib-utilities',
     keywords='frc first robotics',
+    install_requires=['wpilib'],
     packages=packages,
     )
