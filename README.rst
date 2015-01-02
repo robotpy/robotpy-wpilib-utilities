@@ -5,7 +5,7 @@ robotpy-wpilib-utilities
     :target: https://travis-ci.org/robotpy/robotpy-wpilib-utilities
 
 Useful utility functions/objects for RobotPy. Must have 2015 version of
-RobotPy to use this (though, for now 2014 code is accepted).
+RobotPy to use this.
 
 Contribution guidelines
 =======================
@@ -22,7 +22,7 @@ which is where packages like this come in.
   WPILib -- though, this may change.
 * Contributions will work (or at least, not break) on all supported RobotPy
   platforms (Windows/Linux/OSX, RoboRio)
-* All pull requests will be tested using Travis-CI (TODO)
+* All pull requests will be tested using Travis-CI
 
 Installation
 ============
