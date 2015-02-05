@@ -2,18 +2,12 @@
 
 from os.path import dirname, exists, join
 import sys, subprocess
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup_dir = dirname(__file__)
 git_dir = join(setup_dir, '.git')
 base_package = 'robotpy_ext'
 version_file = join(setup_dir, base_package, 'version.py')
-
-packages = [
-    base_package,
-    base_package + '.misc',
-    base_package + '.common_drivers'
-]
 
 # Automatically generate a version.py based on the git version
 if exists(git_dir):
@@ -55,5 +49,5 @@ setup(
     url='https://github.com/robotpy/robotpy-wpilib-utilities',
     keywords='frc first robotics',
     install_requires=['wpilib>=2015.0.9'],
-    packages=packages,
+    packages=find_packages(),
     )
