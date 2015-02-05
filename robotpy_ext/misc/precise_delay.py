@@ -24,7 +24,7 @@ class PreciseDelay:
         self.timer = wpilib.Timer()    
         self.delay_period = delay_period
         
-        self.timer.Start()
+        self.timer.start()
         
     def wait(self):
         '''Waits until the delay period has passed'''

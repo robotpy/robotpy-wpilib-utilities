@@ -50,10 +50,10 @@ setup(
     version=__version__,
     description='Useful utility functions/objects for RobotPy',
     long_description=long_description,
-    author='Peter Johnson, Dustin Spicuzza',
+    author='RobotPy Development Team',
     author_email='robotpy@googlegroups.com',
     url='https://github.com/robotpy/robotpy-wpilib-utilities',
     keywords='frc first robotics',
-    install_requires=['wpilib'],
+    install_requires=['wpilib>=2015.0.9'],
     packages=packages,
     )
