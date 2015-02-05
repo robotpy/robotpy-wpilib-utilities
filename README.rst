@@ -4,8 +4,12 @@ robotpy-wpilib-utilities
 .. image:: https://travis-ci.org/robotpy/robotpy-wpilib-utilities.svg
     :target: https://travis-ci.org/robotpy/robotpy-wpilib-utilities
 
-Useful utility functions/objects for RobotPy. Must have 2015 version of
-RobotPy to use this.
+Useful utility functions/objects for RobotPy WPILib (2015+).
+
+Documentation
+=============
+
+API Documentation can be found at http://robotpy-wpilib-utilities.readthedocs.org/en/latest/
 
 Contribution guidelines
 =======================
@@ -27,7 +31,7 @@ which is where packages like this come in.
 Installation
 ============
 
-TODO: Will be integrated into RobotPy 2015 installation somehow
+This library is automatically installed when you install pyfrc or RobotPy
 
 License
 =======
