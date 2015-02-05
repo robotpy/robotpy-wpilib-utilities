@@ -100,7 +100,7 @@ class StatefulAutonomous:
         You use this by defining a class that inherits from ``StatefulAutonomous``.
         To define each state, you use the :func:`timed_state` decorator on a
         function. When each state is run, the decorated function will be
-        called. Decorated functions can receive the following parameters::
+        called. Decorated functions can receive the following parameters:
         
         - ``tm`` - The amount of time that autonomous mode has been running
         - ``state_tm`` - The amount of time that this state has been running
@@ -173,11 +173,13 @@ class StatefulAutonomous:
             
                 self.register_sd_var('foo', 1)
                 
-            This value will show up on NetworkTables as the key ``MODE_NAME\foo``.
+            This value will show up on NetworkTables as the key ``MODE_NAME\\foo``
+            if add_prefix is specified, otherwise as ``foo``.
                 
             :param name:     Name of variable to display to user
             :param default:  Default value of variable
-            :param add_prefix: 
+            :param add_prefix: Prefix this setting with the mode name
+            :type  add_prefix: bool
             :param vmin:     For tuning: minimum value of this variable
             :param vmax:     For tuning: maximum value of this variable
         '''
