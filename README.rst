@@ -7,12 +7,12 @@ robotpy-wpilib-utilities
 Useful utility functions/objects for RobotPy WPILib (2015+).
 
 Documentation
-=============
+-------------
 
 API Documentation can be found at http://robotpy-wpilib-utilities.readthedocs.org/en/latest/
 
 Contribution guidelines
-=======================
+-----------------------
 
 This repository is intended to be a common place for high quality code to live
 for "things that should be in WPILib, but aren't". The python implementation of
@@ -29,17 +29,17 @@ which is where packages like this come in.
 * All pull requests will be tested using Travis-CI
 
 Installation
-============
+------------
 
 This library is automatically installed when you install pyfrc or RobotPy
 
 License
-=======
+-------
 
 BSD License, similar to WPILib.
 
 Authors
-=======
+-------
 
 - Dustin Spicuzza (dustin@virtualroadside.com)
 - Insert your name here!

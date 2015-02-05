@@ -1,9 +1,6 @@
 robotpy_ext.common_drivers package
 ==================================
 
-Submodules
-----------
-
 robotpy_ext.common_drivers.driver_base module
 ---------------------------------------------
 
