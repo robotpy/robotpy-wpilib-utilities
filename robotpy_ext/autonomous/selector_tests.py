@@ -17,24 +17,35 @@ def test_all_autonomous(control, fake_time, robot):
         
         def __init__(self):
             self.initialized = False
+            self.init_time = None
+            self.chooser = None
             
             self.state = 'auto'
             self.currentChoice = None
             self.until = None
         
         def initialize_chooser(self, tm):
-            self.initialized = True
-            self.chooser = ChooserControl('Autonomous Mode')
+            
+            if self.chooser is None:
+                self.chooser = ChooserControl('Autonomous Mode')
+            
             self.choices = self.chooser.getChoices()
+            if len(self.choices) == 0:
+                return False
             
             self.state = 'disabled'
             self.currentChoice =  -1
             self.until = tm
+            self.init_time = tm
+            self.initialized = True
+            return True
         
         def on_step(self, tm):
             
             if not self.initialized:
-                self.initialize_chooser(tm)
+                if not self.initialize_chooser(tm):
+                    assert tm < 10, "Robot didn't create a chooser within 10 seconds, probably an error"
+                    return True
             
             if self.state == 'auto':
                 if tm >= self.until:
@@ -61,4 +72,4 @@ def test_all_autonomous(control, fake_time, robot):
     controller = control.run_test(AutonomousTester)
     
     # Make sure they ran for the correct amount of time
-    assert int(fake_time.get()) == len(controller.choices)*(autonomous_seconds+1)
+    assert int(fake_time.get()) == int(len(controller.choices)*(autonomous_seconds+1) + controller.init_time)
