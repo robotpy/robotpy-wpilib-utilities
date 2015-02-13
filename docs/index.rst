@@ -5,6 +5,8 @@
 .. toctree::
    :maxdepth: 4
 
+   samples
+   
    robotpy_ext.autonomous
    robotpy_ext.common_drivers
    robotpy_ext.control

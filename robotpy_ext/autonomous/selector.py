@@ -38,7 +38,7 @@ class AutonomousModeSelector:
             class MyRobot(wpilib.IterativeRobot):
             
                 def robotInit(self):
-                    self.automodes = AutonomousModeSelector()
+                    self.automodes = AutonomousModeSelector('autonomous')
             
                 def autonomousPeriodic(self):
                     self.automodes.run()
@@ -49,13 +49,16 @@ class AutonomousModeSelector:
             class MyRobot(wpilib.SampleRobot):
             
                 def robotInit(self):
-                    self.automodes = AutonomousModeSelector()
+                    self.automodes = AutonomousModeSelector('autonomous')
             
                 def autonomous(self):
                     self.automodes.run()
        
         If you use AutonomousModeSelector, you may also be interested in
         the autonomous state machine helper (:class:`.StatefulAutonomous`).
+        
+        Check out the samples in our github repository that show some basic
+        usage of ``AutonomousModeSelector``.
         
         .. note:: If you use AutonomousModeSelector, then you should add
                   ``robotpy_ext.autonomous.selector_tests`` to your pyfrc

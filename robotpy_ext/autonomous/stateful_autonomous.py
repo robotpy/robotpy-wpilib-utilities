@@ -135,6 +135,9 @@ class StatefulAutonomous:
         If you use this object with :class:`.AutonomousModeSelector`, make sure
         to initialize it with the dictionary, and it will be passed to this 
         autonomous mode object when initialized.
+        
+        .. seealso:: Check out the samples in our github repository that show
+                     some basic usage of ``AutonomousModeSelector``.
     '''
     
     __built = False
@@ -176,7 +179,8 @@ class StatefulAutonomous:
             This value will show up on NetworkTables as the key ``MODE_NAME\\foo``
             if add_prefix is specified, otherwise as ``foo``.
                 
-            :param name:     Name of variable to display to user
+            :param name:     Name of variable to display to user, cannot have a
+                             space in it.
             :param default:  Default value of variable
             :param add_prefix: Prefix this setting with the mode name
             :type  add_prefix: bool
@@ -193,10 +197,13 @@ class StatefulAutonomous:
         if is_number:
             name = '%s|%0.3f|%0.3f' % (name, vmin, vmax)
         
-        self.__tunables.add(name)
+        self.__tunables.append(name)
         self.__table.putValue(self.MODE_NAME + '_tunables', self.__tunables)
         
     def __register_sd_var_internal(self, name, default, add_prefix, readback):
+        
+        if ' ' in name:
+            raise ValueError("ERROR: Cannot use spaces in a tunable variable name (%s)" % name)
         
         is_number = False
         sd_name = name
