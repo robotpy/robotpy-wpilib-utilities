@@ -17,71 +17,127 @@ def __get_state_serial():
     __global_cnt_serial[0] = __global_cnt_serial[0] + 1
     return __global_cnt_serial[0]
 
+def _create_wrapper(f, first):
+    
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        return f(*args, **kwargs)
+    
+    # store state variables here
+    wrapper.name = f.__name__
+    wrapper.description = f.__doc__
+    wrapper.ran = False
+    wrapper.first = first
+    wrapper.expires = 0xffffffff
+    wrapper.serial = __get_state_serial()
+    
+    # inspect the args, provide a correct call implementation
+    args, varargs, keywords, _ = inspect.getargspec(f)
+    
+    if keywords is not None:
+        raise ValueError("Cannot use keyword arguments for function %s" % wrapper.name)
+    
+    if varargs is not None:
+        raise ValueError("Cannot use *args arguments for function %s" % wrapper.name)
+    
+    if args[0] != 'self':
+        raise ValueError("First argument must be 'self'")
+    
+    # TODO: there has to be a better way to do this. oh well. it only runs once.
+    
+    if len(args) > 4:
+        raise ValueError("Too many parameters for %s" % wrapper.name)
+    
+    wrapper_creator = 'w = lambda self, tm, state_tm, initial_call: f(%s)' % ','.join(args)
+    
+    for arg in ['self', 'tm', 'state_tm', 'initial_call']:
+        try:
+            args.remove(arg)
+        except ValueError:
+            pass
+    
+    if len(args) != 0:
+        raise ValueError("Invalid parameter names in %s: %s" % (wrapper.name, ','.join(args)))
+    
+    varlist = {'f': f}
+    exec(wrapper_creator, varlist, varlist)
+    
+    wrapper.run = varlist['w']    
+    return wrapper
+
+
 #
 # Decorators:
 #
+#   state
 #   timed_state 
 #
+
 def timed_state(f=None, duration=None, next_state=None, first=False):
     '''
         If this decorator is applied to a function in an object that inherits
         from :class:`.StatefulAutonomous`, it indicates that the function
-        is a state.
+        is a state that will run for a set amount of time unless interrupted
+        
+        The decorated function can have the following arguments in any order:
+        
+        - ``tm`` - The number of seconds since autonomous has started
+        - ``state_tm`` - The number of seconds since this state has been active
+          (note: it may not start at zero!)
+        - ``initial_call`` - Set to True when the state is initially called,
+          False otherwise. If the state is switched to multiple times, this
+          will be set to True at the start of each state.
         
         :param duration: The length of time to run the state before progressing
                          to the next state
-        :param next_state: The name of the next state
+        :type  duration: float
+        :param next_state: The name of the next state. If not specified, then
+                           this will be the last state executed if time expires
+        :type  next_state: str
         :param first: If True, this state will be ran first
+        :type  first: bool
     '''
     
     if f is None:
         return functools.partial(timed_state, duration=duration, next_state=next_state, first=first)
     
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        return f(*args, **kwargs)
-
-    # store state variables here
-    wrapper.first = first
-    wrapper.name = f.__name__
-    wrapper.description = f.__doc__
+    if duration is None:
+        raise ValueError("timed_state functions must specify a duration")
+    
+    wrapper = _create_wrapper(f, first)
+    
     wrapper.next_state = next_state
     wrapper.duration = duration
-    wrapper.expires = 0xffffffff
-    wrapper.ran = False
-    wrapper.serial = __get_state_serial()
-    
-    # inspect the args, provide a correct call implementation
-    args, varargs, keywords, defaults = inspect.getargspec(f)
-    
-    if keywords is not None or varargs is not None:
-        raise ValueError("Invalid function parameters for function %s" % wrapper.name)
-    
-    # TODO: there has to be a better way to do this. oh well.
-    
-    if len(args) == 1:
-        wrapper.run = lambda self, tm, state_tm: f(self)
-    elif len(args) == 2:
-        if args[1] == 'tm':
-            wrapper.run = lambda self, tm, state_tm: f(self, tm)
-        elif args[1] == 'state_tm':
-            wrapper.run = lambda self, tm, state_tm: f(self, state_tm)
-        else:
-            raise ValueError("Invalid parameter name for function %s" % wrapper.name)
-    elif args == ['self', 'tm', 'state_tm']:
-        wrapper.run = lambda self, tm, state_tm: f(self, tm, state_tm)
-    elif args == ['self', 'state_tm', 'tm']:
-        wrapper.run = lambda self, tm, state_tm: f(self, state_tm, tm)
-    else:
-        raise ValueError("Invalid parameter names for function %s" % wrapper.name)
-    
-    
-    # provide a default docstring?
     
     return wrapper
-
-
+    
+    
+def state(f=None, first=False):
+    '''
+        If this decorator is applied to a function in an object that inherits
+        from :class:`.StatefulAutonomous`, it indicates that the function
+        is a state. The state will continue to be executed until the
+        ``next_state`` function is executed.
         
+        The decorated function can have the following arguments in any order:
+        
+        - ``tm`` - The number of seconds since autonomous has started
+        - ``state_tm`` - The number of seconds since this state has been active
+          (note: it may not start at zero!)
+        - ``initial_call`` - Set to True when the state is initially called,
+          False otherwise. If the state is switched to multiple times, this
+          will be set to True at the start of each state.
+        
+        :param first: If True, this state will be ran first
+        :type  first: bool
+    '''
+    
+    if f is None:
+        return functools.partial(state, first=first)
+    
+    return _create_wrapper(f, first)
+
+
 
 class StatefulAutonomous:
     '''
@@ -102,8 +158,14 @@ class StatefulAutonomous:
         function. When each state is run, the decorated function will be
         called. Decorated functions can receive the following parameters:
         
-        - ``tm`` - The amount of time that autonomous mode has been running
-        - ``state_tm`` - The amount of time that this state has been running
+        - ``tm`` - The number of seconds since autonomous has started
+        - ``state_tm`` - The number of seconds since this state has been active
+          (note: it may not start at zero!)
+        - ``initial_call`` - Set to True when the state is initially called,
+          False otherwise. If the state is switched to multiple times, this
+          will be set to True at the start of each state.
+        
+        If you want to do something only at the beginning of the state
         
         An example autonomous mode that drives the robot forward for 5 seconds
         might look something like this::
@@ -243,9 +305,6 @@ class StatefulAutonomous:
             state = getattr(self.__class__, name)
             if name.startswith('__') or not hasattr(state, 'next_state'):
                 continue
-            
-            # find a pre-execute function if available
-            state.pre = getattr(self.__class__, 'pre_%s' % name, None)
 
             # is this the first state to execute?
             if state.first:
@@ -342,6 +401,9 @@ class StatefulAutonomous:
         '''Called when the autonomous mode is disabled'''
         pass
     
+    def done(self):
+        '''Call this function to indicate that no more states should be called'''
+        self.next_state(None)
     
     def next_state(self, name):
         '''Call this function to transition to the next state
@@ -357,17 +419,14 @@ class StatefulAutonomous:
             return
         
         self.__state.ran = False
-        
     
     def on_iteration(self, tm):
         '''This function is called by the autonomous mode switcher, should
            not be called by enduser code. It is called once per control
            loop iteration.'''
         
-        # state: first, name, pre, time
-        
         # if you get an error here, then you probably overrode on_enable, 
-        # but didn't call super().on_enable()
+        # but didn't call super().on_enable(). Don't do that.
         try:
             state = self.__state
         except AttributeError:
@@ -391,18 +450,15 @@ class StatefulAutonomous:
             return
         
         # is this the first time this was executed?
-        if not state.ran:
+        initial_call = not state.ran
+        if initial_call:
             state.ran = True
             state.start_time = new_state_start
-            state.expires = state.start_time + getattr(self, state.name + '_duration')
+            state.expires = state.start_time + getattr(self, state.name + '_duration', 0xffffffff)
             
             logger.info("%.3fs: Entering state: %s", tm, state.name)
         
-            # execute the pre state if it exists
-            if state.pre is not None:
-                state.pre(self, tm)
-        
-        # execute the state
-        state.run(self, tm, tm - state.start_time)
+        # execute the state function, passing it the arguments
+        state.run(self, tm, tm - state.start_time, initial_call)
 
     
