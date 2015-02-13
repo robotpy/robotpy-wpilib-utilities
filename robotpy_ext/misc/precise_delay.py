@@ -30,8 +30,20 @@ class PreciseDelay:
         # The WPILib sleep/etc functions are slightly less stable as
         # they have more overhead, so only use them in simulation mode
         if hal.HALIsSimulation():
+            
             self.delay = wpilib.Timer.delay
             self.get_now = wpilib.Timer.getFPGATimestamp
+            
+            # Test to see if we're in a unit test, and switch the wait function
+            # to run more efficiently -- otherwise full tests are dog slow
+            try:
+                import pyfrc.config
+                if pyfrc.config.mode == 'test':
+                    self.wait = self._wait_unit_tests
+            except:
+                pass
+            
+            
         else:
             self.delay = time.sleep
             self.get_now = time.time  
@@ -41,7 +53,7 @@ class PreciseDelay:
             raise ValueError("You probably don't want to delay less than 1ms!")
         
         self.next_delay = self.get_now() + self.delay_period
-        
+    
     def wait(self):
         '''Waits until the delay period has passed'''
         
@@ -58,3 +70,12 @@ class PreciseDelay:
                 break
         
         self.next_delay += self.delay_period
+
+    def _wait_unit_tests(self):
+        
+        # Not optimized -- just need the unit tests to run fast
+        # - TODO: should we just always use this in simulated mode?
+        
+        wpilib.Timer.delay(self.delay_period)
+        
+        
