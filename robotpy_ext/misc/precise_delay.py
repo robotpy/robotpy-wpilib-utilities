@@ -29,7 +29,7 @@ class PreciseDelay:
         
         # The WPILib sleep/etc functions are slightly less stable as
         # they have more overhead, so only use them in simulation mode
-        if hal.HALIsSimulation:
+        if hal.HALIsSimulation():
             self.delay = wpilib.Timer.delay
             self.get_now = wpilib.Timer.getFPGATimestamp
         else:
