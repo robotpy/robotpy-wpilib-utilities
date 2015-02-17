@@ -16,8 +16,7 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
     To use this driver, pin 2 on the sensor must be mapped to a dio pin.
     """
 
-    #This code has actually never been run, so it is extra not-verified!
-    verified = False
+    verified = True
 
     def __init__(self, channel, output_units=units.inch):
         """Sonar sensor constructor
@@ -31,7 +30,7 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
 
         #Setup the counter
         self.counter = wpilib.Counter(channel)
-        self.counter.setSemiPeriodMode(highSemiPeriod=False)
+        self.counter.setSemiPeriodMode(highSemiPeriod=True)
 
         #Call the parents
         super().__init__()
@@ -42,7 +41,7 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
 
     def get(self):
         """Return the current sonar sensor reading, in the units specified from the constructor"""
-        inches = self.counter.get()/0.000147
+        inches = self.counter.getPeriod()/0.000147
         return units.convert(units.inch, self.output_units, inches)
 
 

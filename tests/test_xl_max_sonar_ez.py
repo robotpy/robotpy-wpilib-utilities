@@ -3,7 +3,7 @@
 
 def test_digital_sensor(wpimock):
 
-    wpimock.Counter().get.return_value = 1*0.000147
+    wpimock.Counter().getPeriod.return_value = 1*0.000147
 
     from robotpy_ext.common_drivers import xl_max_sonar_ez
     digital = xl_max_sonar_ez.MaxSonarEZPulseWidth(1)
