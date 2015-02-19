@@ -6,7 +6,7 @@ some of the methods
 import wpilib
 
 from . import driver_base
-from robotpy_ext.common_drivers import units
+from . import units
 
 
 class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
