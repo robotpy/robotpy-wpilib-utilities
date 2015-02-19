@@ -1,13 +1,19 @@
 robotpy_ext.common_drivers package
 ==================================
 
+robotpy_ext.common_drivers.distance_sensors module
+--------------------------------------------------
+
+.. automodule:: robotpy_ext.common_drivers.distance_sensors
+    :members:
+    :undoc-members:
+
 robotpy_ext.common_drivers.driver_base module
 ---------------------------------------------
 
 .. automodule:: robotpy_ext.common_drivers.driver_base
     :members:
     :undoc-members:
-    :show-inheritance:
 
 robotpy_ext.common_drivers.units module
 ---------------------------------------
