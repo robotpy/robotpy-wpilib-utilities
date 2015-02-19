@@ -16,7 +16,11 @@ class FeatureExample(StatefulAutonomous):
     # Weird argument combinations are supported
     #
     
-    @timed_state(duration=0.5, next_state='weird1', first=True)
+    @state(first=True)
+    def first(self):
+        self.next_state('weird0')
+    
+    @timed_state(duration=0.5, next_state='weird1')
     def weird0(self):
         pass
     
@@ -54,7 +58,6 @@ class FeatureExample(StatefulAutonomous):
     @state()
     def none1(self, initial_call):
         self.done()
-        
     
     # Run for N number of iterations
     

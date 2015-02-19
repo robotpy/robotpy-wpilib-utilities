@@ -303,7 +303,7 @@ class StatefulAutonomous:
         for name in dir(self.__class__):
             
             state = getattr(self.__class__, name)
-            if name.startswith('__') or not hasattr(state, 'next_state'):
+            if name.startswith('__') or not hasattr(state, 'first'):
                 continue
 
             # is this the first state to execute?
@@ -319,7 +319,7 @@ class StatefulAutonomous:
             #    via SmartDashboard
                 
             # make the time tunable
-            if state.duration is not None:
+            if hasattr(state, 'duration'):
                 self.__register_sd_var_internal(state.name + '_duration', state.duration, True, True)
             
             description = ''
