@@ -1,10 +1,17 @@
 robotpy_ext.control package
 ===========================
 
+robotpy_ext.control.button_debouncer module
+-------------------------------------------
+
+.. automodule:: robotpy_ext.control.button_debouncer
+    :members:
+    :undoc-members:
+
+
 robotpy_ext.control.xbox_controller module
 ------------------------------------------
 
 .. automodule:: robotpy_ext.control.xbox_controller
     :members:
     :undoc-members:
-    :show-inheritance:
