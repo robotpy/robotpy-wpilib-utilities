@@ -59,4 +59,5 @@ target/
 .pycharmproject
 
 robotpy_ext/version.py
+.deploy_cfg
 
