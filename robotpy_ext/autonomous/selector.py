@@ -88,9 +88,10 @@ class AutonomousModeSelector:
         
         for module_filename in modules:
             
+            module = None
             module_name = os.path.basename(module_filename[:-3])
             
-            if module_name in  ['__init__', 'manager']:
+            if module_name in  ['__init__']:
                 continue
         
             try:
@@ -170,7 +171,7 @@ class AutonomousModeSelector:
         logger.info("Autonomous switcher initialized")
     
             
-    def run(self, control_loop_wait_time=0.020, iter_fn=None):    
+    def run(self, control_loop_wait_time=0.020, iter_fn=None, on_exception=None):    
         '''
             This function does everything required to implement autonomous
             mode behavior. You should call this from your autonomous mode
@@ -185,12 +186,17 @@ class AutonomousModeSelector:
             :param control_loop_wait_time: Amount of time between iterations
             :param iter_fn: Called at the end of every iteration while
                             autonomous mode is executing
+            :param on_exception: Called when an uncaught exception is raised,
+                                 must take a single keyword arg "forceReport"
         '''
         
         logger.info("Begin autonomous")
         
         if iter_fn is None:
             iter_fn = lambda: None
+            
+        if on_exception is None:
+            on_exception = self._on_exception
         
         # keep track of how much time has passed in autonomous mode
         timer = wpilib.Timer()
@@ -199,8 +205,7 @@ class AutonomousModeSelector:
         try:
             self._on_autonomous_enable()
         except:
-            if not self.ds.isFMSAttached():
-                raise
+            on_exception(forceReport=True)
         
         #
         # Autonomous control loop
@@ -213,8 +218,7 @@ class AutonomousModeSelector:
             try:            
                 self._on_iteration(timer.get())
             except:
-                if not self.ds.isFMSAttached():
-                    raise
+                on_exception()
             
             iter_fn()
              
@@ -227,8 +231,7 @@ class AutonomousModeSelector:
         try:
             self._on_autonomous_disable()
         except:
-            if not self.ds.isFMSAttached():
-                raise
+            on_exception(forceReport=True)
             
         logger.info("Autonomous mode ended")
         
@@ -258,4 +261,8 @@ class AutonomousModeSelector:
         '''Run the code for the current autonomous mode'''
         if self.active_mode is not None:
             self.active_mode.on_iteration(time_elapsed)
+            
+    def _on_exception(self, forceReport=False):
+        if not self.ds.isFMSAttached():
+            raise
 

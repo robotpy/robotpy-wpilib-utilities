@@ -1,0 +1,2 @@
+
+from .magicrobot import MagicRobot
