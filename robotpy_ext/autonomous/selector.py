@@ -81,10 +81,20 @@ class AutonomousModeSelector:
         logger.info("Begin initializing autonomous mode switcher")
         
         # load all modules in specified module
-        autonomous_pkg = importlib.import_module(autonomous_pkgname) 
+        modules = []
         
-        modules_path = os.path.dirname(os.path.abspath(autonomous_pkg.__file__))
-        modules = glob(os.path.join(modules_path, '*.py' ))
+        try:
+            autonomous_pkg = importlib.import_module(autonomous_pkgname)
+        except ImportError as e:
+            if e.name not in [autonomous_pkgname, autonomous_pkgname.split('.')[0]]:
+                raise
+            
+            # Don't kill the robot because they didn't create an autonomous package
+            logger.warn("Cannot load the '%s' package", autonomous_pkgname)
+        else:
+            if hasattr(autonomous_pkg, '__file__'):
+                modules_path = os.path.dirname(os.path.abspath(autonomous_pkg.__file__))
+                modules = glob(os.path.join(modules_path, '*.py' ))
         
         for module_filename in modules:
             
