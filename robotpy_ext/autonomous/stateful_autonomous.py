@@ -205,7 +205,7 @@ class StatefulAutonomous:
     __built = False
     __done = False
     
-    def __init__(self, components):
+    def __init__(self, components=None):
         """
             :param components: A dictionary of values that will be assigned
                                as attributes to this object, using the key
@@ -216,8 +216,9 @@ class StatefulAutonomous:
         if not hasattr(self, 'MODE_NAME'):
             raise ValueError("Must define MODE_NAME class variable")
         
-        for k,v in components.items():
-            setattr(self, k, v)
+        if components:
+            for k,v in components.items():
+                setattr(self, k, v)
         
         self.__table = networktables.NetworkTable.getTable('SmartDashboard')
         self.__sd_args = []
