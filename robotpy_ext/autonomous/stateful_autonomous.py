@@ -68,7 +68,7 @@ def _create_wrapper(f, first):
 # Decorators:
 #
 #   state
-#   timed_state 
+#   timed_state
 #
 
 def timed_state(f=None, duration=None, next_state=None, first=False):
@@ -136,6 +136,39 @@ def state(f=None, first=False):
     return _create_wrapper(f, first)
 
 
+class state_alias:
+    '''
+        Not a decorator, used to alias a state so it can be referred to as
+        a different name::
+        
+            class MyAuto(StatefulAutonomous):
+            
+                @state()
+                def something(self):
+                    pass
+                    
+                something_else = state_alias(something)
+                
+        It can be used to set a state as first too (useful in derived classes)::
+        
+            class MyAuto(StatefulAutonomous):
+            
+                @state()
+                def something(self):
+                    pass
+                
+            class MyDerivedAuto(MyAuto):
+            
+                something_else = state_alias(something, first=True)
+        
+    '''
+    
+    def __init__(self, state_fn, first=False):
+        self.first = first
+        self.aliased = state_fn
+        
+    def __getattr__(self, name):
+        return getattr(self.aliased, name)
 
 class StatefulAutonomous:
     '''
@@ -191,7 +224,7 @@ class StatefulAutonomous:
             mode = DriveForward(components)
         
         If you use this object with :class:`.AutonomousModeSelector`, make sure
-        to initialize it with the dictionary, and it will be passed to this 
+        to initialize it with the dictionary, and it will be passed to this
         autonomous mode object when initialized.
         
         .. seealso:: Check out the samples in our github repository that show
@@ -268,7 +301,7 @@ class StatefulAutonomous:
         sd_name = name
         
         if add_prefix:
-            sd_name = '%s\\%s' % (self.MODE_NAME, name) 
+            sd_name = '%s\\%s' % (self.MODE_NAME, name)
         
         if isinstance(default, bool):
             self.__table.putBoolean(sd_name, default)
@@ -302,10 +335,14 @@ class StatefulAutonomous:
             state = getattr(self.__class__, name)
             if name.startswith('__') or not hasattr(state, 'first'):
                 continue
-            
+
             if state.origin != __name__:
                 errmsg = "You must only use state decorators imported from %s! This was from %s" % (__name__, state.origin)
                 raise InvalidWrapperError(errmsg)
+
+            if isinstance(state, state_alias):
+                setattr(self, name, state.aliased)
+                name = state.aliased.name
 
             # is this the first state to execute?
             if state.first:
@@ -314,6 +351,9 @@ class StatefulAutonomous:
                 
                 self.__first = name
                 has_first = True
+                
+            if isinstance(state, state_alias):
+                continue
               
             # problem: how do we expire old entries?
             # -> what if we just use json? more flexible, but then we can't tune it
@@ -399,9 +439,12 @@ class StatefulAutonomous:
         self.next_state(None)
     
     def next_state(self, name):
-        '''Call this function to transition to the next state
+        '''Call this function to transition to the next state.
         
         :param name: Name of the state to transition to
+        
+        .. note:: The state function will not be called immediately, it will
+                  be called on the next iteration of the control loop.
         '''
         if name is not None:
             self.__state = getattr(self.__class__, name)
@@ -412,13 +455,24 @@ class StatefulAutonomous:
             return
         
         self.__state.ran = False
+        
+    def next_state_now(self, name):
+        '''Call this function to transition to the next state, and call the next
+        state function immediately. Prefer to use :meth:`next_state` instead.
+        
+        :param name: Name of the state to transition to
+        '''
+        self.next_state(name)
+        self.on_iteration(self.__iter_tm)
     
     def on_iteration(self, tm):
         '''This function is called by the autonomous mode switcher, should
            not be called by enduser code. It is called once per control
            loop iteration.'''
         
-        # if you get an error here, then you probably overrode on_enable, 
+        self.__iter_tm = tm
+        
+        # if you get an error here, then you probably overrode on_enable,
         # but didn't call super().on_enable(). Don't do that.
         try:
             state = self.__state
