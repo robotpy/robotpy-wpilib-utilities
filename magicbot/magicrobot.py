@@ -207,7 +207,7 @@ class MagicRobot(wpilib.SampleRobot,
         """
             This function is called in disabled mode. You should not
             override this function; rather, you should override the
-            :meth:`disabledPeriodics` function instead.
+            :meth:`disabledPeriodic` function instead.
 
             .. warning:: Internal API, don't override
         """
