@@ -92,7 +92,7 @@ class MyRobot(wpilib.SampleRobot):
         while self.isOperatorControl() and self.isEnabled():
             
             if tm.hasPeriodPassed(1.0):
-                print("NavX Gyro", self.ahrs.getYaw())
+                print("NavX Gyro", self.ahrs.getYaw(), self.ahrs.getAngle())
             
             rotateToAngle = False
             if self.stick.getRawButton(1):

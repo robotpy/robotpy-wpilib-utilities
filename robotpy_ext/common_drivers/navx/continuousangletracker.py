@@ -14,33 +14,46 @@ class ContinuousAngleTracker:
         self.last_angle = 0.0
         self.zero_crossing_count = 0
         self.last_rate = 0
+        self.first_sample = True
     
     def nextAngle(self, newAngle):
-        adjusted_last_angle = self.last_angle + 360.0 if self.last_angle < 0.0 else self.last_angle
-        adjusted_curr_angle = newAngle + 360.0 if newAngle < 0.0 else newAngle
-        delta_angle = adjusted_curr_angle - adjusted_last_angle
+        
+        # If the first received sample is negative, 
+        # ensure that the zero crossing count is
+        # decremented.
+        
+        if self.first_sample:
+            self.first_sample = False
+            if newAngle < 0.0:
+                self.zero_crossing_count -= 1
+        
+        # Calculate delta angle, adjusting appropriately
+        # if the current sample crossed the -180/180
+        # point.
+        
+        
+        bottom_crossing = False
+        delta_angle = newAngle - self.last_angle
+        
+        # Adjust for wraparound at -180/+180 point
+        if delta_angle >= 180.0:
+            delta_angle = 360.0 - delta_angle
+            bottom_crossing = True
+        elif delta_angle <= -180.0:
+            delta_angle = 360.0 + delta_angle;
+            bottom_crossing = True
+        
         self.last_rate = delta_angle
 
-        angle_last_direction = 0
-        if adjusted_curr_angle < adjusted_last_angle:
-            if delta_angle < -180.0:
-                angle_last_direction = -1
-            else:
-                angle_last_direction = 1
-            
-        elif adjusted_curr_angle > adjusted_last_angle:
-            if delta_angle > 180.0:
-                angle_last_direction = -1
-            else:
-                angle_last_direction = 1
-        
-        if angle_last_direction < 0:
-            if adjusted_curr_angle < 0.0 and adjusted_last_angle >= 0.0:
-                self.zero_crossing_count -= 1
-                       
-        elif angle_last_direction > 0:
-            if adjusted_curr_angle >= 0.0 and adjusted_last_angle < 0.0:
-                self.zero_crossing_count += 1
+        # If a zero crossing occurred, increment/decrement
+        # the zero crossing count appropriately.
+        if not bottom_crossing:
+            if delta_angle < 0.0:
+                if (newAngle < 0.0) and (self.last_angle >= 0.0):
+                    self.zero_crossing_count -= 1
+            elif delta_angle >= 0.0:
+                if (newAngle >= 0.0) and (self.last_angle < 0.0):
+                    self.zero_crossing_count += 1
         
         self.last_angle = newAngle
     
