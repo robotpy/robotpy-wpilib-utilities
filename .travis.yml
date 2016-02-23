@@ -12,5 +12,5 @@ script:
   - tests/run_tests.sh
   - samples/magicbot_simple/robot.py coverage test
   - samples/navx_mxp/robot.py coverage test
-  - samples/navx_rotate_to_angle/robot.py coverage test
+  #- samples/navx_rotate_to_angle/robot.py coverage test
   - samples/stateful_autonomous/robot.py coverage test
