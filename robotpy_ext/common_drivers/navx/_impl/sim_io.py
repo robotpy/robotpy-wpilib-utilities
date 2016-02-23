@@ -45,7 +45,7 @@ class NavXSimBase:
             # NavX returns angle in 180 to -180, angle key is continuous
             
             angle = hal_data['robot'].get(self.angle_key, 0)
-            angle = (abs(angle + 180) % 360.0) - 180.0
+            angle = ((angle + 180) % 360.0) - 180.0
             AHRSProtocol.encodeProtocolSignedHundredthsFloat(angle, data, IMURegisters.NAVX_REG_YAW_L-4)
             
         # no idea
