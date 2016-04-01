@@ -9,6 +9,7 @@ from robotpy_ext.autonomous import AutonomousModeSelector
 
 from robotpy_ext.misc.orderedclass import OrderedClass
 
+from networktables import NetworkTable
 
 __all__ = ['MagicRobot']
 
@@ -28,6 +29,13 @@ class MagicRobot(wpilib.SampleRobot,
         MagicRobot uses the :class:`.AutonomousModeSelector` to allow you
         to define multiple autonomous modes and to select one of them via
         the SmartDashboard/SFX.
+        
+        MagicRobot will set the following NetworkTables variables
+        automatically:
+        
+        - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'test'
+        - ``/robot/is_simulation``: True/False
+        
     """
 
     #: Amount of time each loop takes (default is 20ms)
@@ -58,6 +66,9 @@ class MagicRobot(wpilib.SampleRobot,
 
         # Next, create the robot components and wire them together
         self._create_components()
+        
+        self.__nt = NetworkTable.getTable('/robot')
+        self.__nt.putBoolean('is_simulation', self.isSimulation())
 
     def createObjects(self):
         """
@@ -193,6 +204,8 @@ class MagicRobot(wpilib.SampleRobot,
 
             .. warning:: Internal API, don't override
         """
+        
+        self.__nt.putString('mode', 'auto')
 
         self._on_mode_enable_components()
 
@@ -211,6 +224,8 @@ class MagicRobot(wpilib.SampleRobot,
 
             .. warning:: Internal API, don't override
         """
+        
+        self.__nt.putString('mode', 'disabled')
 
         delay = PreciseDelay(self.control_loop_wait_time)
 
@@ -236,6 +251,8 @@ class MagicRobot(wpilib.SampleRobot,
 
             .. warning:: Internal API, don't override
         """
+        
+        self.__nt.putString('mode', 'teleop')
 
         delay = PreciseDelay(self.control_loop_wait_time)
 
@@ -260,6 +277,9 @@ class MagicRobot(wpilib.SampleRobot,
 
     def test(self):
         '''Called when the robot is in test mode'''
+        
+        self.__nt.putString('mode', 'test')
+        
         while self.isTest() and self.isEnabled():
             wpilib.LiveWindow.run()
             wpilib.Timer.delay(.01)
@@ -293,6 +313,8 @@ class MagicRobot(wpilib.SampleRobot,
         #       other components just in case
 
         components = []
+        
+        self.logger.info("Creating magic components")
 
         # Identify all of the types, and create them
         for m in self.members:
@@ -317,6 +339,8 @@ class MagicRobot(wpilib.SampleRobot,
 
             # Store for later
             components.append((m, component))
+            
+            self.logger.info("-> %s (class: %s)", m, ctyp.__name__)
 
         # Collect attributes of this robot that are injectable
         self._injectables = {}
@@ -345,6 +369,9 @@ class MagicRobot(wpilib.SampleRobot,
 
 
     def _inject_vars(self, cname, component):
+        
+        self.logger.debug("Injecting magic variables into %s", cname)
+        
         for n in dir(component):
             if n.startswith('_'):
                 continue
@@ -367,6 +394,7 @@ class MagicRobot(wpilib.SampleRobot,
                                  (cname, n, self, type(injectable), inject_type))
 
             setattr(component, n, injectable)
+            self.logger.debug("-> %s as %s.%s", injectable, cname, n)
 
     def _execute_components(self):
         for component in self._components:
