@@ -31,10 +31,21 @@ class MyRobot(wpilib.SampleRobot):
     # controllers by displaying a form where you can enter new P, I,  */
     # and D constants and test the mechanism.                         */
     
-    kP = 0.03
-    kI = 0.00
-    kD = 0.00
-    kF = 0.00
+    # Often, you will find it useful to have different parameters in
+    # simulation than what you use on the real robot
+    
+    if wpilib.RobotBase.isSimulation():
+        # These PID parameters are used in simulation
+        kP = 0.06
+        kI = 0.00
+        kD = 0.00
+        kF = 0.00
+    else:
+        # These PID parameters are used on a real robot
+        kP = 0.03
+        kI = 0.00
+        kD = 0.00
+        kF = 0.00
     
     kToleranceDegrees = 2.0
         
