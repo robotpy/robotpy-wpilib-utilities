@@ -11,6 +11,8 @@ from robotpy_ext.misc.orderedclass import OrderedClass
 
 from networktables import NetworkTable
 
+from .magic_tunable import setup_tunables
+
 __all__ = ['MagicRobot']
 
 class MagicRobot(wpilib.SampleRobot,
@@ -374,22 +376,30 @@ class MagicRobot(wpilib.SampleRobot,
         # For each new component, perform magic injection
         for cname, component in components:
             self._components.append(component)
-            self._inject_vars(cname, component)
+            setup_tunables(component, cname, 'components')
+            self._setup_vars(cname, component)
 
         # Do it for autonomous modes too
         for mode in self._automodes.modes.values():
-            self._inject_vars(None, mode)
-
-
-    def _inject_vars(self, cname, component):
+            mode.logger = logging.getLogger(mode.MODE_NAME)
+            setup_tunables(mode, mode.MODE_NAME, 'autonomous')
+            self._setup_vars( mode.MODE_NAME, mode)
+            
+        # Call setup functions for components
+        for cname, component in components:
+            if hasattr(component, 'setup'):
+                component.setup()
+    
+    def _setup_vars(self, cname, component):
         
         self.logger.debug("Injecting magic variables into %s", cname)
         
         for n in dir(component):
             if n.startswith('_'):
                 continue
-
+            
             inject_type = getattr(component, n)
+            
             if not isinstance(inject_type, type):
                 continue
 
