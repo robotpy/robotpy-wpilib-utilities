@@ -8,7 +8,8 @@ import collections
 class OrderedClass(type):
     '''
         Metaclass that stores class attributes in a member called
-        'members'
+        'members'. If you subclass something that uses this metaclass,
+        the base class members will be listed before the subclass
     '''
 
     @classmethod
@@ -17,5 +18,6 @@ class OrderedClass(type):
 
     def __new__(cls, name, bases, namespace, **kwds):
         result = type.__new__(cls, name, bases, dict(namespace))
-        result.members = tuple(namespace)
+        members = getattr(result, 'members', ())
+        result.members = members + tuple(namespace)
         return result
