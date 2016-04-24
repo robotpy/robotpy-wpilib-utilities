@@ -35,6 +35,7 @@ class MagicRobot(wpilib.SampleRobot,
         
         - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'test'
         - ``/robot/is_simulation``: True/False
+        - ``/robot/is_ds_attached``: True/False
         
     """
 
@@ -69,6 +70,7 @@ class MagicRobot(wpilib.SampleRobot,
         
         self.__nt = NetworkTable.getTable('/robot')
         self.__nt.putBoolean('is_simulation', self.isSimulation())
+        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
 
     def createObjects(self):
         """
@@ -206,6 +208,7 @@ class MagicRobot(wpilib.SampleRobot,
         """
         
         self.__nt.putString('mode', 'auto')
+        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
 
         self._on_mode_enable_components()
 
@@ -226,6 +229,7 @@ class MagicRobot(wpilib.SampleRobot,
         """
         
         self.__nt.putString('mode', 'disabled')
+        ds_attached = None
 
         delay = PreciseDelay(self.control_loop_wait_time)
 
@@ -236,6 +240,11 @@ class MagicRobot(wpilib.SampleRobot,
             self.onException(forceReport=True)
 
         while self.isDisabled():
+            
+            if ds_attached != self.ds.isDSAttached():
+                ds_attached = not ds_attached
+                self.__nt.putBoolean('is_ds_attached', ds_attached)
+            
             try:
                 self.disabledPeriodic()
             except:
@@ -253,6 +262,9 @@ class MagicRobot(wpilib.SampleRobot,
         """
         
         self.__nt.putString('mode', 'teleop')
+        # don't need to update this during teleop -- presumably will switch
+        # modes when ds is no longer attached
+        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
 
         delay = PreciseDelay(self.control_loop_wait_time)
 
@@ -279,6 +291,7 @@ class MagicRobot(wpilib.SampleRobot,
         '''Called when the robot is in test mode'''
         
         self.__nt.putString('mode', 'test')
+        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
         
         while self.isTest() and self.isEnabled():
             wpilib.LiveWindow.run()
