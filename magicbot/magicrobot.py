@@ -279,6 +279,9 @@ class MagicRobot(wpilib.SampleRobot,
             self.onException(forceReport=True)
 
         while self.isOperatorControl() and self.isEnabled():
+            
+            #self._update_autosend()
+            
             try:
                 self.teleopPeriodic()
             except:
@@ -351,6 +354,7 @@ class MagicRobot(wpilib.SampleRobot,
 
             # Automatically inject a logger object
             component.logger = logging.getLogger(m)
+            component._Magicbot__autosend = {}
 
             # Store for later
             components.append((m, component))
@@ -418,6 +422,18 @@ class MagicRobot(wpilib.SampleRobot,
 
             setattr(component, n, injectable)
             self.logger.debug("-> %s as %s.%s", injectable, cname, n)
+        
+        # XXX
+        #if is_autosend:
+            # where to store the nt key?
+        #    component._Magicbot__autosend[prop.f] = None
+    
+    #def _update_autosend(self):
+    #    # seems like this should just be a giant list instead
+    #    for component in self._components:
+    #        d = component._Magicbot__autosend
+    #        for f in d.keys():
+    #            d[f] = f(component)     
 
     def _execute_components(self):
         for component in self._components:

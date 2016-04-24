@@ -15,3 +15,20 @@ def wpimock(monkeypatch):
     mock.SensorBase = FakeSensorBase
     monkeypatch.setitem(sys.modules, 'wpilib', mock)
     return mock
+
+@pytest.fixture(scope='function')
+def wpitime(monkeypatch):
+    
+    class FakeTime:
+        def __init__(self):
+            self.now = 0 # in seconds
+            
+        def getFPGATime(self):
+            return self.now * 1000000
+            
+    ft = FakeTime()
+    
+    import hal
+    monkeypatch.setattr(hal, 'getFPGATime', ft.getFPGATime)
+    
+    return ft
