@@ -165,8 +165,6 @@ class StatefulAutonomous:
           False otherwise. If the state is switched to multiple times, this
           will be set to True at the start of each state.
         
-        If you want to do something only at the beginning of the state
-        
         An example autonomous mode that drives the robot forward for 5 seconds
         might look something like this::
         
