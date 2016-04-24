@@ -7,6 +7,7 @@ class MagicComponent:
         
             class MyComponent:
             
+                # other variables 'imported' automatically from MagicRobot
                 elevator_motor = Talon
                 other_component = MyOtherComponent
                 
@@ -27,6 +28,21 @@ class MagicComponent:
         .. note:: You don't need to inherit from ``MagicComponent``, it is only
                   provided for documentation's sake
     """
+    
+    def setup(self):
+        """
+            This function is called after ``createObjects`` has been called in
+            the main robot class, and after all components have been created
+            
+            The setup function is optional and components do not have to define
+            one. ``setup()`` functions are called in order of component definition
+            in the main robot class.
+            
+            .. note:: For technical reasons, variables imported from
+                      MagicRobot are not initialized when your component's
+                      constructor is called. However, they will be initialized
+                      by the time this function is called.   
+        """
     
     def on_enabled(self):
         """
