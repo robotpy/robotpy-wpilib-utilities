@@ -101,7 +101,7 @@ def timed_state(f=None, *, duration=None, next_state=None, first=False, must_fin
         :param first: If True, this state will be ran first
         :type  first: bool
         :param must_finish: If True, then this state will continue executing
-                            even if ``should_run()`` is not called. However,
+                            even if ``engage()`` is not called. However,
                             if ``done()`` is called, execution will stop
                             regardless of whether this is set.
         :type  must_finish: bool
@@ -139,7 +139,7 @@ def state(f=None, *, first=False, must_finish=False):
         :param first: If True, this state will be ran first
         :type  first: bool
         :param must_finish: If True, then this state will continue executing
-                            even if ``should_run()`` is not called. However,
+                            even if ``engage()`` is not called. However,
                             if ``done()`` is called, execution will stop
                             regardless of whether this is set.
         :type  must_finish: bool
@@ -172,7 +172,7 @@ class StateMachine(metaclass=OrderedClass):
           
         To be consistent with the magicbot philosophy, in order for the
         state machine to execute its states you must call the
-        :func:`should_run` function upon each execution of the main
+        :func:`engage` function upon each execution of the main
         robot control loop. If you do not call this function, then
         execution will cease unless the current executing state is
         marked as ``must_finish``.
@@ -198,7 +198,7 @@ class StateMachine(metaclass=OrderedClass):
                 
                 def fire(self):
                     """This is called from the main loop"""
-                    self.should_run()
+                    self.engage()
                     
                 @state(first=True)
                 def begin_firing(self):
@@ -208,7 +208,7 @@ class StateMachine(metaclass=OrderedClass):
                     
                 @timed_state(duration=1.0, must_finish=True)
                 def firing(self):
-                    """This state will continue executing even if should_run isn't called"""
+                    """This state will continue executing even if engage isn't called"""
                     self.shooter.enable()
                     self.ball_pusher.push()
             
@@ -303,7 +303,7 @@ class StateMachine(metaclass=OrderedClass):
             raise NoFirstStateError("Starting state not defined! Use first=True on a state decorator")
         
         # Indicates that an external party wishes the state machine to execute
-        self.__should_run = False
+        self.__engaged = False
         
         # Indicates that the state machine is currently executing
         self.__executing = False
@@ -333,7 +333,7 @@ class StateMachine(metaclass=OrderedClass):
         '''
         self.done()
         
-    def should_run(self, initial_state=None, force=False):
+    def engage(self, initial_state=None, force=False):
         '''
             This signals that you want the state machine to execute its
             states.
@@ -344,7 +344,7 @@ class StateMachine(metaclass=OrderedClass):
             :param force:         If True, will transition even if the state
                                   machine is currently active.
         '''
-        self.__should_run = True
+        self.__engaged = True
     
         if force or self.__state is None:
             if initial_state:
@@ -402,7 +402,7 @@ class StateMachine(metaclass=OrderedClass):
         now = Timer.getFPGATimestamp()
         
         if not self.__executing:
-            if self.__should_run:
+            if self.__engaged:
                 self.__start = now
                 self.__executing = True
             else:
@@ -429,7 +429,7 @@ class StateMachine(metaclass=OrderedClass):
                 new_state_start = state.expires
                 state = self.__state
         
-        if state is None or (not self.__should_run and not state.must_finish):
+        if state is None or (not self.__engaged and not state.must_finish):
             self.done()
         else:
             # is this the first time this was executed?
@@ -446,7 +446,7 @@ class StateMachine(metaclass=OrderedClass):
             state.run(self, tm, tm - state.start_time, initial_call)
         
         # Reset this each time
-        self.__should_run = False
+        self.__engaged = False
 
     
 class AutonomousStateMachine(StateMachine):
@@ -454,7 +454,7 @@ class AutonomousStateMachine(StateMachine):
         This is a specialized version of the StateMachine that is designed
         to be used as an autonomous mode. There are a few key differences:
         
-        - The :func:`.should_run` function is always called, so the state machine
+        - The :func:`.engage` function is always called, so the state machine
           will always run to completion unless done() is called
         - VERBOSE_LOGGING is set to True, so a log message will be printed out upon
           each state transition
@@ -465,5 +465,5 @@ class AutonomousStateMachine(StateMachine):
     
     def on_iteration(self, tm):
         # TODO, remove the on_iteration function in 2017
-        self.should_run()
+        self.engage()
         self.execute()   
