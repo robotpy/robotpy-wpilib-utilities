@@ -19,7 +19,7 @@ class MultipleFirstStatesError(Exception):
     pass
 
 
-def _create_wrapper(f, first):
+def _create_wrapper(f, first, must_finish):
     
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
@@ -29,6 +29,7 @@ def _create_wrapper(f, first):
     wrapper.name = f.__name__
     wrapper.description = f.__doc__
     wrapper.first = first
+    wrapper.must_finish = must_finish
     
     # inspect the args, provide a correct call implementation
     args, varargs, keywords, _ = inspect.getargspec(f)
@@ -71,11 +72,12 @@ class _StateData:
         self.expires = 0xffffffff
         self.ran = False
         self.run = wrapper.run
+        self.must_finish = wrapper.must_finish
         
         if hasattr(wrapper, 'next_state'):
             self.next_state = wrapper.next_state
 
-def timed_state(f=None, *, duration=None, next_state=None, first=False):
+def timed_state(f=None, *, duration=None, next_state=None, first=False, must_finish=False):
     '''
         If this decorator is applied to a function in an object that inherits
         from :class:`.StateMachine`, it indicates that the function
@@ -88,7 +90,7 @@ def timed_state(f=None, *, duration=None, next_state=None, first=False):
           (note: it may not start at zero!)
         - ``initial_call`` - Set to True when the state is initially called,
           False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state.
+          will be set to True at the start of each state execution.
         
         :param duration: The length of time to run the state before progressing
                          to the next state
@@ -98,22 +100,27 @@ def timed_state(f=None, *, duration=None, next_state=None, first=False):
         :type  next_state: str
         :param first: If True, this state will be ran first
         :type  first: bool
+        :param must_finish: If True, then this state will continue executing
+                            even if ``should_run()`` is not called. However,
+                            if ``done()`` is called, execution will stop
+                            regardless of whether this is set.
+        :type  must_finish: bool
     '''
     
     if f is None:
-        return functools.partial(timed_state, duration=duration, next_state=next_state, first=first)
+        return functools.partial(timed_state, duration=duration, next_state=next_state, first=first, must_finish=must_finish)
     
     if duration is None:
         raise ValueError("timed_state functions must specify a duration")
     
-    wrapper = _create_wrapper(f, first)
+    wrapper = _create_wrapper(f, first, must_finish)
     
     wrapper.next_state = next_state
     wrapper.duration = duration
     
     return wrapper
 
-def state(f=None, *, first=False):
+def state(f=None, *, first=False, must_finish=False):
     '''
         If this decorator is applied to a function in an object that inherits
         from :class:`.StateMachine`, it indicates that the function
@@ -127,16 +134,21 @@ def state(f=None, *, first=False):
           (note: it may not start at zero!)
         - ``initial_call`` - Set to True when the state is initially called,
           False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state.
+          will be set to True at the start of each state execution.
         
         :param first: If True, this state will be ran first
         :type  first: bool
+        :param must_finish: If True, then this state will continue executing
+                            even if ``should_run()`` is not called. However,
+                            if ``done()`` is called, execution will stop
+                            regardless of whether this is set.
+        :type  must_finish: bool
     '''
     
     if f is None:
-        return functools.partial(state, first=first)
+        return functools.partial(state, first=first, must_finish=must_finish)
     
-    return _create_wrapper(f, first)
+    return _create_wrapper(f, first, must_finish)
 
 
 
@@ -148,7 +160,8 @@ class StateMachine(metaclass=OrderedClass):
         You use this by defining a class that inherits from ``StateMachine``.
         To define each state, you use the :func:`timed_state` decorator on a
         function. When each state is run, the decorated function will be
-        called. Decorated functions can receive the following parameters:
+        called. Decorated state functions can receive the following
+        parameters:
         
         - ``tm`` - The number of seconds since autonomous has started
         - ``state_tm`` - The number of seconds since this state has been active
@@ -156,10 +169,21 @@ class StateMachine(metaclass=OrderedClass):
         - ``initial_call`` - Set to True when the state is initially called,
           False otherwise. If the state is switched to multiple times, this
           will be set to True at the start of each state.
+          
+        To be consistent with the magicbot philosophy, in order for the
+        state machine to execute its states you must call the
+        :func:`should_run` function upon each execution of the main
+        robot control loop. If you do not call this function, then
+        execution will cease unless the current executing state is
+        marked as ``must_finish``.
+        
+        When execution ceases, the :func:`done` function will be called
+        unless execution was stopped by calling the ``done`` function.
         
         As a magicbot component, this contains an ``execute`` function that
-        will be called on each control loop. If you call other components from
-        this component, you should ensure that your component occurs *before*
+        will be called on each control loop. All state execution occurs from
+        within that function call. If you call other components from this
+        component, you should ensure that your component occurs *before*
         the other components in your Robot class.
         
         Here's a very simple example of how you might implement a shooter
@@ -172,10 +196,9 @@ class StateMachine(metaclass=OrderedClass):
                 shooter = Shooter
                 ball_pusher = BallPusher
                 
-                
                 def fire(self):
                     """This is called from the main loop"""
-                    self.begin()
+                    self.should_run()
                     
                 @state(first=True)
                 def begin_firing(self):
@@ -183,8 +206,9 @@ class StateMachine(metaclass=OrderedClass):
                     if self.shooter.ready():
                         self.next_state('firing')
                     
-                @timed_state(duration=1.0)
+                @timed_state(duration=1.0, must_finish=True)
                 def firing(self):
+                    """This state will continue executing even if should_run isn't called"""
                     self.shooter.enable()
                     self.ball_pusher.push()
             
@@ -206,11 +230,15 @@ class StateMachine(metaclass=OrderedClass):
           - state durations can be tuned here
           - The 'current state' is output as it happens
           - Descriptions and names of the states are here (for dashboard use)
+          
         
+        .. warning:: This object is not intended to be threadsafe and should not
+                     be accessed from multiple threads
     '''
     
     VERBOSE_LOGGING = False
     
+    #: NT variable that indicates which state is currently being executed
     current_state = tunable('', subtable='state')
     
     def __new__(cls):
@@ -274,14 +302,24 @@ class StateMachine(metaclass=OrderedClass):
         if not has_first:
             raise NoFirstStateError("Starting state not defined! Use first=True on a state decorator")
         
+        # Indicates that an external party wishes the state machine to execute
+        self.__should_run = False
+        
+        # Indicates that the state machine is currently executing
         self.__executing = False
+        
+        # A dictionary of states
         self.__states = states
+        
+        # The currently executing state, or None if not executing
         self.__state = None
+        
         
     @property
     def is_executing(self):
         ''':returns: True if the state machine is executing states'''
-        return self.__state is not None
+        #return self.__state is not None
+        return self.__executing
         
     def on_enable(self):
         '''
@@ -294,18 +332,21 @@ class StateMachine(metaclass=OrderedClass):
             magicbot component API: called when autonomous/teleop is disabled
         '''
         self.done()
-    
-    def begin(self, initial_state=None, force=False):
-        '''
-            Call this to begin execution of the state machine
         
-            :param initial_state: If specified, start in this state instead
-                                  of in the 'first' state
+    def should_run(self, initial_state=None, force=False):
+        '''
+            This signals that you want the state machine to execute its
+            states.
+            
+            :param initial_state: If specified and execution is not currently
+                                  occurring, start in this state instead of
+                                  in the 'first' state
             :param force:         If True, will transition even if the state
                                   machine is currently active.
         '''
-        if force or not self.__executing:
-            self.__start = Timer.getFPGATimestamp()
+        self.__should_run = True
+    
+        if force or self.__state is None:
             if initial_state:
                 self.next_state(initial_state)
             else:
@@ -318,32 +359,38 @@ class StateMachine(metaclass=OrderedClass):
         
         .. note:: This should only be called from one of the state functions
         '''
-        if name is not None:
-            self.__state = self.__states[name]
-        else:
-            self.__state = None
-            
-        if self.__state is None:
-            self.__executing = False
-            self.current_state = ''
-            return
+        state = self.__states[name]
         
-        self.__executing = True
-        self.current_state = self.__state.name
-        self.__state.ran = False
+        self.current_state = state.name
+        state.ran = False
+        
+        self.__state = state
         
     def next_state_now(self, name):
         '''Call this function to transition to the next state, and call the next
         state function immediately. Prefer to use :meth:`next_state` instead.
         
         :param name: Name of the state to transition to
+        
+        .. note:: This should only be called from one of the state functions
         '''
         self.next_state(name)
+        # TODO: may want to do this differently?
         self.execute()
         
     def done(self):
-        '''Call this function to indicate that no more states should be called'''
-        self.next_state(None)
+        '''Call this function to end execution of the state machine.
+        
+        .. note:: If you wish to do something each time execution ceases,
+                  override this function (but be sure to call
+                  ``super().done()``!)
+        '''
+        self.__state = None
+        self.__executing = False
+        self.current_state = ''
+        
+        if self.VERBOSE_LOGGING:
+            self.logger.info("Stopped state machine execution")
     
     def execute(self):
         '''
@@ -352,65 +399,71 @@ class StateMachine(metaclass=OrderedClass):
             this function.
         '''
         
-        if not self.__executing:
-            return
-        
         now = Timer.getFPGATimestamp()
-        tm = now - self.__start
         
-        # if you get an error here, then _build_states was never called
-        try:
-            state = self.__state
-        except AttributeError:
-            raise ValueError("_build_states was never called!")
+        if not self.__executing:
+            if self.__should_run:
+                self.__start = now
+                self.__executing = True
+            else:
+                return
+        
+        tm = now - self.__start
+        state = self.__state
         
         # we adjust this so that if we have states chained together,
         # then the total time it runs is the amount of time of the
         # states. Otherwise, the time drifts.
         new_state_start = tm
         
-        # determine if the time has passed to execute the next state
-        if state is not None and state.expires < tm:
-            self.next_state(state.next_state)
-            new_state_start = state.expires
-            state = self.__state
-        
         if state is None:
-            if self.__executing:
+            self.done()
+        
+        # determine if the time has passed to execute the next state
+        # -> intentionally comes first, 
+        if state is not None and state.expires < tm:
+            if state.next_state is None:
+                state = None
+            else:
+                self.next_state(state.next_state)
+                new_state_start = state.expires
+                state = self.__state
+        
+        if state is None or (not self.__should_run and not state.must_finish):
+            self.done()
+        else:
+            # is this the first time this was executed?
+            initial_call = not state.ran
+            if initial_call:
+                state.ran = True
+                state.start_time = new_state_start
+                state.expires = new_state_start + getattr(self, state.duration_attr, 0xffffffff)
+                
                 if self.VERBOSE_LOGGING:
-                    self.logger.info("%.3fs: End of state machine", tm)
-                self.__executing = False
-            return
-        
-        # is this the first time this was executed?
-        initial_call = not state.ran
-        if initial_call:
-            state.ran = True
-            state.start_time = new_state_start
-            state.expires = new_state_start + getattr(self, state.duration_attr, 0xffffffff)
+                    self.logger.info("%.3fs: Entering state: %s", tm, state.name)
             
-            if self.VERBOSE_LOGGING:
-                self.logger.info("%.3fs: Entering state: %s", tm, state.name)
+            # execute the state function, passing it the arguments
+            state.run(self, tm, tm - state.start_time, initial_call)
         
-        # execute the state function, passing it the arguments
-        state.run(self, tm, tm - state.start_time, initial_call)
+        # Reset this each time
+        self.__should_run = False
 
     
 class AutonomousStateMachine(StateMachine):
     '''
         This is a specialized version of the StateMachine that is designed
-        to be used as an autonomous mode.
+        to be used as an autonomous mode. There are a few key differences:
+        
+        - The :func:`.should_run` function is always called, so the state machine
+          will always run to completion unless done() is called
+        - VERBOSE_LOGGING is set to True, so a log message will be printed out upon
+          each state transition
+        
     '''
     
     VERBOSE_LOGGING = True
     
-    def on_enable(self):
-        self.begin()
-            
-    def on_disable(self):
-        # maybe this should always happen?
-        self.done()
-        
     def on_iteration(self, tm):
-        # TODO, remove this in 2017
+        # TODO, remove the on_iteration function in 2017
+        self.should_run()
         self.execute()   
