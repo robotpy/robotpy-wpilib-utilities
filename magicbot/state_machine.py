@@ -464,7 +464,21 @@ class AutonomousStateMachine(StateMachine):
     
     VERBOSE_LOGGING = True
     
+    def on_enable(self):
+        super().on_enable()
+        self.__engaged = True
+    
     def on_iteration(self, tm):
-        # TODO, remove the on_iteration function in 2017
-        self.engage()
-        self.execute()   
+        # TODO, remove the on_iteration function in 2017? 
+        
+        # Only engage the state machine until its execution finishes, otherwise
+        # it will just keep repeating
+        #
+        # This is because if you keep calling engage(), the state machine will
+        # loop. I'm tempted to change that, but I think it would lead to unexpected
+        # side effects. Will have to contemplate this...
+        
+        if self.__engaged:
+            self.engage()
+            self.execute()
+            self.__engaged = self.is_executing
