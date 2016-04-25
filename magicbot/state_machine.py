@@ -238,7 +238,9 @@ class StateMachine(metaclass=OrderedClass):
     
     VERBOSE_LOGGING = False
     
-    #: NT variable that indicates which state is currently being executed
+    #: NT variable that indicates which state will be executed next (though,
+    #: does not guarantee that it will be executed). Will return an empty
+    #: string if the state machine is not currently engaged.
     current_state = tunable('', subtable='state')
     
     def __new__(cls):
@@ -303,10 +305,10 @@ class StateMachine(metaclass=OrderedClass):
             raise NoFirstStateError("Starting state not defined! Use first=True on a state decorator")
         
         # Indicates that an external party wishes the state machine to execute
-        self.__engaged = False
+        self.__should_engage = False
         
         # Indicates that the state machine is currently executing
-        self.__executing = False
+        self.__engaged = False
         
         # A dictionary of states
         self.__states = states
@@ -319,7 +321,7 @@ class StateMachine(metaclass=OrderedClass):
     def is_executing(self):
         ''':returns: True if the state machine is executing states'''
         #return self.__state is not None
-        return self.__executing
+        return self.__engaged
         
     def on_enable(self):
         '''
@@ -344,7 +346,7 @@ class StateMachine(metaclass=OrderedClass):
             :param force:         If True, will transition even if the state
                                   machine is currently active.
         '''
-        self.__engaged = True
+        self.__should_engage = True
     
         if force or self.__state is None:
             if initial_state:
@@ -360,9 +362,8 @@ class StateMachine(metaclass=OrderedClass):
         .. note:: This should only be called from one of the state functions
         '''
         state = self.__states[name]
-        
-        self.current_state = state.name
         state.ran = False
+        self.current_state = state.name
         
         self.__state = state
         
@@ -386,7 +387,7 @@ class StateMachine(metaclass=OrderedClass):
                   ``super().done()``!)
         '''
         self.__state = None
-        self.__executing = False
+        self.__engaged = False
         self.current_state = ''
         
         if self.VERBOSE_LOGGING:
@@ -401,10 +402,10 @@ class StateMachine(metaclass=OrderedClass):
         
         now = Timer.getFPGATimestamp()
         
-        if not self.__executing:
-            if self.__engaged:
+        if not self.__engaged:
+            if self.__should_engage:
                 self.__start = now
-                self.__executing = True
+                self.__engaged = True
             else:
                 return
         
@@ -429,7 +430,7 @@ class StateMachine(metaclass=OrderedClass):
                 new_state_start = state.expires
                 state = self.__state
         
-        if state is None or (not self.__engaged and not state.must_finish):
+        if state is None or (not self.__should_engage and not state.must_finish):
             self.done()
         else:
             # is this the first time this was executed?
@@ -446,7 +447,7 @@ class StateMachine(metaclass=OrderedClass):
             state.run(self, tm, tm - state.start_time, initial_call)
         
         # Reset this each time
-        self.__engaged = False
+        self.__should_engage = False
 
     
 class AutonomousStateMachine(StateMachine):

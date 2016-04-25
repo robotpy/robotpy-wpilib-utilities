@@ -67,47 +67,71 @@ def test_sm(wpitime):
     # should not be able to directly call
     with pytest.raises(IllegalCallError):
         sm.first_state()
+    
+    assert sm.current_state == ''
+    assert not sm.is_executing
         
-    sm.begin()
+    sm.engage()
     assert sm.current_state == 'first_state'
+    assert not sm.is_executing
     
     sm.execute()
     assert sm.current_state == 'second_state'
+    assert sm.is_executing
     
-    # should not go back to the first state
-    sm.begin()
+    # should not change
+    sm.engage()
     assert sm.current_state == 'second_state'
+    assert sm.is_executing
     
     sm.execute()
     assert sm.current_state == 'second_state'
+    assert sm.is_executing
     
     wpitime.now += 1.5
+    sm.engage()
     sm.execute()
-    
     assert sm.current_state == 'third_state'
+    assert sm.is_executing
+    
+    sm.engage()
     sm.execute()
+    assert sm.current_state == 'third_state'
+    assert sm.is_executing
     
     # should be done
     sm.done()
     assert sm.current_state == ''
+    assert not sm.is_executing
     
     # should be able to start directly at second state
-    sm.begin(initial_state='second_state')
+    sm.engage(initial_state='second_state')
     sm.execute()
     assert sm.current_state == 'second_state'
+    assert sm.is_executing
     
     wpitime.now += 1.5
+    sm.engage()
     sm.execute()
     assert sm.current_state == 'third_state'
+    assert sm.is_executing
     
     # test force
-    sm.begin()
+    sm.engage()
+    sm.execute()
     assert sm.current_state == 'third_state'
-    sm.begin(force=True)
+    assert sm.is_executing
+    
+    sm.engage(force=True)
     assert sm.current_state == 'first_state'
+    assert sm.is_executing
     
+    sm.execute() 
+    sm.execute()
+    assert not sm.is_executing
+    assert sm.current_state == ''
     
-    assert sm.executed == ['sf', 1, 2, 3, 3, 2, 3]
+    assert sm.executed == ['sf', 1, 2, 3, 3, 2, 3, 3, 1]
 
 def test_sm_inheritance():
     
@@ -123,7 +147,7 @@ def test_sm_inheritance():
     
     sm = _TM2()
     setup_tunables(sm, 'cname')
-    sm.begin()
+    sm.engage()
     assert sm.current_state == 'first_state'
     
     sm.execute()
@@ -131,5 +155,46 @@ def test_sm_inheritance():
     
     sm.execute()
     assert sm.current_state == ''
+
+def test_must_finish():
+    class _TM(StateMachine):
+        
+        def __init__(self):
+            self.executed = []
+        
+        @state(first=True)
+        def ordinary1(self):
+            self.next_state('ordinary2')
+            self.executed.append(1)
+            
+        @state
+        def ordinary2(self):
+            self.next_state('must_finish')
+            self.executed.append(2)
     
+        @state(must_finish=True)
+        def must_finish(self):
+            self.executed.append('mf')
     
+    sm = _TM()
+    setup_tunables(sm, 'cname')
+    
+    sm.engage()
+    sm.execute()
+    sm.execute()
+    
+    assert sm.current_state == ''
+    assert not sm.is_executing
+    
+    sm.engage()
+    sm.execute()
+    sm.engage()
+    sm.execute()
+    sm.execute()
+    sm.execute()
+    
+    assert sm.current_state == 'must_finish'
+    assert sm.is_executing
+    
+    assert sm.executed == [1, 1, 2, 'mf', 'mf']
+
