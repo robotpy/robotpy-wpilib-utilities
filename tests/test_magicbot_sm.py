@@ -1,7 +1,7 @@
 
 from magicbot.state_machine import (
     state, timed_state,
-    StateMachine,
+    AutonomousStateMachine, StateMachine,
     IllegalCallError, NoFirstStateError, MultipleFirstStatesError
 )
 
@@ -197,4 +197,33 @@ def test_must_finish():
     assert sm.is_executing
     
     assert sm.executed == [1, 1, 2, 'mf', 'mf']
+
+def test_autonomous_sm():
+    class _TM(AutonomousStateMachine):
+        
+        i = 0
+        VERBOSE_LOGGING = False
+        
+        @state(first=True)
+        def something(self):
+            self.i += 1
+            if self.i == 6:
+                self.done()
+        
+    sm = _TM()
+    setup_tunables(sm, 'cname')
+    
+    sm.on_enable()
+    
+    for _ in range(5):
+        sm.on_iteration(None)
+        assert sm.is_executing
+        
+    sm.on_iteration(None)
+    assert not sm.is_executing
+        
+    for _ in range(5):
+        sm.on_iteration(None)
+        assert not sm.is_executing
+    
 
