@@ -48,6 +48,6 @@ setup(
     author_email='robotpy@googlegroups.com',
     url='https://github.com/robotpy/robotpy-wpilib-utilities',
     keywords='frc first robotics',
-    install_requires=['wpilib>=2016.1.1,<2017.0.0'],
+    install_requires=['wpilib>=2016.1.1,<2017.0.0', 'pynetworktables>=2015.3.3'],
     packages=find_packages(),
     )
