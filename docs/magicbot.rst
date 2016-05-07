@@ -43,7 +43,7 @@ drivetrain, forklift, elevator, etc). We refer to these parts as
 "Components". 
 
 Components
-^^^^^^^^^^
+~~~~~~~~~~
 
 When you design your robot code, you should define each of the components
 of your robot and order them in a hierarchy, with "low level" components
@@ -92,7 +92,7 @@ not call the execute function as ``execute`` is automatically called by
 MagicRobot if you define it as a magic component.
 
 Component creation
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 Components are instantiated by the MagicRobot class. You can tell the
 :class:`.MagicRobot` class to create magic components by defining the
@@ -113,7 +113,7 @@ variable names and types in your MyRobot object.
 
 
 Variable injection
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 To reduce boilerplate associated with passing components around, and to
 enhance autocomplete for PyDev, MagicRobot can inject variables defined
@@ -137,7 +137,7 @@ out this example:
             # created in MyRobot.createObjects
 
 Operator Control code
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 Code that controls components should go in the ``teleopPeriodic`` method.
 This is really the only place that you should generally interact with a
@@ -178,7 +178,175 @@ automatically be loaded at robot startup.
 
 .. seealso:: :class:`.AutonomousModeSelector` on how to define an
              autonomous mode.
-     
+
+Dashboard & coprocessor communications
+--------------------------------------
+
+The simplest method to communicate with other programs external to your robot
+code (examples include dashboards and image processing code) is using 
+NetworkTables. NetworkTables is a distributed keystore, or put more simply,
+it is similar to a python dictionary that is shared across multiple processes.
+ 
+.. note:: For more information about NetworkTables, see the `pynetworktables documentation <http://pynetworktables.readthedocs.io/en/latest/>`_.
+
+Magicbot provides a simple way to interact with NetworkTables, using the
+:func:`tunable` property. It provides a python property that has get/set
+functions that read and write from NetworkTables. The NetworkTables key
+is automatically determined by the name of your object instance and the
+name of the attribute that the tunable is assigned to.
+
+In the following example, this would create a NetworkTables variable called
+`/components/mine/foo`, and assign it a default value of 1.0::
+
+    class MyComponent:
+
+        foo = tunable(default=1.0)
+
+    ...
+
+    class MyRobot:
+        mine = MyComponent
+
+To access the variable, in ``MyComponent`` you can read or write ``self.foo``
+and it will read/write to NetworkTables.
+
+For more information about creating custom dashboards, see the following:
+
+* `pynetworktables2js docs <http://pynetworktables2js.readthedocs.io/en/latest/>`_
+* `Smartdashboard docs <https://wpilib.screenstepslive.com/s/4485/m/26401>`_
+
+
+Example Components
+------------------
+
+Low level components
+~~~~~~~~~~~~~~~~~~~~
+
+Low level components are those that directly interact with hardware. Generally,
+these should not be stateful but should express simple actions that cause the
+component to do whatever it is in a simple way, so when it doesn't work you can
+bypass any automation and more easily test the component.
+
+Here's an example single-wheel shooter component::
+
+    class Shooter:
+
+        shooter_motor = wpilib.Talon
+        
+        # speed is tunable via NetworkTables
+        shoot_speed = tunable(1.0)
+        
+        def __init__(self):
+            self.enabled = False
+        
+        def enable(self):
+            '''Causes the shooter motor to spin'''
+            self.enabled = True
+
+        def is_ready(self):
+            # in a real robot, you'd be using an encoder to determine if the
+            # shooter were at the right speed.. 
+            return True
+
+        def execute(self):
+            '''This gets called at the end of the control loop'''
+            if self.enabled:
+                self.shooter_motor.set(self.shoot_speed)
+            else:
+                self.shooter_motor.set(0)
+            
+            self.enabled = False
+
+Now, this is useful, but you'll note that it's not particularly smart. It just
+makes the component work. Which is great -- very easy to debug. Let's automate
+some stuff now.
+
+High level components
+~~~~~~~~~~~~~~~~~~~~~
+
+High level components are those that control other components to automate
+one or more of them for automated behaviors. Consider the example of the
+Shooter component above -- let's say that you have some intake component
+that  needs to feed a ball into the shooter when the shooter is ready. At
+that point, you're ready for high level components! First, let's just define
+what the low-level intake interface is:
+
+* Has a function 'feed_shooter' which will send the ball to the shooter
+
+Let's automate these two using a state machine helper::
+
+    from magicbot import StateMachine, state, timed_state
+
+    class ShooterControl(StateMachine):
+        shooter = Shooter
+        intake = Intake
+        
+        def fire(self):
+            '''This function is called from teleop or autonomous to cause the
+               shooter to fire'''
+            self.engage()
+            
+        @state(first=True)
+        def prepare_to_fire(self):
+            '''First state -- waits until shooter is ready before going to the
+               next action in the sequence'''
+            self.shooter.enable()
+            
+            if self.shooter.is_ready():
+                self.next_state_now('firing')
+            
+        @timed_state(duration=1, must_finish=True)
+        def firing(self):
+            '''Fires the ball'''
+            self.shooter.enable()
+            self.intake.feed_shooter()
+                    
+There's a few special things to point out here:
+
+* There are two steps in this state machine: 'prepare_to_fire' and 'firing'. The
+  first step is 'prepare_to_fire', and it only transitions into 'firing' if the
+  shooter is ready.
+* When you want the state machine to start executing, you call the 'engage'
+  method. Of course, it's nice to have a semantically useful name, so we defined
+  a function called 'fire' which just calls the 'engage' function for us.
+* True to magicbot philosophy, the state machine will only execute if the 'engage'
+  function is continuously called. So if you call engage, then prepare_to_fire
+  will execute. But if you neglect to call engage again, then no states will
+  execute.
+  
+  .. note:: There is an exception to this rule! Once you start firing, if the
+            intake stops then the ball will get stuck, so we *must* continue
+            even if engage doesn't occur. To tell the state machine about this,
+            we pass the ``must_finish`` argument to @timed_state which will
+            continue executing the state machine step until the duration has
+            expired.
+                    
+Now obviously this is a very simple example, but you can extend the sequence of
+events that happens as much as you want. It allows you to specify arbitrarily 
+complex sets of steps to happen, and the resulting code is really easy to 
+understand.
+
+Using these components
+~~~~~~~~~~~~~~~~~~~~~~
+
+Here's one way that you might put them together in your robot.py file::
+
+    class MyRobot(magicbot.MagicRobot):
+
+        # High level components go first
+        shooter_control = ShooterControl
+
+        # Low level components come last
+        intake = Intake
+        shooter = Shooter
+        
+        ... 
+        
+        def teleopPeriodic(self):
+        
+            if self.joystick.getTrigger():
+                self.shooter_control.fire()
+
 magicbot module
 ----------------
 
@@ -188,7 +356,7 @@ magicbot module
     :show-inheritance:
 
 Component
-^^^^^^^^^
+~~~~~~~~~
 
 .. automodule:: magicbot.magiccomponent
     :members:
@@ -196,7 +364,7 @@ Component
     :show-inheritance:
 
 Tunable
-^^^^^^^
+~~~~~~~
 
 .. automodule:: magicbot.magic_tunable
     :members:
@@ -204,7 +372,7 @@ Tunable
     :show-inheritance:
 
 State machines
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 .. automodule:: magicbot.state_machine
     :members:
