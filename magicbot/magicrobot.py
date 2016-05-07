@@ -11,7 +11,7 @@ from robotpy_ext.misc.orderedclass import OrderedClass
 
 from networktables import NetworkTable
 
-from .magic_tunable import setup_tunables
+from .magic_tunable import setup_tunables, _TunableProperty
 
 __all__ = ['MagicRobot']
 
@@ -335,10 +335,12 @@ class MagicRobot(wpilib.SampleRobot,
         self.logger.info("Creating magic components")
 
         # Identify all of the types, and create them
-        for m in self.members:
-            if m.startswith('_'):
-                continue
+        cls = self.__class__
 
+        for m in self.members:
+            if m.startswith('_') or isinstance(getattr(cls, m, None), _TunableProperty):
+                continue
+            
             ctyp = getattr(self, m)
             if not isinstance(ctyp, type):
                 continue
@@ -365,7 +367,8 @@ class MagicRobot(wpilib.SampleRobot,
         self._injectables = {}
 
         for n in dir(self):
-            if n.startswith('_') or n in self._exclude_from_injection:
+            if n.startswith('_') or n in self._exclude_from_injection or \
+               isinstance(getattr(cls, n, None), _TunableProperty):
                 continue
 
             o = getattr(self, n)
@@ -387,7 +390,10 @@ class MagicRobot(wpilib.SampleRobot,
         for mode in self._automodes.modes.values():
             mode.logger = logging.getLogger(mode.MODE_NAME)
             setup_tunables(mode, mode.MODE_NAME, 'autonomous')
-            self._setup_vars( mode.MODE_NAME, mode)
+            self._setup_vars(mode.MODE_NAME, mode)
+
+        # And for self too
+        setup_tunables(self, 'robot', None)
             
         # Call setup functions for components
         for cname, component in components:

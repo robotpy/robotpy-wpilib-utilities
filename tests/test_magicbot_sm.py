@@ -197,6 +197,36 @@ def test_must_finish():
     assert sm.is_executing
     
     assert sm.executed == [1, 1, 2, 'mf', 'mf']
+    
+def test_run_min_duration(wpitime):
+    
+    class _TM(StateMachine):
+        
+        @timed_state(first=True, min_duration=2)
+        def state1(self, state_tm):
+            pass
+        
+        @state
+        def state2(self):
+            pass
+        
+    sm = _TM()
+    setup_tunables(sm, 'cname')
+    
+    sm.engage()
+    sm.execute()
+    assert sm.current_state == 'state1'
+    assert sm.is_executing
+    
+    wpitime.now += 1
+    sm.execute()
+    assert sm.current_state == 'state1'
+    assert sm.is_executing
+    
+    wpitime.now += 2
+    sm.execute()
+    assert sm.current_state == ''
+    assert not sm.is_executing
 
 def test_autonomous_sm():
     class _TM(AutonomousStateMachine):

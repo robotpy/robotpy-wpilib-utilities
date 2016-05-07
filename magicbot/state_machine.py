@@ -73,11 +73,13 @@ class _StateData:
         self.ran = False
         self.run = wrapper.run
         self.must_finish = wrapper.must_finish
+        self.has_min_duration = getattr(wrapper, 'has_min_duration', False)
         
         if hasattr(wrapper, 'next_state'):
             self.next_state = wrapper.next_state
 
-def timed_state(f=None, *, duration=None, next_state=None, first=False, must_finish=False):
+def timed_state(f=None, *, duration=None, next_state=None, first=False, must_finish=False,
+                min_duration=None):
     '''
         If this decorator is applied to a function in an object that inherits
         from :class:`.StateMachine`, it indicates that the function
@@ -105,18 +107,37 @@ def timed_state(f=None, *, duration=None, next_state=None, first=False, must_fin
                             if ``done()`` is called, execution will stop
                             regardless of whether this is set.
         :type  must_finish: bool
+        :param min_duration: When specified, this indicates that the state
+                             will continue executing for some period of time
+                             even if ``engage()`` is not called. Once the
+                             specified period of time is over, this state 
+                             wiil continue executing until engage is no
+                             longer called.
+        :type min_duration: float
     '''
     
     if f is None:
-        return functools.partial(timed_state, duration=duration, next_state=next_state, first=first, must_finish=must_finish)
+        return functools.partial(timed_state, duration=duration, next_state=next_state,
+                                 first=first, must_finish=must_finish,
+                                  min_duration=min_duration)
     
-    if duration is None:
-        raise ValueError("timed_state functions must specify a duration")
+    if duration:
+        if min_duration:
+            raise ValueError("Cannot specify duration and min_duration")
+    elif min_duration:
+        if duration:
+            raise ValueError("Cannot specify duration and min_duration")
+        if must_finish:
+            raise ValueError("Cannot specify must_finish and min_duration")
+        duration = min_duration
+    else:
+        raise ValueError("timed_state functions must specify duration or must_finish_at_least")
     
     wrapper = _create_wrapper(f, first, must_finish)
     
     wrapper.next_state = next_state
     wrapper.duration = duration
+    wrapper.has_min_duration = bool(min_duration)
     
     return wrapper
 
@@ -423,7 +444,11 @@ class StateMachine(metaclass=OrderedClass):
         # determine if the time has passed to execute the next state
         # -> intentionally comes first, 
         if state is not None and state.expires < tm:
-            if state.next_state is None:
+            if state.has_min_duration:
+                # Now that the duration has expired, turn it into a 'normal' state
+                state.expires = 0xffffffff
+                state.must_finish = False
+            elif state.next_state is None:
                 state = None
             else:
                 self.next_state(state.next_state)
@@ -439,6 +464,8 @@ class StateMachine(metaclass=OrderedClass):
                 state.ran = True
                 state.start_time = new_state_start
                 state.expires = new_state_start + getattr(self, state.duration_attr, 0xffffffff)
+                if state.has_min_duration:
+                    state.must_finish = True
                 
                 if self.VERBOSE_LOGGING:
                     self.logger.info("%.3fs: Entering state: %s", tm, state.name)

@@ -136,6 +136,34 @@ out this example:
             # self.elevator_motor is a reference to the Talon instance
             # created in MyRobot.createObjects
 
+Low level components
+^^^^^^^^^^^^^^^^^^^^
+
+Low level components are those that directly interact with hardware.
+
+Here's an example low level component that 
+
+    class Shooter:
+
+        shooter_motor = wpilib.Talon
+
+
+        def is_ready(self):
+            pas
+
+        def execute(self):
+            pass
+
+
+High level components
+^^^^^^^^^^^^^^^^^^^^^
+
+High level components are those that control other components to automate
+one or more of them for automated behaviors. Consider the example of the
+Shooter component above -- while it is usable, it's a bit klunky for an
+operator to control, or to use from an autonomous mode.
+
+
 Operator Control code
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -178,6 +206,48 @@ automatically be loaded at robot startup.
 
 .. seealso:: :class:`.AutonomousModeSelector` on how to define an
              autonomous mode.
+
+Dashboard & coprocessor communications
+--------------------------------------
+
+The simplest method to communicate with other programs external to your robot
+code (examples include dashboards and image processing code) is using 
+NetworkTables. NetworkTables is a distributed keystore, or put more simply,
+it is similar to a python dictionary that is shared across multiple processes.
+
+
+TODO: should include docs from `tunable` or make them different somehow.. or link
+to them from here, this is a bit odd to dup
+ 
+.. note:: For more information about NetworkTables, see TODO
+
+Magicbot provides a simple way to interact with NetworkTables, using the
+:func:`tunable` property. It provides a python property that has get/set
+functions that read and write from NetworkTables. The NetworkTables key
+is automatically determined by the name of your object instance and the
+name of the attribute that the tunable is assigned to.
+
+In the following example, this would create a NetworkTables variable called
+`/components/mine/foo`, and assign it a default value of 1.0::
+
+    class MyComponent:
+
+        foo = tunable(default=1.0)
+
+    ...
+
+    class MyRobot:
+        mine = MyComponent
+
+To access the variable, in ``MyComponent`` you can read or write ``self.foo``
+and it will read/write to NetworkTables.
+
+For more information about creating custom dashboards, see the following:
+
+* pynetworktables2js docs
+* Smartdashboard docs?
+
+
      
 magicbot module
 ----------------

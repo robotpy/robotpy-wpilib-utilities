@@ -37,6 +37,13 @@ def tunable(default, *, writeDefault=True, subtable=None):
                     
                     # get the variable
                     foo = self.foo
+
+        The key of the NetworkTables variable will vary based on what kind of
+        object the decorated method belongs to:
+
+        * A component: ``/components/COMPONENTNAME/VARNAME``
+        * An autonomous mode: ``/autonomous/MODENAME/VARNAME``
+        * Your main robot class: ``/robot/VARNAME``
                     
         .. note:: When executing unit tests on objects that create tunables,
                   you will want to use setup_tunables to set the object up.
@@ -72,6 +79,12 @@ def tunable(default, *, writeDefault=True, subtable=None):
 def setup_tunables(component, cname, prefix='components'):
     '''
         Connects the tunables on an object to NetworkTables.
+
+        :param component:   Component object
+        :param cname:       Name of component
+        :type cname: str
+        :param prefix:      Prefix to use, or no prefix if None
+        :type prefix: str    
     
         .. note:: This is not needed in normal use, only useful
                   for testing
@@ -79,6 +92,11 @@ def setup_tunables(component, cname, prefix='components'):
     
     gtable = NetworkTable.getGlobalTable()
     cls = component.__class__
+
+    if prefix is None:
+        prefix = '/%s' % cname
+    else:
+        prefix = '/%s/%s' % (prefix, cname)
     
     for n in dir(cls):
         if n.startswith('_'):
@@ -89,9 +107,9 @@ def setup_tunables(component, cname, prefix='components'):
             continue
         
         if prop._ntsubtable:
-            key = '/%s/%s/%s/%s' % (prefix, cname, prop._ntsubtable, n)
+            key = '%s/%s/%s' % (prefix, prop._ntsubtable, n)
         else:
-            key = '/%s/%s/%s' % (prefix, cname, n)
+            key = '%s/%s' % (prefix, n)
         
         ntattr = '_Tunable__%s' % n
         
@@ -102,6 +120,21 @@ def setup_tunables(component, cname, prefix='components'):
         setattr(component, ntattr, ntvalue)
         prop._ntattr = ntattr
         prop._global_table = gtable
+
+def tunable_subscribe(f):
+    '''
+        ::
+
+            @tunable_subscription
+            def on_p_update(self, value):
+                """This is called when /components/my_component/p is updated"""
+                pass # v
+
+        ... warning: Functions are called on the NetworkTables thread, and should
+                     complete as soon as possible. If you do long operations on
+                     them (for example, Timer.sleep()), you will interfere with
+                     NetworkTables communications to your robot.
+    '''
 
 
 # TODO
