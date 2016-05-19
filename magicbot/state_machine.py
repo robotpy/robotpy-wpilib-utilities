@@ -386,12 +386,14 @@ class StateMachine(metaclass=OrderedClass):
                   override this function (but be sure to call
                   ``super().done()``!)
         '''
+        if self.VERBOSE_LOGGING and self.__state is not None:
+            self.logger.info("Stopped state machine execution")
+        
         self.__state = None
         self.__engaged = False
         self.current_state = ''
         
-        if self.VERBOSE_LOGGING:
-            self.logger.info("Stopped state machine execution")
+        
     
     def execute(self):
         '''
