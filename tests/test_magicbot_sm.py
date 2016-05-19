@@ -156,7 +156,7 @@ def test_sm_inheritance():
     sm.execute()
     assert sm.current_state == ''
 
-def test_must_finish():
+def test_must_finish(wpitime):
     class _TM(StateMachine):
         
         def __init__(self):
@@ -175,6 +175,15 @@ def test_must_finish():
         @state(must_finish=True)
         def must_finish(self):
             self.executed.append('mf')
+            
+        @state
+        def ordinary3(self):
+            self.executed.append(3)
+            self.next_state_now('timed_must_finish')
+            
+        @timed_state(duration=1, must_finish=True)
+        def timed_must_finish(self):
+            self.executed.append('tmf')
     
     sm = _TM()
     setup_tunables(sm, 'cname')
@@ -196,7 +205,29 @@ def test_must_finish():
     assert sm.current_state == 'must_finish'
     assert sm.is_executing
     
-    assert sm.executed == [1, 1, 2, 'mf', 'mf']
+    sm.next_state('ordinary3')
+    sm.engage()
+    sm.execute()
+    
+    assert sm.current_state == 'timed_must_finish'
+    
+    sm.execute()
+    assert sm.is_executing
+    assert sm.current_state == 'timed_must_finish'
+    
+    for _ in range(7):
+        wpitime.now += 0.1
+    
+        sm.execute()
+        assert sm.is_executing
+        assert sm.current_state == 'timed_must_finish'
+    
+    wpitime.now += 1
+    sm.execute()
+    assert not sm.is_executing
+    
+    
+    assert sm.executed == [1, 1, 2, 'mf', 'mf', 3] + ['tmf']*9
 
 def test_autonomous_sm():
     class _TM(AutonomousStateMachine):
