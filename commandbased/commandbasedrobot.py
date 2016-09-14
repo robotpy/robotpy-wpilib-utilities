@@ -34,13 +34,15 @@ class CommandBasedRobot(IterativeRobot):
                 self.disabledInit()
                 while self.ds.isDisabled():
                     hal.HALNetworkCommunicationObserveUserProgramDisabled()
-                    self.__runPeriodic(self.disabledPeriodic)
+                    self.disabledPeriodic()
+                    self.ds.waitForData()
 
             elif self.ds.isAutonomous():
                 self.autonomousInit()
                 while self.ds.isAutonomous():
                     hal.HALNetworkCommunicationObserveUserProgramAutonomous()
-                    self.__runPeriodic(self.autonomousPeriodic)
+                    self.autonomousPeriodic()
+                    self.ds.waitForData()
 
             elif self.ds.isTest():
                 LiveWindow.setEnabled(True)
@@ -48,7 +50,8 @@ class CommandBasedRobot(IterativeRobot):
                 self.testInit()
                 while self.ds.isTest():
                     hal.HALNetworkCommunicationObserveUserProgramTest()
-                    self.__runPeriodic(self.testPeriodic)
+                    self.testPeriodic()
+                    self.ds.waitForData()
 
                 LiveWindow.setEnabled(False)
 
@@ -59,19 +62,8 @@ class CommandBasedRobot(IterativeRobot):
                 # looping while disabled.
                 while self.ds.isEnabled() and self.ds.isOperatorControl():
                     hal.HALNetworkCommunicationObserveUserProgramTeleop()
-                    self.__runPeriodic(self.teleopPeriodic)
-
-
-    def __runPeriodic(self, periodicFunction):
-        '''
-        Run the correct "periodic" function and then wait for new data from the
-        driver station.
-        '''
-
-        periodicFunction()
-
-        while not self.ds.isNewControlData():
-            self.ds.waitForData()
+                    self.teleopPeriodic()
+                    self.ds.waitForData()
 
 
     def commandPeriodic(self):
