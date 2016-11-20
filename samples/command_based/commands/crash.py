@@ -1,4 +1,4 @@
-from commandbased import InstantCommand
+from wpilib.command import InstantCommand
 
 class Crash(InstantCommand):
     '''

@@ -1,4 +1,4 @@
-from commandbased import TimedCommand
+from wpilib.command import TimedCommand
 
 import subsystems
 
