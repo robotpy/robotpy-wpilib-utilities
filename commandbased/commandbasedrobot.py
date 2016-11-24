@@ -19,28 +19,28 @@ class CommandBasedRobot(IterativeRobot):
         from IterativeRobot for readability and to initialize scheduler.
         """
 
-        hal.HALReport(hal.HALUsageReporting.kResourceType_Framework,
-                      hal.HALUsageReporting.kFramework_Iterative)
+        hal.report(hal.HALUsageReporting.kResourceType_Framework,
+                   hal.HALUsageReporting.kFramework_Iterative)
 
         self.scheduler = Scheduler.getInstance()
         self.robotInit()
 
         # Tell the DS that the robot is ready to be enabled
-        hal.HALNetworkCommunicationObserveUserProgramStarting()
+        hal.observeUserProgramStarting()
 
         # loop forever, calling the appropriate mode-dependent function
         while True:
             if self.ds.isDisabled():
                 self.disabledInit()
                 while self.ds.isDisabled():
-                    hal.HALNetworkCommunicationObserveUserProgramDisabled()
+                    hal.observeUserProgramDisabled()
                     self.disabledPeriodic()
                     self.ds.waitForData()
 
             elif self.ds.isAutonomous():
                 self.autonomousInit()
                 while self.ds.isAutonomous():
-                    hal.HALNetworkCommunicationObserveUserProgramAutonomous()
+                    hal.observeUserProgramAutonomous()
                     self.autonomousPeriodic()
                     self.ds.waitForData()
 
@@ -49,7 +49,7 @@ class CommandBasedRobot(IterativeRobot):
 
                 self.testInit()
                 while self.ds.isTest():
-                    hal.HALNetworkCommunicationObserveUserProgramTest()
+                    hal.observeUserProgramTest()
                     self.testPeriodic()
                     self.ds.waitForData()
 
@@ -61,7 +61,7 @@ class CommandBasedRobot(IterativeRobot):
                 # to check isEnabled as well, since otherwise it will continue
                 # looping while disabled.
                 while self.ds.isEnabled() and self.ds.isOperatorControl():
-                    hal.HALNetworkCommunicationObserveUserProgramTeleop()
+                    hal.observeUserProgramTeleop()
                     self.teleopPeriodic()
                     self.ds.waitForData()
 
