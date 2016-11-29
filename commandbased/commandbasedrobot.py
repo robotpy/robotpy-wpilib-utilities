@@ -31,37 +31,37 @@ class CommandBasedRobot(IterativeRobot):
         # loop forever, calling the appropriate mode-dependent function
         while True:
             if self.ds.isDisabled():
+                hal.observeUserProgramDisabled()
                 self.disabledInit()
                 while self.ds.isDisabled():
-                    hal.observeUserProgramDisabled()
                     self.disabledPeriodic()
                     self.ds.waitForData()
 
             elif self.ds.isAutonomous():
+                hal.observeUserProgramAutonomous()
                 self.autonomousInit()
                 while self.ds.isAutonomous():
-                    hal.observeUserProgramAutonomous()
                     self.autonomousPeriodic()
                     self.ds.waitForData()
 
             elif self.ds.isTest():
+                hal.observeUserProgramTest()
                 LiveWindow.setEnabled(True)
 
                 self.testInit()
                 while self.ds.isTest():
-                    hal.observeUserProgramTest()
                     self.testPeriodic()
                     self.ds.waitForData()
 
                 LiveWindow.setEnabled(False)
 
             else:
+                hal.observeUserProgramTeleop()
                 self.teleopInit()
                 # isOperatorControl checks "not autonomous or test", so we need
                 # to check isEnabled as well, since otherwise it will continue
                 # looping while disabled.
                 while self.ds.isEnabled() and self.ds.isOperatorControl():
-                    hal.observeUserProgramTeleop()
                     self.teleopPeriodic()
                     self.ds.waitForData()
 
