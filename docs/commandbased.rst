@@ -116,3 +116,57 @@ Whichever method you choose, you can utilize it simply by importing::
 Final Thoughts
 --------------
 Welcome to FRC programming with Python. This documentation is still developing, so if you find a great trick to make programming your robot in the Command based paradigm more "pythonic", please update it with your ideas.
+
+
+API Reference
+-------------
+
+.. automodule:: commandbased.commandbasedrobot
+    :members:
+    :exclude-members: autonomousPeriodic, disabledPeriodic, teleopPeriodic, robotInit, testPeriodic, startCompetition
+    :show-inheritance:
+
+Commands
+~~~~~~~~
+    
+.. automodule:: wpilib.command.command
+    :members:
+
+.. automodule:: wpilib.command.commandgroup
+    :members:
+    
+.. automodule:: wpilib.command.instantcommand
+    :members:
+
+.. automodule:: wpilib.command.pidcommand
+    :members:
+
+.. automodule:: wpilib.command.printcommand
+    :members:
+
+.. automodule:: wpilib.command.startcommand
+    :members:
+
+.. automodule:: commandbased.stopcommand
+    :members:
+
+.. automodule:: wpilib.command.timedcommand
+    :members:
+
+.. automodule:: wpilib.command.waitcommand
+    :members:
+
+.. automodule:: wpilib.command.waitforchildren
+    :members:
+
+.. automodule:: wpilib.command.waituntilcommand
+    :members:
+
+Subsystems
+~~~~~~~~~~
+    
+.. automodule:: wpilib.command.subsystem
+    :members:
+
+.. automodule:: wpilib.command.pidsubsystem
+    :members:
