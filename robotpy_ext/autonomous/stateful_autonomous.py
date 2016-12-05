@@ -138,6 +138,39 @@ def state(f=None, first=False):
     return _create_wrapper(f, first)
 
 
+class state_alias:
+    '''
+        Not a decorator, used to alias a state so it can be referred to as
+        a different name::
+        
+            class MyAuto(StatefulAutonomous):
+            
+                @state()
+                def something(self):
+                    pass
+                    
+                something_else = state_alias(something)
+                
+        It can be used to set a state as first too (useful in derived classes)::
+        
+            class MyAuto(StatefulAutonomous):
+            
+                @state()
+                def something(self):
+                    pass
+                
+            class MyDerivedAuto(MyAuto):
+            
+                something_else = state_alias(something, first=True)
+        
+    '''
+    
+    def __init__(self, state_fn, first=False):
+        self.first = first
+        self.aliased = state_fn
+        
+    def __getattr__(self, name):
+        return getattr(self.aliased, name)
 
 class StatefulAutonomous:
     '''
@@ -304,6 +337,10 @@ class StatefulAutonomous:
             state = getattr(self.__class__, name)
             if name.startswith('__') or not hasattr(state, 'first'):
                 continue
+            
+            if isinstance(state, state_alias):
+                setattr(self, name, state.aliased)
+                name = state.aliased.name
 
             # is this the first state to execute?
             if state.first:
@@ -312,6 +349,9 @@ class StatefulAutonomous:
                 
                 self.__first = name
                 has_first = True
+                
+            if isinstance(state, state_alias):
+                continue
               
             # problem: how do we expire old entries?
             # -> what if we just use json? more flexible, but then we can't tune it
@@ -405,9 +445,12 @@ class StatefulAutonomous:
         self.next_state(None)
     
     def next_state(self, name):
-        '''Call this function to transition to the next state
+        '''Call this function to transition to the next state.
         
         :param name: Name of the state to transition to
+        
+        .. note:: The state function will not be called immediately, it will
+                  be called on the next iteration of the control loop.
         '''
         if name is not None:
             self.__state = getattr(self.__class__, name)
@@ -418,11 +461,22 @@ class StatefulAutonomous:
             return
         
         self.__state.ran = False
+        
+    def next_state_now(self, name):
+        '''Call this function to transition to the next state, and call the next
+        state function immediately. Prefer to use :meth:`next_state` instead.
+        
+        :param name: Name of the state to transition to
+        '''
+        self.next_state(name)
+        self.on_iteration(self.__iter_tm)
     
     def on_iteration(self, tm):
         '''This function is called by the autonomous mode switcher, should
            not be called by enduser code. It is called once per control
            loop iteration.'''
+        
+        self.__iter_tm = tm
         
         # if you get an error here, then you probably overrode on_enable, 
         # but didn't call super().on_enable(). Don't do that.

@@ -10,6 +10,7 @@ class MyRobot(wpilib.IterativeRobot):
         
         # Simple two wheel drive
         self.drive = wpilib.RobotDrive(0, 1)
+        self.drive.setSafetyEnabled(False)
         
         # Items in this dictionary are available in your autonomous mode
         # as attributes on your autonomous object
