@@ -9,7 +9,8 @@ Useful utility functions/objects for RobotPy WPILib (2015+).
 Documentation
 -------------
 
-API Documentation can be found at http://robotpy-wpilib-utilities.readthedocs.org/en/latest/
+* API Documentation can be found at http://robotpy-wpilib-utilities.readthedocs.io
+* Example programs can be found at https://github.com/robotpy/examples
 
 Contribution guidelines
 -----------------------
