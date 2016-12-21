@@ -49,9 +49,13 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+docs/_sidebar.rst.inc
 
 # PyBuilder
 target/
+
+.project
+.pydevproject
 
 #PyCharm Project files
 *.iml
