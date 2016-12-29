@@ -1,4 +1,5 @@
 
+import contextlib
 import inspect
 import logging
 
@@ -196,6 +197,35 @@ class MagicRobot(wpilib.SampleRobot,
             pass    # ok, can't do anything here
 
         self.__last_error_report = now
+
+    @contextlib.contextmanager
+    def consumeExceptions(self, forceReport=False):
+        """
+            This returns a context manager which will consume any uncaught
+            exceptions that might otherwise crash the robot.
+
+            Example usage::
+
+                def teleopPeriodic(self):
+                    with self.consumeExceptions():
+                        if self.joystick.getTrigger():
+                            self.shooter.shoot()
+
+                    with self.consumeExceptions():
+                        if self.joystick.getRawButton(2):
+                            self.ball_intake.run()
+
+                    # and so on...
+
+            :param forceReport: Always report the exception to the DS. Don't
+                                set this to True
+
+            .. seealso:: :meth:`onException` for more details
+        """
+        try:
+            yield
+        except:
+            self.onException(forceReport=forceReport)
 
     #
     # Internal API
