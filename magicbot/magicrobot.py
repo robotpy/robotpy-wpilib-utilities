@@ -9,6 +9,7 @@ from robotpy_ext.misc import PreciseDelay
 from robotpy_ext.autonomous import AutonomousModeSelector
 
 from robotpy_ext.misc.orderedclass import OrderedClass
+from robotpy_ext.misc.periodic_filter import PeriodicFilter
 
 from networktables import NetworkTable
 
@@ -49,6 +50,9 @@ class MagicRobot(wpilib.SampleRobot,
     #: uncaught exceptions be reported?
     error_report_interval = 0.5
 
+    #: Logging intervate: how often should the logger print out?
+    logging_interval = 1.0
+    
     def robotInit(self):
         """
             .. warning:: Internal API, don't override; use :meth:`createObjects` instead
@@ -59,7 +63,14 @@ class MagicRobot(wpilib.SampleRobot,
         ]
 
         self.__last_error_report = -10
+        
+        
 
+        # Setup logger
+        self.__last_log = -10
+        self.logger.addFilter(PeriodicFilter(self))
+        self.loggingLoop = True
+        
         self._components = []
 
         # Create the user's objects and stuff here
@@ -74,7 +85,7 @@ class MagicRobot(wpilib.SampleRobot,
         self.__nt = NetworkTable.getTable('/robot')
         self.__nt.putBoolean('is_simulation', self.isSimulation())
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
-
+        
     def createObjects(self):
         """
             You should override this and initialize all of your wpilib
@@ -277,11 +288,13 @@ class MagicRobot(wpilib.SampleRobot,
                 ds_attached = not ds_attached
                 self.__nt.putBoolean('is_ds_attached', ds_attached)
             
+            self._refresh_logger()
             try:
                 self.disabledPeriodic()
             except:
                 self.onException()
-
+            
+            self.loggingLoop = False
             delay.wait()
 
     def operatorControl(self):
@@ -310,8 +323,7 @@ class MagicRobot(wpilib.SampleRobot,
 
         while self.isOperatorControl() and self.isEnabled():
             
-            #self._update_autosend()
-            
+            self._refresh_logger()
             try:
                 self.teleopPeriodic()
             except:
@@ -386,6 +398,7 @@ class MagicRobot(wpilib.SampleRobot,
 
             # Automatically inject a logger object
             component.logger = logging.getLogger(m)
+            component.logger.addFilter(PeriodicFilter(self))
             component._Magicbot__autosend = {}
 
             # Store for later
@@ -477,3 +490,11 @@ class MagicRobot(wpilib.SampleRobot,
                 component.execute()
             except:
                 self.onException()
+            
+    def _refresh_logger(self):
+        now = wpilib.Timer.getFPGATimestamp()
+        self.loggingLoop = False
+        if now - self.__last_log > self.logging_interval:
+            self.loggingLoop = True
+            self.__last_log = now
+                
