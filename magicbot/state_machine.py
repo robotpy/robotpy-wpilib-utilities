@@ -361,7 +361,10 @@ class StateMachine(metaclass=OrderedClass):
         
         .. note:: This should only be called from one of the state functions
         '''
-        state = self.__states[name]
+        if type(name) is str:
+            state = self.__states[name]
+        else:
+            state = name
         state.ran = False
         self.current_state = state.name
         
