@@ -40,9 +40,9 @@ class MagicRobot(wpilib.SampleRobot,
         - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'test'
         - ``/robot/is_simulation``: True/False
         - ``/robot/is_ds_attached``: True/False
-        
+            
     """
-
+    
     #: Amount of time each loop takes (default is 20ms)
     control_loop_wait_time = 0.020
 
@@ -64,8 +64,6 @@ class MagicRobot(wpilib.SampleRobot,
 
         self.__last_error_report = -10
         
-        
-
         # Setup logger
         self.__last_log = -10
         self.logger.addFilter(PeriodicFilter(self))
@@ -448,7 +446,7 @@ class MagicRobot(wpilib.SampleRobot,
         self.logger.debug("Injecting magic variables into %s", cname)
         
         for n in dir(component):
-            if n.startswith('_'):
+            if n.startswith('_') or isinstance(getattr(component.__class__, n), property):
                 continue
             
             inject_type = getattr(component, n)
@@ -497,4 +495,5 @@ class MagicRobot(wpilib.SampleRobot,
         if now - self.__last_log > self.logging_interval:
             self.loggingLoop = True
             self.__last_log = now
-                
+     
+        
