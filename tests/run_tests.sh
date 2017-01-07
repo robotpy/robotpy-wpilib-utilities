@@ -10,3 +10,8 @@ if [ "$RUNCOVERAGE" == "1" ]; then
 else
     python3 -m pytest "$@"
 fi
+
+# Run tests on examples repository
+if [ "$CONTINUOUS_INTEGRATION" == "true" ]; then
+    curl https://raw.githubusercontent.com/robotpy/examples/master/_remote_tests.sh | bash -s ext
+fi

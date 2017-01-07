@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 from os.path import dirname, exists, join
 import sys, subprocess
 from setuptools import setup, find_packages
@@ -39,6 +40,8 @@ else:
 with open(join(setup_dir, 'README.rst'), 'r') as readme_file:
     long_description = readme_file.read()
 
+install_requires = ['wpilib>=2016.1.1,<2017.0.0', 'pynetworktables>=2015.3.3']
+
 setup(
     name='robotpy-wpilib-utilities',
     version=__version__,
@@ -48,6 +51,6 @@ setup(
     author_email='robotpy@googlegroups.com',
     url='https://github.com/robotpy/robotpy-wpilib-utilities',
     keywords='frc first robotics',
-    install_requires=['wpilib>=2016.1.1,<2017.0.0', 'pynetworktables>=2015.3.3'],
+    install_requires=install_requires if not os.environ.get('ROBOTPY_NO_DEPS') else None,
     packages=find_packages(),
     )
