@@ -269,8 +269,8 @@ class StateMachine(metaclass=OrderedClass):
         #for each state function:
         for name in self.members:
             
-            state = getattr(cls, name)
-            if name.startswith('__') or not hasattr(state, 'first'):
+            state = getattr(cls, name, None)
+            if state is None or name.startswith('__') or not hasattr(state, 'first'):
                 continue
 
             # is this the first state to execute?
