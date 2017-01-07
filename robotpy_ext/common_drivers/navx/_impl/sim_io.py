@@ -54,35 +54,35 @@ class NavXSimBase:
         
 class NavXI2CSim(NavXSimBase, I2CSimBase):
     
-    def i2CInitialize(self, port, status):
+    def initializeI2C(self, port, status):
         status.value = 0
         
         # TODO: support other sim parameters
         self.angle_key = 'navxmxp_i2c_%d_angle' % port
         
-    def i2CWrite(self, port, device_address, data_to_send, send_size):
-        self._write(data_to_send)
-        return send_size
+    def writeI2C(self, port, deviceAddress, dataToSend, sendSize):
+        self._write(dataToSend)
+        return sendSize
     
-    def i2CRead(self, port, device_address, buffer, count):
+    def readI2C(self, port, deviceAddress, buffer, count):
         self._read(buffer, count)
         return count
 
 class NavXSPISim(NavXSimBase, SPISimBase):
     
-    def spiInitialize(self, port, status):
+    def initializeSPI(self, port, status):
         status.value = 0
         
         # TODO: support other sim parameters
         self.angle_key = 'navxmxp_spi_%d_angle' % port
     
-    def spiWrite(self, port, data_to_send, send_size):
-        self._write(data_to_send)
-        return send_size
+    def writeSPI(self, port, dataToSend, sendSize):
+        self._write(dataToSend)
+        return sendSize
     
-    def spiTransaction(self, port, data_to_send, data_received, size):
-        self._read(data_received, size - 1)
+    def transactionSPI(self, port, dataToSend, dataReceived, size):
+        self._read(dataReceived, size - 1)
         # TODO: maybe disable crc in sim
-        data_received[-1] = crc7(data_received[:-1])
+        dataReceived[-1] = crc7(dataReceived[:-1])
         return size
 
