@@ -40,7 +40,7 @@ else:
 with open(join(setup_dir, 'README.rst'), 'r') as readme_file:
     long_description = readme_file.read()
 
-install_requires = ['wpilib>=2016.1.1,<2017.0.0', 'pynetworktables>=2015.3.3']
+install_requires = ['wpilib>=2017.0.0,<2018.0.0', 'pynetworktables>=2017.0.1']
 
 setup(
     name='robotpy-wpilib-utilities',
