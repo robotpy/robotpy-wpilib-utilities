@@ -1,5 +1,5 @@
 
-from networktables import NetworkTable
+from networktables import NetworkTables
 
 # Only used as a marker
 class _TunableProperty(property):
@@ -60,14 +60,15 @@ def tunable(default, *, writeDefault=True, subtable=None):
     # the name of the key is related to the name of the variable name in the
     # robot class
     
+    nt = NetworkTables
+    
     def _get(self):
         return getattr(self, prop._ntattr).value
     
     def _set(self, value):
         v = getattr(self, prop._ntattr)
-        prop._global_table.putValue(v.key, value)
-        v._AutoUpdateValue__value = value
-    
+        nt._api.setEntryValue(v.key, v._valuefn(value))
+        
     prop = _TunableProperty(fget=_get, fset=_set)
     prop._ntdefault = default
     prop._ntsubtable = subtable
@@ -90,7 +91,6 @@ def setup_tunables(component, cname, prefix='components'):
                   for testing
     '''
     
-    gtable = NetworkTable.getGlobalTable()
     cls = component.__class__
 
     if prefix is None:
@@ -113,13 +113,12 @@ def setup_tunables(component, cname, prefix='components'):
         
         ntattr = '_Tunable__%s' % n
         
-        ntvalue = NetworkTable.getGlobalAutoUpdateValue(key,
-                                                        prop._ntdefault,
-                                                        prop._ntwritedefault)
+        ntvalue = NetworkTables.getGlobalAutoUpdateValue(key,
+                                                         prop._ntdefault,
+                                                         prop._ntwritedefault)
         # double indirection
         setattr(component, ntattr, ntvalue)
         prop._ntattr = ntattr
-        prop._global_table = gtable
 
 
 # TODO

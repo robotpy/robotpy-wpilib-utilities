@@ -222,7 +222,7 @@ class StatefulAutonomous:
         self.__sd_args = []
 
         self.__build_states()
-        self.__tunables = networktables.StringArray()
+        self.__tunables = []
         
         if hasattr(self, 'initialize'):
             self.initialize()
@@ -259,7 +259,7 @@ class StatefulAutonomous:
             name = '%s|%0.3f|%0.3f' % (name, vmin, vmax)
         
         self.__tunables.append(name)
-        self.__table.putValue(self.MODE_NAME + '_tunables', self.__tunables)
+        self.__table.putStringArray(self.MODE_NAME + '_tunables', self.__tunables)
         
     def __register_sd_var_internal(self, name, default, add_prefix, readback):
         
@@ -334,19 +334,11 @@ class StatefulAutonomous:
         
         sorted_states = sorted(states.items())
         
-        array = networktables.StringArray()
+        self.__table.putStringArray(self.MODE_NAME + '_durations',
+                                    (name for _, (name, desc) in sorted_states))
         
-        for _, (name, desc) in sorted_states:
-            array.append(name)
-            
-        self.__table.putValue(self.MODE_NAME + '_durations', array)
-        
-        array = networktables.StringArray()
-        
-        for _, (name, desc) in sorted_states:
-            array.append(desc)
-            
-        self.__table.putValue(self.MODE_NAME + '_descriptions', array)
+        self.__table.putStringArray(self.MODE_NAME + '_descriptions',
+                                    (desc for _, (name, desc) in sorted_states))
         
         if not has_first:
             raise ValueError("Starting state not defined! Use first=True on a state decorator")

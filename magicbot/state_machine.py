@@ -260,8 +260,8 @@ class StateMachine(metaclass=OrderedClass):
         #          an array with the names, and the dashboard uses that
         #          to determine the ordering too
         
-        nt_names = networktables.StringArray()
-        nt_desc = networktables.StringArray()
+        nt_names = []
+        nt_desc = []
     
         states = {}
         cls = self.__class__
@@ -297,12 +297,12 @@ class StateMachine(metaclass=OrderedClass):
                 prop = getattr(cls, state_data.duration_attr, None)
                 if prop is None:
                     prop = setattr(cls, state_data.duration_attr, tunable(state.duration, writeDefault=False, subtable='state'))
-        
-        cls.state_names = tunable(nt_names, subtable='state')
-        cls.state_descriptions = tunable(nt_desc, subtable='state')
          
         if not has_first:
             raise NoFirstStateError("Starting state not defined! Use first=True on a state decorator")
+        
+        cls.state_names = tunable(nt_names, subtable='state')
+        cls.state_descriptions = tunable(nt_desc, subtable='state')
         
         # Indicates that an external party wishes the state machine to execute
         self.__should_engage = False
