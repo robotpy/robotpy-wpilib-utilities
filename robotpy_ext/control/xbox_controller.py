@@ -20,7 +20,7 @@ class XboxController:
         self.ds = wpilib.DriverStation.getInstance()
         self.port = port
         
-        hal.HALReport(hal.HALUsageReporting.kResourceType_Joystick, port)
+        hal.report(hal.HALUsageReporting.kResourceType_Joystick, port)
     
     def getLeftX(self):
         """Get the left stick X axis
