@@ -51,7 +51,7 @@ class MagicRobot(wpilib.SampleRobot,
     error_report_interval = 0.5
 
     #: Logging interval: how often should the logger print out?
-    logging_interval = 1.0
+    logging_interval = 0
     
     def robotInit(self):
         """
