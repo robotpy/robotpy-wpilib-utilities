@@ -1,3 +1,4 @@
+import warnings
 
 import hal
 import wpilib
@@ -8,6 +9,8 @@ class XboxController:
         specific buttons and axes.
     
         Mapping based on http://www.team358.org/files/programming/ControlSystem2015-2019/images/XBoxControlMapping.jpg
+
+        :deprecated: Use :class:`wpilib.XboxController <wpilib.xboxcontroller.XboxController>` instead
     '''
     
     def __init__(self, port):
@@ -17,6 +20,8 @@ class XboxController:
         :type  port: int
         '''
     
+        warnings.warn('robotpy_ext.control.xbox_controller is deprecated, use wpilib.XboxController instead', category=DeprecationWarning, stacklevel=2)
+
         self.ds = wpilib.DriverStation.getInstance()
         self.port = port
         
@@ -163,5 +168,3 @@ class XboxController:
         :rtype: bool
         """
         return self.ds.getStickAxis(self.port, 3) > 0
-
-
