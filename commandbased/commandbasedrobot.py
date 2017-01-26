@@ -2,7 +2,6 @@ import hal
 
 from wpilib.iterativerobot import IterativeRobot
 from wpilib.command.scheduler import Scheduler
-from wpilib.driverstation import DriverStation
 from wpilib.livewindow import LiveWindow
 
 
@@ -11,7 +10,6 @@ class CommandBasedRobot(IterativeRobot):
     The base class for a Command-Based Robot. To use, instantiate commands and
     trigger them.
     '''
-
 
     def startCompetition(self):
         """
@@ -40,7 +38,7 @@ class CommandBasedRobot(IterativeRobot):
             elif self.ds.isAutonomous():
                 hal.observeUserProgramAutonomous()
                 self.autonomousInit()
-                while self.ds.isAutonomous():
+                while self.ds.isEnabled() and self.ds.isAutonomous():
                     self.autonomousPeriodic()
                     self.ds.waitForData()
 
@@ -49,7 +47,7 @@ class CommandBasedRobot(IterativeRobot):
                 LiveWindow.setEnabled(True)
 
                 self.testInit()
-                while self.ds.isTest():
+                while self.ds.isEnabled() and self.ds.isTest():
                     self.testPeriodic()
                     self.ds.waitForData()
 
@@ -105,4 +103,4 @@ class CommandBasedRobot(IterativeRobot):
         more complex behavior, override this method in your robot class.
         '''
 
-        DriverStation.reportError(str(error), printTrace=True)
+        self.ds.reportError(str(error), printTrace=True)
