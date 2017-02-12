@@ -1,13 +1,14 @@
 
 import functools
 import inspect
+
 import networktables
 
 from robotpy_ext.misc.orderedclass import OrderedClass
+from wpilib import Timer
 
 from .magic_tunable import tunable
 
-from wpilib import Timer
 
 class IllegalCallError(Exception):
     pass
@@ -361,7 +362,11 @@ class StateMachine(metaclass=OrderedClass):
         
         .. note:: This should only be called from one of the state functions
         '''
-        state = self.__states[name]
+        if callable(name):
+            state = self.__states[name.__name__]
+        else:
+            state = self.__states[name]
+            
         state.ran = False
         self.current_state = state.name
         
