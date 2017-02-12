@@ -275,5 +275,36 @@ def test_next_fn():
     sm.execute()
     assert sm.current_state == 'second_state'
     
+    sm.engage()
     sm.execute()
     assert sm.current_state == ''
+
+def test_next_fn2(wpitime):
+    class _TM(StateMachine):
+        
+        @state    
+        def second_state(self):
+            pass
+        
+        @timed_state(first=True, duration=0.1, next_state=second_state)
+        def first_state(self):
+            pass
+    
+    sm = _TM()
+    setup_tunables(sm, 'cname')
+    sm.engage()
+    sm.execute()
+    assert sm.current_state == 'first_state'
+    assert sm.is_executing
+    
+    wpitime.now += 0.5
+    
+    sm.engage()
+    sm.execute()
+    assert sm.current_state == 'second_state'
+    assert sm.is_executing
+    
+    sm.execute()
+    assert sm.current_state == ''
+    assert not sm.is_executing
+
