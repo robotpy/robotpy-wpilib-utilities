@@ -257,4 +257,23 @@ def test_autonomous_sm():
         sm.on_iteration(None)
         assert not sm.is_executing
     
-
+def test_next_fn():
+    class _TM(StateMachine):
+        @state(first=True)
+        def first_state(self):
+            self.next_state(self.second_state)
+        
+        @state    
+        def second_state(self):
+            self.done()
+    
+    sm = _TM()
+    setup_tunables(sm, 'cname')
+    sm.engage()
+    assert sm.current_state == 'first_state'
+    
+    sm.execute()
+    assert sm.current_state == 'second_state'
+    
+    sm.execute()
+    assert sm.current_state == ''
