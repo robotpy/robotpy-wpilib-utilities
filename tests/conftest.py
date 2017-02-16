@@ -9,6 +9,14 @@ from unittest.mock import MagicMock, call
 class FakeSensorBase:
     pass
 
+def pytest_runtest_setup():
+    import networktables
+    networktables.NetworkTables.setTestMode()
+    
+def pytest_runtest_teardown():
+    import networktables
+    networktables.NetworkTables.shutdown()
+
 @pytest.fixture(scope="function")
 def wpimock(monkeypatch):
     mock = MagicMock(name='wpimock')
