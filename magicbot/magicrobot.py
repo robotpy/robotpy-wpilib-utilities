@@ -19,9 +19,6 @@ __all__ = ['MagicRobot']
 class MagicRobot(wpilib.SampleRobot,
                  metaclass=OrderedClass):
     """
-        .. warning:: This implementation is still being developed, and may
-                     be changed during the course of the 2016 season.
-
         Robots that use the MagicBot framework should use this as their
         base robot class. If you use this as your base, you must
         implement the following methods:
