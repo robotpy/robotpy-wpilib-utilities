@@ -8,7 +8,7 @@ class _TunableProperty(property):
 class _AutosendProperty(_TunableProperty):
     pass
 
-def tunable(default, *, writeDefault=True, subtable=None):
+def tunable(default, *, writeDefault=True, subtable=None, doc=None):
     '''
         This allows you to define simple properties that allow you to easily
         communicate with other programs via NetworkTables.
@@ -69,7 +69,7 @@ def tunable(default, *, writeDefault=True, subtable=None):
         v = getattr(self, prop._ntattr)
         nt._api.setEntryValue(v.key, v._valuefn(value))
         
-    prop = _TunableProperty(fget=_get, fset=_set)
+    prop = _TunableProperty(fget=_get, fset=_set, doc=doc)
     prop._ntdefault = default
     prop._ntsubtable = subtable
     prop._ntwritedefault = writeDefault
