@@ -151,6 +151,7 @@ class AutonomousModeSelector:
         self.chooser = wpilib.SendableChooser()
         
         default_modes = []
+        mode_names = []
         
         logger.info("Loaded autonomous modes:")
         for k,v in sorted(self.modes.items()):
@@ -162,6 +163,8 @@ class AutonomousModeSelector:
             else:
                 logger.info( " -> %s", k )
                 self.chooser.addObject(k, v)
+            
+            mode_names.append(k)
         
         if len(self.modes) == 0:
             logger.warn("-- no autonomous modes were loaded!")
@@ -177,6 +180,9 @@ class AutonomousModeSelector:
                 
         # must PutData after setting up objects
         wpilib.SmartDashboard.putData('Autonomous Mode', self.chooser)
+        
+        # XXX: Compatibility with the FRC dashboard
+        wpilib.SmartDashboard.putStringArray('Auto List', mode_names)
         
         logger.info("Autonomous switcher initialized")
     
@@ -252,7 +258,18 @@ class AutonomousModeSelector:
     
     def _on_autonomous_enable(self):
         '''Selects the active autonomous mode and enables it'''
-        self.active_mode = self.chooser.getSelected()
+        
+        # XXX: FRC Dashboard compatibility
+        # -> if you set it here, you're stuck using it. The FRC Dashboard
+        #    doesn't seem to have a default (nor will it show a default),
+        #    so the key will only get set if you set it.
+        auto_mode = wpilib.SmartDashboard.getString('Auto Selector', None)
+        if auto_mode is not None and auto_mode in self.modes:
+            logger.info("Using autonomous mode set by LabVIEW dashboard")
+            self.active_mode = self.modes[auto_mode]
+        else:
+            self.active_mode = self.chooser.getSelected()
+        
         if self.active_mode is not None:
             logger.info("Enabling '%s'" % self.active_mode.MODE_NAME)
             self.active_mode.on_enable()
