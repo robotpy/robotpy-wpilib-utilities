@@ -1,0 +1,5 @@
+[git-source-track]
+validation_root = robotpy_ext/common_drivers/navx
+exclude_commits_file = devtools/exclude_commits_navx
+upstream_root = ../navxmxp
+upstream_commit = 90aa4de29dc4d296d51bd66202b5defe546b81a3

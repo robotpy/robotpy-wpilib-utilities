@@ -1,3 +1,4 @@
+# validated: 2017-02-19 DS 83e16a18b59e roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO_SPI.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #

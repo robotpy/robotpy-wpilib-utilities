@@ -1,3 +1,4 @@
+# validated: 2017-02-19 DS df8b945e5075 java/navx/src/com/kauailabs/navx/IMUProtocol.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #

@@ -1,3 +1,4 @@
+# validated: 2017-02-19 DS fed66235acf0 java/navx/src/com/kauailabs/navx/AHRSProtocol.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #

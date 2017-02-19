@@ -1,3 +1,4 @@
+# validated: 2017-02-19 DS 6e2706e9e44b roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
