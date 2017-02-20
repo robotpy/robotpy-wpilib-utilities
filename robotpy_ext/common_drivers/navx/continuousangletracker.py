@@ -1,4 +1,4 @@
-# validated: 2017-02-19 DS 83e16a18b59e roborio/java/navx_frc/src/com/kauailabs/navx/frc/ContinuousAngleTracker.java
+# validated: 2017-02-19 DS c5e3a8a9b642 roborio/java/navx_frc/src/com/kauailabs/navx/frc/ContinuousAngleTracker.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
@@ -9,63 +9,101 @@
 # in the root directory of the project
 #----------------------------------------------------------------------------
 
+import threading
+
 class ContinuousAngleTracker:
     
     def __init__(self):
-        self.last_angle = 0.0
-        self.zero_crossing_count = 0
-        self.last_rate = 0
-        self.first_sample = True
+        self._init()
+        self.angleAdjust = 0.0
+        self.lock = threading.Lock()
+        
+    def _init(self):
+        self.gyro_prevVal = 0.0
+        self.ctrRollOver  = 0
+        self.fFirstUse = True
+        self.last_yaw_angle = 0.0
+        self.curr_yaw_angle = 0.0
     
     def nextAngle(self, newAngle):
         
-        # If the first received sample is negative, 
-        # ensure that the zero crossing count is
-        # decremented.
-        
-        if self.first_sample:
-            self.first_sample = False
-            if newAngle < 0.0:
-                self.zero_crossing_count -= 1
-        
-        # Calculate delta angle, adjusting appropriately
-        # if the current sample crossed the -180/180
-        # point.
-        
-        
-        bottom_crossing = False
-        delta_angle = newAngle - self.last_angle
-        
-        # Adjust for wraparound at -180/+180 point
-        if delta_angle >= 180.0:
-            delta_angle = 360.0 - delta_angle
-            bottom_crossing = True
-        elif delta_angle <= -180.0:
-            delta_angle = 360.0 + delta_angle;
-            bottom_crossing = True
-        
-        self.last_rate = delta_angle
-
-        # If a zero crossing occurred, increment/decrement
-        # the zero crossing count appropriately.
-        if not bottom_crossing:
-            if delta_angle < 0.0:
-                if (newAngle < 0.0) and (self.last_angle >= 0.0):
-                    self.zero_crossing_count -= 1
-            elif delta_angle >= 0.0:
-                if (newAngle >= 0.0) and (self.last_angle < 0.0):
-                    self.zero_crossing_count += 1
-        
-        self.last_angle = newAngle
+        with self.lock:
+            self.last_yaw_angle = self.curr_yaw_angle
+            self.curr_yaw_angle = newAngle
+    
+    def reset(self):
+        '''Invoked (internally) whenever yaw reset occurs.'''
+        with self.lock:
+            self._init()
     
     def getAngle(self):
-        accumulated_angle = self.zero_crossing_count * 360.0
-        curr_angle = self.last_angle
-        if curr_angle < 0.0:
-            curr_angle += 360.0
+        # First case
+        # Old reading: +150 degrees
+        # New reading: +170 degrees
+        # Difference:  (170 - 150) = +20 degrees
         
-        accumulated_angle += curr_angle
-        return accumulated_angle
+        # Second case
+        # Old reading: -20 degrees
+        # New reading: -50 degrees
+        # Difference : (-50 - -20) = -30 degrees 
+        
+        # Third case
+        # Old reading: +179 degrees
+        # New reading: -179 degrees
+        # Difference:  (-179 - 179) = -358 degrees
+        
+        # Fourth case
+        # Old reading: -179  degrees
+        # New reading: +179 degrees
+        # Difference:  (+179 - -179) = +358 degrees
+        
+        with self.lock:
+            yawVal = self.curr_yaw_angle
+            
+            # Has gyro_prevVal been previously set?
+            # If not, return do not calculate, return current value
+            if not self.fFirstUse:
+                
+                # Determine count for rollover counter
+                difference = yawVal - self.gyro_prevVal
+
+                # Clockwise past +180 degrees
+                # If difference > 180*, increment rollover counter
+                if difference < -180.0:
+                    self.ctrRollOver += 1
+
+                # Counter-clockwise past -180 degrees:
+                # If difference > 180*, decrement rollover counter
+                
+                elif difference > 180.0:
+                    self.ctrRollOver -= 1
+            
+            # Mark gyro_prevVal as being used
+            self.fFirstUse = False
+                
+            # Calculate value to return back to calling function
+            # e.g. +720 degrees or -360 degrees
+            gyroVal = yawVal + (360.0 * self.ctrRollOver)
+            self.gyro_prevVal = yawVal
+            
+            return gyroVal + self.angleAdjust
+
+    def setAngleAdjustment(self, adjustment):
+        self.angleAdjust = adjustment
+        
+    def getAngleAdjustment(self):
+        return self.angleAdjust
     
     def getRate(self):
-        return self.last_rate
+        with self.lock:
+            difference = self.curr_yaw_angle - self.last_yaw_angle
+            
+        if difference > 180.0:
+            # Clockwise past +180 degrees
+            difference = 360.0 - difference
+        else:
+            # Counter-clockwise past -180 degrees
+            difference = 360.0 + difference
+        
+        return difference
+

@@ -63,7 +63,7 @@ class AHRS(wpilib.SensorBase):
     @classmethod
     def create_spi(cls, port=wpilib.SPI.Port.kMXP, spi_bitrate=None, update_rate_hz=None):
         """Constructs the AHRS class using SPI communication, overriding the 
-        default update rate with a custom rate which may be from 4 to 60, 
+        default update rate with a custom rate which may be from 4 to 100, 
         representing the number of updates per second sent by the sensor.  
         
         This constructor allows the specification of a custom SPI bitrate, in bits/second.
@@ -82,7 +82,7 @@ class AHRS(wpilib.SensorBase):
     @classmethod
     def create_i2c(cls, port=wpilib.I2C.Port.kMXP, update_rate_hz=None):
         """Constructs the AHRS class using I2C communication, overriding the
-        default update rate with a custom rate which may be from 4 to 60,
+        default update rate with a custom rate which may be from 4 to 100,
         representing the number of updates per second sent by the sensor.
         
         This constructor should be used if communicating via I2C.
@@ -163,6 +163,9 @@ class AHRS(wpilib.SensorBase):
         self.fw_ver_major = 0
         self.fw_ver_minor = 0
         
+        self.last_sensor_timestamp = 0
+        self.last_update_time = 0
+        
         self.pidSource = self.PIDSourceType.kDisplacement
         
         self.mutex = threading.RLock()
@@ -170,6 +173,7 @@ class AHRS(wpilib.SensorBase):
         self.integrator = InertialDataIntegrator()
         self.yaw_offset_tracker = OffsetTracker(self.YAW_HISTORY_LENGTH)
         self.yaw_angle_tracker = ContinuousAngleTracker()
+        self.callbacks = []
         
         self.io = RegisterIO(io, self.update_rate_hz, self, self)
         self.ioThread = threading.Thread(target=self.io.run, name='NavX',
@@ -273,8 +277,11 @@ class AHRS(wpilib.SensorBase):
         """
         if self._isBoardYawResetSupported():
             self.io.zeroYaw()
+            # Notification is deferred until action is complete.
         else:
             self.yaw_offset_tracker.setOffset()
+            # Notification occurs immediately.
+            self._yawResetComplete()
     
     def isCalibrating(self):
         """Returns true if the sensor is currently performing automatic
@@ -319,6 +326,46 @@ class AHRS(wpilib.SensorBase):
         """
         return self.io.getByteCount()
     
+    def getActualUpdateRate(self):
+        """Returns the navX-Model device's currently configured update
+        rate.  Note that the update rate that can actually be realized
+        is a value evenly divisible by the navX-Model device's internal
+        motion processor sample clock (200Hz).  Therefore, the rate that
+        is returned may be lower than the requested sample rate.
+        
+        The actual sample rate is rounded down to the nearest integer
+        that is divisible by the number of Digital Motion Processor clock
+        ticks.  For instance, a request for 58 Hertz will result in
+        an actual rate of 66Hz (200 / (200 / 58), using integer
+        math.
+        
+        :returns: Returns the current actual update rate in Hz
+        (cycles per second).
+        """
+        actual_update_rate = self._getActualUpdateRateInternal(self.getRequestedUpdateRate())
+        return int(actual_update_rate & 0xFF)
+    
+    def _getActualUpdateRateInternal(self, update_rate):
+        NAVX_MOTION_PROCESSOR_UPDATE_RATE_HZ = 200
+        integer_update_rate = int(update_rate & 0xFF)
+        realized_update_rate = NAVX_MOTION_PROCESSOR_UPDATE_RATE_HZ / \
+                (NAVX_MOTION_PROCESSOR_UPDATE_RATE_HZ / integer_update_rate)
+        return realized_update_rate
+    
+    def getRequestedUpdateRate(self):
+        """Returns the currently requested update rate.
+        rate.  Note that not every update rate can actually be realized,
+        since the actual update rate must be a value evenly divisible by
+        the navX-Model device's internal motion processor sample clock (200Hz).
+        
+        To determine the actual update rate, use the
+        {@link #getActualUpdateRate()} method.
+        
+        :returns: Returns the requested update rate in Hz
+        (cycles per second).
+        """
+        return int(self.update_rate_hz & 0xFF)
+    
     def getUpdateCount(self):
         """Returns the count of valid updates which have
         been received from the sensor.  This count should increase
@@ -328,6 +375,20 @@ class AHRS(wpilib.SensorBase):
         """
        
         return self.io.getUpdateCount()
+    
+    def getLastSensorTimestamp(self):
+        """Returns the sensor timestamp corresponding to the
+        last sample retrieved from the sensor.  Note that this
+        sensor timestamp is only provided when the Register-based
+        IO methods (SPI, I2C) are used; sensor timestamps are not
+        provided when Serial-based IO methods (TTL UART, USB)
+        are used.
+        
+        :returns: The sensor timestamp (in ms) corresponding to the
+                  current AHRS sensor data.
+        :rtype: int
+        """
+        return self.last_sensor_timestamp
     
     def getWorldLinearAccelX(self):
         """Returns the current linear acceleration in the X-axis (in G).
@@ -485,7 +546,7 @@ class AHRS(wpilib.SensorBase):
         
         :returns: Returns the imaginary portion (W) of the quaternion.
         """
-        return self.quaternionW / 16384.0
+        return self.quaternionW
     
     def getQuaternionX(self):
         """Returns the real portion (X axis) of the Orientation Quaternion which
@@ -500,7 +561,7 @@ class AHRS(wpilib.SensorBase):
         
         :returns: Returns the real portion (X) of the quaternion.
         """
-        return self.quaternionX / 16384.0
+        return self.quaternionX
     
     def getQuaternionY(self):
         """Returns the real portion (Y axis) of the Orientation Quaternion which
@@ -517,7 +578,7 @@ class AHRS(wpilib.SensorBase):
         
         :returns: Returns the real portion (X) of the quaternion.
         """
-        return self.quaternionY / 16384.0
+        return self.quaternionY
     
     def getQuaternionZ(self):
         """Returns the real portion (Z axis) of the Orientation Quaternion which
@@ -534,7 +595,7 @@ class AHRS(wpilib.SensorBase):
         
         :returns: Returns the real portion (X) of the quaternion.
         """
-        return self.quaternionZ / 16384.0
+        return self.quaternionZ
     
     def resetDisplacement(self):
         """Zeros the displacement integration variables.   Invoke this at the moment when
@@ -648,7 +709,31 @@ class AHRS(wpilib.SensorBase):
         else:
             return self.integrator.getDisplacementZ()
     
-    
+    def registerCallback(self, callback):
+        """Registers a callback interface.  This interface
+        will be called back when new data is available,
+        based upon a change in the sensor timestamp.
+        
+        Note that this callback will occur within the context of the
+        device IO thread, which is not the same thread context the
+        caller typically executes in.
+        """
+        self.callbacks.append(callback)
+        return True
+
+    def deregisterCallback(self, callback):
+        """Deregisters a previously registered callback interface.
+        
+        Be sure to deregister any callback which have been
+        previously registered, to ensure that the object
+        implementing the callback interface does not continue
+        to be accessed when no longer necessary.
+        """
+        try:
+            self.callbacks.remove(callback)
+            return True
+        except ValueError:
+            return False
     
     #**********************************************************
     # PIDSource Interface Implementation
@@ -697,9 +782,6 @@ class AHRS(wpilib.SensorBase):
         """
         return self.yaw_angle_tracker.getAngle()
     
-
-    
-
     def getRate(self):
         """Return the rate of rotation of the yaw (Z-axis) gyro, in degrees per second.
         
@@ -709,7 +791,33 @@ class AHRS(wpilib.SensorBase):
         """
         return self.yaw_angle_tracker.getRate()
     
-
+    def setAngleAdjustment(self, adjustment):
+        """Sets an amount of angle to be automatically added before returning a
+        angle from the :meth:`getAngle` method.  This allows users of the ``getAngle`` method
+        to logically rotate the sensor by a given amount of degrees.
+        
+        NOTE 1:  The adjustment angle is **only** applied to the value returned
+        from ``getAngle`` - it does not adjust the value returned from :meth:`getYaw`, nor
+        any of the quaternion values.
+        
+        NOTE 2:  The adjustment angle is **not** automatically cleared whenever the
+        sensor yaw angle is reset.
+        
+        If not set, the default adjustment angle is 0 degrees (no adjustment).
+        
+        :param adjustment: in degrees (range:  -360 to 360)
+        """
+        self.yaw_angle_tracker.setAngleAdjustment(adjustment)
+    
+    def getAngleAdjustment(self):
+        """Returns the currently configured adjustment angle.  See
+        :meth:`setAngleAdjustment` for more details.
+        
+        If this method returns 0 degrees, no adjustment to the value returned
+        via :meth:`getAngle` will occur.
+        :returns: adjustment, in degrees (range:  -360 to 360)
+        """
+        return self.yaw_angle_tracker.getAngleAdjustment()
     
     def reset(self):
         """Reset the Yaw gyro.
@@ -719,7 +827,6 @@ class AHRS(wpilib.SensorBase):
         after it has been running.
         """
         self.zeroYaw()
-    
     
     def getRawGyroX(self):
         """Returns the current raw (unprocessed) X-axis gyro rotation rate (in degrees/sec).
@@ -765,7 +872,6 @@ class AHRS(wpilib.SensorBase):
         :returns: Returns the current acceleration rate (in G).
         """
         return self.raw_accel_x / (DEV_UNITS_MAX / self.accel_fsr_g)
-    
 
     def getRawAccelY(self):
         """Returns the current raw (unprocessed) Y-axis acceleration rate (in G).
@@ -803,7 +909,6 @@ class AHRS(wpilib.SensorBase):
         :returns: Returns the mag field strength (in uTesla).
         """
         return self.cal_mag_x / UTESLA_PER_DEV_UNIT
-    
 
     def getRawMagY(self):
         """Returns the current raw (unprocessed) Y-axis magnetometer reading (in uTesla).
@@ -905,26 +1010,38 @@ class AHRS(wpilib.SensorBase):
     def _isDisplacementSupported(self):
         return (self.capability_flags & AHRSProtocol.NAVX_CAPABILITY_FLAG_VEL_AND_DISP) != 0
     
+    def _isAHRSPosTimestampSupported(self):
+        return (self.capability_flags & AHRSProtocol.NAVX_CAPABILITY_FLAG_AHRSPOS_TS) != 0
+    
     # iocomplete notification stuff
     
-    def _setYawPitchRoll(self, o):
+    def _setYawPitchRoll(self, o, sensor_timestamp):
         with self.mutex:
             self.__dict__.update(o.__dict__)
+            self.last_sensor_timestamp = sensor_timestamp
     
-    def _setAHRSPosData(self, o):
+    def _setAHRSPosData(self, o, sensor_timestamp):
         with self.mutex:
             self.__dict__.update(o.__dict__)
+            self.last_sensor_timestamp = sensor_timestamp
             
             self.yaw_offset_tracker.updateHistory(self.yaw)
             self.yaw_angle_tracker.nextAngle(self.getYaw())
+            
+            callbacks = self.callbacks[:]
+            
+        for callback in callbacks:
+            callback(o, sensor_timestamp)
     
-    def _setRawData(self, o):
+    def _setRawData(self, o, sensor_timestamp):
         with self.mutex:
             self.__dict__.update(o.__dict__)
+            self.last_sensor_timestamp = sensor_timestamp
     
-    def _setAHRSData(self, o):
+    def _setAHRSData(self, o, sensor_timestamp):
         with self.mutex:
             self.__dict__.update(o.__dict__)
+            self.last_sensor_timestamp = sensor_timestamp
             
             self.yaw_offset_tracker.updateHistory(self.yaw)
             
@@ -934,6 +1051,11 @@ class AHRS(wpilib.SensorBase):
                                      self.is_moving)
             
             self.yaw_angle_tracker.nextAngle(self.getYaw())
+            
+            callbacks = self.callbacks[:]
+            
+        for callback in callbacks:
+            callback(o, sensor_timestamp)
     
     def _setBoardID(self, o):
         with self.mutex:
@@ -942,6 +1064,9 @@ class AHRS(wpilib.SensorBase):
     def _setBoardState(self, o):
         with self.mutex:
             self.__dict__.update(o.__dict__)
+            
+    def _yawResetComplete(self):
+        self.yaw_angle_tracker.reset()
     
     #
     # LiveWindow 

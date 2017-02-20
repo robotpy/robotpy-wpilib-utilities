@@ -1,4 +1,4 @@
-# validated: 2017-02-19 DS 6e2706e9e44b roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO.java
+# validated: 2017-02-19 DS c5e3a8a9b642 roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
@@ -19,7 +19,7 @@ logger = logging.getLogger('navx')
 __all__ = ['RegisterIO']
 
 IO_TIMEOUT_SECONDS = 1.0
-
+DELAY_OVERHEAD_SECONDS = 0.004
 
 
 class _BoardId:
@@ -50,7 +50,7 @@ class RegisterIO:
         
             :param notify_sink: must have the following callable attributes: 
                 _setYawPitchRoll, _setAHRSData, _setAHRSPosData,
-                _setRawData, _setBoardID, _setBoardState
+                _setRawData, _setBoardID, _setBoardState, _yawResetComplete
         """
         
         self.io_provider = io_provider
@@ -66,6 +66,7 @@ class RegisterIO:
         self.last_update_time = 0
         self.byte_count = 0
         self.update_count = 0
+        self.last_sensor_timestamp = 0
         self._stop = False
         
     def stop(self):
@@ -93,6 +94,17 @@ class RegisterIO:
             
             log_error = True
             
+            # Calculate delay to match configured update rate
+            # Note:  some additional time is removed from the
+            # 1/update_rate value to ensure samples are not
+            # dropped, esp. at higher update rates.
+            update_rate = 1.0/(self.update_rate_hz & 0xFF)
+            if update_rate > DELAY_OVERHEAD_SECONDS:
+                update_rate -= DELAY_OVERHEAD_SECONDS
+                
+            logger.info("-- Update rate: %shz (%.4fs)",
+                        self.update_rate_hz, update_rate)
+            
             # IO Loop
             while not self._stop:
                 if self.board_state.update_rate_hz != self.update_rate_hz:
@@ -108,7 +120,7 @@ class RegisterIO:
                     log_error = True
                     
                     
-                Timer.delay(1.0/self.update_rate_hz)
+                Timer.delay(update_rate)
         except Exception:
             logger.exception("Unhandled exception in NavX thread")
         finally:
@@ -163,9 +175,12 @@ class RegisterIO:
         
         curr_data = self.io_provider.read(first_address, read_count)
     
-        #timestamp_low = AHRSProtocol.decodeBinaryUint16(curr_data, IMURegisters.NAVX_REG_TIMESTAMP_L_L-first_address)
-        #timestamp_high = AHRSProtocol.decodeBinaryUint16(curr_data, IMURegisters.NAVX_REG_TIMESTAMP_H_L-first_address)
-        #sensor_timestamp            = (timestamp_high << 16) + timestamp_low
+        sensor_timestamp               = AHRSProtocol.decodeBinaryUint32(curr_data, IMURegisters.NAVX_REG_TIMESTAMP_L_L-first_address)
+        if sensor_timestamp == self.last_sensor_timestamp:
+            return
+        
+        self.last_sensor_timestamp = sensor_timestamp
+        
         ahrspos_update = self.ahrspos_update
         ahrspos_update.op_status       = curr_data[IMURegisters.NAVX_REG_OP_STATUS - first_address]
         ahrspos_update.selftest_status = curr_data[IMURegisters.NAVX_REG_SELFTEST_STATUS - first_address]
@@ -182,10 +197,10 @@ class RegisterIO:
         ahrspos_update.altitude        = AHRSProtocol.decodeProtocol1616Float(curr_data, IMURegisters.NAVX_REG_ALTITUDE_D_L - first_address)
         ahrspos_update.baro_pressure   = AHRSProtocol.decodeProtocol1616Float(curr_data, IMURegisters.NAVX_REG_PRESSURE_DL - first_address)
         ahrspos_update.fused_heading   = AHRSProtocol.decodeProtocolUnsignedHundredthsFloat(curr_data, IMURegisters.NAVX_REG_FUSED_HEADING_L-first_address)
-        ahrspos_update.quaternionW     = AHRSProtocol.decodeBinaryInt16(curr_data, IMURegisters.NAVX_REG_QUAT_W_L-first_address)
-        ahrspos_update.quaternionX     = AHRSProtocol.decodeBinaryInt16(curr_data, IMURegisters.NAVX_REG_QUAT_X_L-first_address)
-        ahrspos_update.quaternionY     = AHRSProtocol.decodeBinaryInt16(curr_data, IMURegisters.NAVX_REG_QUAT_Y_L-first_address)
-        ahrspos_update.quaternionZ     = AHRSProtocol.decodeBinaryInt16(curr_data, IMURegisters.NAVX_REG_QUAT_Z_L-first_address)
+        ahrspos_update.quaternionW     = AHRSProtocol.decodeBinaryInt16(curr_data, IMURegisters.NAVX_REG_QUAT_W_L-first_address)/ 32768.0
+        ahrspos_update.quaternionX     = AHRSProtocol.decodeBinaryInt16(curr_data, IMURegisters.NAVX_REG_QUAT_X_L-first_address)/ 32768.0
+        ahrspos_update.quaternionY     = AHRSProtocol.decodeBinaryInt16(curr_data, IMURegisters.NAVX_REG_QUAT_Y_L-first_address)/ 32768.0
+        ahrspos_update.quaternionZ     = AHRSProtocol.decodeBinaryInt16(curr_data, IMURegisters.NAVX_REG_QUAT_Z_L-first_address)/ 32768.0
         if displacement_registers:
             ahrspos_update.vel_x       = AHRSProtocol.decodeProtocol1616Float(curr_data, IMURegisters.NAVX_REG_VEL_X_I_L-first_address)
             ahrspos_update.vel_y       = AHRSProtocol.decodeProtocol1616Float(curr_data, IMURegisters.NAVX_REG_VEL_Y_I_L-first_address)
@@ -194,9 +209,9 @@ class RegisterIO:
             ahrspos_update.disp_y      = AHRSProtocol.decodeProtocol1616Float(curr_data, IMURegisters.NAVX_REG_DISP_Y_I_L-first_address)
             ahrspos_update.disp_z      = AHRSProtocol.decodeProtocol1616Float(curr_data, IMURegisters.NAVX_REG_DISP_Z_I_L-first_address)            
              
-            self.notify_sink._setAHRSPosData(ahrspos_update)
+            self.notify_sink._setAHRSPosData(ahrspos_update, sensor_timestamp)
         else:
-            self.notify_sink._setAHRSData(ahrspos_update)
+            self.notify_sink._setAHRSData(ahrspos_update, sensor_timestamp)
         
         board_state = self.board_state
         board_state.cal_status      = curr_data[IMURegisters.NAVX_REG_CAL_STATUS-first_address]
@@ -220,7 +235,7 @@ class RegisterIO:
         raw_data_update.cal_mag_y       = AHRSProtocol.decodeBinaryInt16(curr_data,  IMURegisters.NAVX_REG_MAG_Y_L-first_address)
         raw_data_update.cal_mag_z       = AHRSProtocol.decodeBinaryInt16(curr_data,  IMURegisters.NAVX_REG_MAG_Z_L-first_address)
         raw_data_update.mpu_temp_c      = ahrspos_update.mpu_temp
-        self.notify_sink._setRawData(raw_data_update)
+        self.notify_sink._setRawData(raw_data_update, sensor_timestamp)
         
         self.last_update_time = Timer.getFPGATimestamp()
         self.byte_count += len(curr_data)
@@ -236,12 +251,13 @@ class RegisterIO:
     def getUpdateCount(self):
         return self.update_count
     
-    def setUpdateRateHz(self, update_rate):
-        self.io_provider.write(IMURegisters.NAVX_REG_UPDATE_RATE_HZ, update_rate)
+    def setUpdateRateHz(self, update_rate_hz):
+        self.io_provider.write(IMURegisters.NAVX_REG_UPDATE_RATE_HZ, update_rate_hz)
     
     def zeroYaw(self):
         self.io_provider.write( IMURegisters.NAVX_REG_INTEGRATION_CTL, 
                                    AHRSProtocol.NAVX_INTEGRATION_CTL_RESET_YAW )
+        self.notify_sink._yawResetComplete()
 
     def zeroDisplacement(self):
         self.io_provider.write( IMURegisters.NAVX_REG_INTEGRATION_CTL, 

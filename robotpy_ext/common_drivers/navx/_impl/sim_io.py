@@ -3,6 +3,8 @@
 from . import AHRSProtocol
 from . import IMURegisters
 
+import wpilib
+
 from hal_impl.data import hal_data
 
 from hal_impl.i2c_helpers import I2CSimBase
@@ -20,6 +22,7 @@ class NavXSimBase:
     
     def __init__(self):
         self.cap_flags = AHRSProtocol.NAVX_CAPABILITY_FLAG_YAW_RESET
+        self.timer = wpilib.Timer()
     
     def _write(self, data):
         
@@ -42,6 +45,9 @@ class NavXSimBase:
         elif count == 82:
             
             AHRSProtocol.encodeBinaryUint16(self.cap_flags, data, IMURegisters.NAVX_REG_CAPABILITY_FLAGS_L)
+            
+            # sensor timestamp is in ms
+            AHRSProtocol.encodeBinaryUint32(int(self.timer.getMsClock()), data, IMURegisters.NAVX_REG_TIMESTAMP_L_L-4)
             
             # NavX returns angle in 180 to -180, angle key is continuous
             

@@ -1,4 +1,4 @@
-# validated: 2017-02-19 DS fed66235acf0 java/navx/src/com/kauailabs/navx/AHRSProtocol.java
+# validated: 2017-02-19 DS 5247089e2175 java/navx/src/com/kauailabs/navx/AHRSProtocol.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
@@ -55,6 +55,7 @@ class AHRSProtocol(IMUProtocol):
     NAVX_CAPABILITY_FLAG_OMNIMOUNT_CONFIG_MASK = 0x0038
     NAVX_CAPABILITY_FLAG_VEL_AND_DISP =          0x0040
     NAVX_CAPABILITY_FLAG_YAW_RESET =             0x0080
+    NAVX_CAPABILITY_FLAG_AHRSPOS_TS =            0x0100
 
     # NAVX_OMNIMOUNT_CONFIG 
 
@@ -199,7 +200,7 @@ class AHRSProtocol(IMUProtocol):
     INTEGRATION_CONTROL_CMD_MESSAGE_LENGTH    =   13
 
     # Integration Control Response Packet 
-    MSGID_INTEGRATION_CONTROL_RESP =   'i'
+    MSGID_INTEGRATION_CONTROL_RESP =   'j'
     INTEGRATION_CONTROL_RESP_ACTION_INDEX =    4
     INTEGRATION_CONTROL_RESP_PARAMETER_INDEX = 5
     INTEGRATION_CONTROL_RESP_MESSAGE_CHECKSUM_INDEX = 9
@@ -307,10 +308,10 @@ class AHRSProtocol(IMUProtocol):
         disp_y = 0.0
         disp_z = 0.0
         mpu_temp = 0.0
-        quaternionW = 0
-        quaternionX = 0
-        quaternionY = 0
-        quaternionZ = 0
+        quaternionW = 0.0
+        quaternionX = 0.0
+        quaternionY = 0.0
+        quaternionZ = 0.0
         barometric_pressure = 0.0
         baro_temp = 0.0
         op_status = 0
@@ -331,8 +332,16 @@ class AHRSProtocol(IMUProtocol):
         return int.from_bytes(data[offset:offset+2], 'little', signed=True)
     
     @staticmethod
+    def decodeBinaryUint32(data, offset):
+        return int.from_bytes(data[offset:offset+4], 'little', signed=False)
+    
+    @staticmethod
     def encodeBinaryInt16(i, data, offset):
         data[offset:offset+2] = i.to_bytes(2, 'little', signed=True)
+        
+    @staticmethod
+    def encodeBinaryUint32(i, data, offset):
+        data[offset:offset+4] = i.to_bytes(4, 'little', signed=False)
 
     @staticmethod
     def decodeProtocol1616Float(data, offset):

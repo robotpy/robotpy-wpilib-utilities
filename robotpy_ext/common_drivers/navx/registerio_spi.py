@@ -1,4 +1,4 @@
-# validated: 2017-02-19 DS 83e16a18b59e roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO_SPI.java
+# validated: 2017-02-19 DS 3b0fc57cd0e0 roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO_SPI.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
@@ -10,6 +10,8 @@
 #----------------------------------------------------------------------------
 
 DEFAULT_SPI_BITRATE_HZ = 500000
+
+import threading
 
 import hal
 from robotpy_ext.misc.crc7 import crc7
@@ -33,6 +35,8 @@ class RegisterIO_SPI:
         self.port = SPI(port, simPort=simPort)
         self.bitrate = bitrate
         
+        self.mutex = threading.Lock()
+        
     def init(self):
         
         logger.info("Initializing NavX SPI")
@@ -43,14 +47,15 @@ class RegisterIO_SPI:
         self.port.setClockActiveLow()
         self.port.setChipSelectActiveLow()
         
-        logger.info("Initialized!")
+        logger.info("Initialized at bitrate %s", self.bitrate)
         return True
         
     def write(self, address, value):
         data = [address | 0x80, value]
         data.append(crc7(data))
-        if self.port.write(data) != len(data):
-            return False
+        with self.mutex:
+            if self.port.write(data) != len(data):
+                return False
         
         return True
         
@@ -58,13 +63,16 @@ class RegisterIO_SPI:
         
         data = [first_address, count]
         data.append(crc7(data))
-        retcount = self.port.write(data)
-        if retcount != len(data):
-            raise IOError("Write error (%s != %s)" % (retcount, len(data)))
         
-        Timer.delay(0.001)
-        
-        data = self.port.read(True, count + 1)
+        with self.mutex:
+            retcount = self.port.write(data)
+            if retcount != len(data):
+                raise IOError("Write error (%s != %s)" % (retcount, len(data)))
+            
+            Timer.delay(0.001)
+            
+            data = self.port.read(True, count + 1)
+            
         if len(data) != count + 1:
             raise IOError("Read error (%s != %s)" % (len(data), count+1))
         

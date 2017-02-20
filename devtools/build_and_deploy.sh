@@ -18,4 +18,4 @@ fi
 python3 setup.py sdist --formats=gztar
 
 # Run the install now
-python3 $ROBOTPY_DIR/installer/installer.py install -U --force-reinstall --no-deps dist/robotpy-wpilib-utilities-$VERSION.tar.gz
+python3 -m robotpy_installer install -U --force-reinstall --no-deps dist/robotpy-wpilib-utilities-$VERSION.tar.gz
