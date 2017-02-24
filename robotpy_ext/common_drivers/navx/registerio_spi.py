@@ -69,7 +69,9 @@ class RegisterIO_SPI:
             if retcount != len(data):
                 raise IOError("Write error (%s != %s)" % (retcount, len(data)))
             
-            Timer.delay(0.001)
+            # FIXME
+            if not hal.isSimulation():
+                Timer.delay(0.001)
             
             data = self.port.read(True, count + 1)
             
