@@ -32,7 +32,7 @@ class REVAnalogPressureSensor:
     def pressure(self):
         try:
             v = max(self.sensor.getAverageVoltage(), 0.00001)
-            return (250 * (v / getattr('Vn', self.voltage_in))) - 25
+            return (250 * (v / getattr(self, 'Vn', self.voltage_in))) - 25
         except ZeroDivisionError:
             return 0
 
