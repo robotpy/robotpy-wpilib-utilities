@@ -2,7 +2,8 @@
 from magicbot.state_machine import (
     state, timed_state,
     AutonomousStateMachine, StateMachine,
-    IllegalCallError, NoFirstStateError, MultipleFirstStatesError
+    IllegalCallError, NoFirstStateError, MultipleFirstStatesError,
+    InvalidWrapperError, InvalidStateName
 )
 
 from magicbot.magic_tunable import setup_tunables
@@ -307,4 +308,28 @@ def test_next_fn2(wpitime):
     sm.execute()
     assert sm.current_state == ''
     assert not sm.is_executing
+
+
+def test_mixup():
+    from robotpy_ext.autonomous import state as _ext_state
+    from robotpy_ext.autonomous import timed_state as _ext_timed_state
+    
+    class _SM1(StateMachine):
+        
+        @_ext_state(first=True)
+        def the_state(self):
+            pass
+    
+    with pytest.raises(InvalidWrapperError):
+        _SM1()
+        
+    
+    class _SM2(StateMachine):
+        
+        @_ext_timed_state(first=True, duration=1)
+        def the_state(self):
+            pass
+    
+    with pytest.raises(InvalidWrapperError):
+        _SM2()
 

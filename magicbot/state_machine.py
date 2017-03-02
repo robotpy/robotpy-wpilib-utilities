@@ -19,6 +19,9 @@ class NoFirstStateError(Exception):
 class MultipleFirstStatesError(Exception):
     pass
 
+class InvalidWrapperError(Exception):
+    pass
+
 
 def _create_wrapper(f, first, must_finish):
     
@@ -27,6 +30,7 @@ def _create_wrapper(f, first, must_finish):
         raise IllegalCallError("Do not call states directly, use begin/next_state instead")
     
     # store state variables here
+    wrapper.origin = __name__
     wrapper.name = f.__name__
     wrapper.description = f.__doc__
     wrapper.first = first
@@ -273,6 +277,10 @@ class StateMachine(metaclass=OrderedClass):
             state = getattr(cls, name, None)
             if state is None or name.startswith('__') or not hasattr(state, 'first'):
                 continue
+            
+            if state.origin != __name__:
+                errmsg = "You must only use state decorators imported from %s! This was from %s" % (__name__, state.origin)
+                raise InvalidWrapperError(errmsg)
 
             # is this the first state to execute?
             if state.first:
