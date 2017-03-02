@@ -344,3 +344,34 @@ def test_forbidden_state_names():
 
     with pytest.raises(InvalidStateName):
         _SM()
+
+
+def test_mixins():
+    
+    class _SM1(StateMachine):
+        
+        @state
+        def state1(self):
+            pass
+    
+    class _SM2(StateMachine):
+        
+        @state
+        def state2(self):
+            pass
+        
+    class _SM(_SM1, _SM2):
+        
+        @state(first=True)
+        def first_state(self):
+            pass
+        
+    s = _SM()
+    states = s._StateMachine__states
+    
+    assert 'state1' in states
+    assert 'state2' in states
+    assert 'first_state' in states
+    
+    
+    
