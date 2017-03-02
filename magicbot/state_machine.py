@@ -22,6 +22,9 @@ class MultipleFirstStatesError(Exception):
 class InvalidWrapperError(Exception):
     pass
 
+class InvalidStateName(Exception):
+    pass
+
 
 def _create_wrapper(f, first, must_finish):
     
@@ -281,6 +284,11 @@ class StateMachine(metaclass=OrderedClass):
             if state.origin != __name__:
                 errmsg = "You must only use state decorators imported from %s! This was from %s" % (__name__, state.origin)
                 raise InvalidWrapperError(errmsg)
+            
+            # Can't define states that are named the same as things in the
+            # base class, will cause issues. Catch it early. 
+            if hasattr(StateMachine, state.name):
+                raise InvalidStateName("cannot have a state function named '%s'" % state.name)
 
             # is this the first state to execute?
             if state.first:

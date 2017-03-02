@@ -333,3 +333,14 @@ def test_mixup():
     with pytest.raises(InvalidWrapperError):
         _SM2()
 
+
+def test_forbidden_state_names():
+    
+    class _SM(StateMachine):
+        
+        @state
+        def done(self):
+            pass
+
+    with pytest.raises(InvalidStateName):
+        _SM()
