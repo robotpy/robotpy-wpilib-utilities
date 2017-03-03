@@ -16,7 +16,6 @@ class OrderedClass(type):
 
     @classmethod
     def __prepare__(metacls, name, bases, **kwds):
-        print("prepare", name, bases)
         return collections.OrderedDict()
 
     def __new__(cls, name, bases, namespace, **kwds):
