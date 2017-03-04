@@ -101,7 +101,7 @@ class ContinuousAngleTracker:
         if difference > 180.0:
             # Clockwise past +180 degrees
             difference = 360.0 - difference
-        else:
+        elif difference < -180.0:
             # Counter-clockwise past -180 degrees
             difference = 360.0 + difference
         
