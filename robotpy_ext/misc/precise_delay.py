@@ -38,7 +38,7 @@ class PreciseDelay:
             # to run more efficiently -- otherwise full tests are dog slow
             try:
                 import pyfrc.config
-                if pyfrc.config.mode == 'test' or pyfrc.config.mode == 'deploy':
+                if pyfrc.config.mode in ('test', 'upload'):
                     self.wait = self._wait_unit_tests
             except:
                 pass
