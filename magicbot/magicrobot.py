@@ -14,6 +14,7 @@ from robotpy_ext.misc.annotations import get_class_annotations
 from networktables import NetworkTable
 
 from .magic_tunable import setup_tunables, _TunableProperty
+from .magic_reset import will_reset_to
 
 __all__ = ['MagicRobot']
 
@@ -118,6 +119,7 @@ class MagicRobot(wpilib.SampleRobot,
 
         self._components = []
         self._feedbacks = []
+        self._reset_components = []
 
         # Create the user's objects and stuff here
         self.createObjects()
@@ -492,6 +494,7 @@ class MagicRobot(wpilib.SampleRobot,
             self._components.append(component)
             setup_tunables(component, cname, 'components')
             self._setup_vars(cname, component)
+            self._setup_reset_vars(component)
 
         # Do it for autonomous modes too
         for mode in self._automodes.modes.values():
@@ -600,6 +603,21 @@ class MagicRobot(wpilib.SampleRobot,
             # where to store the nt key?
         #    component._Magicbot__autosend[prop.f] = None
     
+    def _setup_reset_vars(self, component):
+        reset_dict = {}
+        
+        for n in dir(component):
+            if isinstance(getattr(type(component), n, True), property):
+                continue
+            
+            a = getattr(component, n, None)
+            if isinstance(a, will_reset_to):
+                reset_dict[n] = a.default
+        
+        if reset_dict:
+            component.__dict__.update(reset_dict)
+            self._reset_components.append((reset_dict, component))
+    
     #def _update_autosend(self):
     #    # seems like this should just be a giant list instead
     #    for component in self._components:
@@ -622,3 +640,6 @@ class MagicRobot(wpilib.SampleRobot,
                 component.execute()
             except:
                 self.onException()
+                
+        for reset_dict, component in self._reset_components:
+            component.__dict__.update(reset_dict)
