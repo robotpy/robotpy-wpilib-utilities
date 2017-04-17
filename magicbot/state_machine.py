@@ -18,6 +18,9 @@ class NoFirstStateError(Exception):
 
 class MultipleFirstStatesError(Exception):
     pass
+    
+class MultipleDefaultStatesError(Exception):
+    pass
 
 class InvalidWrapperError(Exception):
     pass
@@ -38,6 +41,7 @@ def _create_wrapper(f, first, must_finish):
     wrapper.description = f.__doc__
     wrapper.first = first
     wrapper.must_finish = must_finish
+    wrapper.is_default = False
     
     # inspect the args, provide a correct call implementation
     args, varargs, keywords, _ = inspect.getargspec(f)
@@ -158,6 +162,29 @@ def state(f=None, *, first=False, must_finish=False):
     
     return _create_wrapper(f, first, must_finish)
 
+def default_state(f=None):
+    '''
+        If this decorator is applied to a method in an object that inherits
+        from :class:`.StateMachine`, it indicates that the method
+        is a default state; that is, if no other states are executing, this
+        state will execute. There can only be a single default state in a
+        StateMachine object.
+        
+        The decorated function can have the following arguments in any order:
+        
+        - ``tm`` - The number of seconds since the state machine has started
+        - ``state_tm`` - The number of seconds since this state has been active
+          (note: it may not start at zero!)
+        - ``initial_call`` - Set to True when the state is initially called,
+          False otherwise. If the state is switched to multiple times, this
+          will be set to True at the start of each state execution.
+    '''
+    if f is None:
+        return functools.partial(default_state)
+    
+    wrapper = _create_wrapper(f, False, True)
+    wrapper.is_default = True
+    return wrapper
 
 
 class StateMachine(metaclass=OrderedClass):
@@ -273,6 +300,8 @@ class StateMachine(metaclass=OrderedClass):
     
         states = {}
         cls = self.__class__
+        
+        default_state = None
     
         #for each state function:
         for name in self.members:
@@ -307,6 +336,11 @@ class StateMachine(metaclass=OrderedClass):
             nt_names.append(state.name)
             nt_desc.append(description)
             
+            if state.is_default:
+                if default_state is not None:
+                    raise MultipleDefaultStatesError("Multiple default states are not allowed")
+                default_state = state_data
+            
             # make the time tunable
             # -> this depends on tunables being bound after this function is called
             if hasattr(state, 'duration'):
@@ -332,6 +366,12 @@ class StateMachine(metaclass=OrderedClass):
         
         # The currently executing state, or None if not executing
         self.__state = None
+        
+        # The default state
+        self.__default_state = default_state
+        
+        # Variable to store time in
+        self.__start = 0
         
         
     @property
@@ -365,7 +405,7 @@ class StateMachine(metaclass=OrderedClass):
         '''
         self.__should_engage = True
     
-        if force or self.__state is None:
+        if force or self.__state is None or self.__state is self.__default_state:
             if initial_state:
                 self.next_state(initial_state)
             else:
@@ -420,7 +460,8 @@ class StateMachine(metaclass=OrderedClass):
         '''
             magicbot component API: This is called on each iteration of the
             control loop. Most of the time, you will not want to override
-            this function.
+            this function. If you find you want to, you may want to use the
+            @default_state mechanism instead.
         '''
         
         now = Timer.getFPGATimestamp()
@@ -429,9 +470,10 @@ class StateMachine(metaclass=OrderedClass):
             if self.__should_engage:
                 self.__start = now
                 self.__engaged = True
-            else:
+            elif self.__default_state is None:
                 return
         
+        # tm is the number of seconds that the state machine has been executing
         tm = now - self.__start
         state = self.__state
         
@@ -439,9 +481,6 @@ class StateMachine(metaclass=OrderedClass):
         # then the total time it runs is the amount of time of the
         # states. Otherwise, the time drifts.
         new_state_start = tm
-        
-        if state is None:
-            self.done()
         
         # determine if the time has passed to execute the next state
         # -> intentionally comes first, 
@@ -453,9 +492,20 @@ class StateMachine(metaclass=OrderedClass):
                 new_state_start = state.expires
                 state = self.__state
         
+        # deactivate the current state unless engage was called or
+        # must_finish was set
         if state is None or (not self.__should_engage and not state.must_finish):
-            self.done()
-        else:
+            state = None
+        
+        # if there is no state to execute and there is a default
+        # state, do the default state
+        if state is None and self.__default_state is not None:
+            state = self.__default_state
+            if self.__state != state:
+                state.ran = False
+                self.__state = state
+        
+        if state is not None:
             # is this the first time this was executed?
             initial_call = not state.ran
             if initial_call:
@@ -468,6 +518,9 @@ class StateMachine(metaclass=OrderedClass):
             
             # execute the state function, passing it the arguments
             state.run(self, tm, tm - state.start_time, initial_call)
+        else:
+            # or clear the state
+            self.done()
         
         # Reset this each time
         self.__should_engage = False
