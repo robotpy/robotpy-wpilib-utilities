@@ -456,6 +456,31 @@ class MagicRobot(wpilib.SampleRobot,
             setattr(component, n, injectable)
             self.logger.debug("-> %s as %s.%s", injectable, cname, n)
         
+        if hasattr(component, '__annotations__'):
+            for n, type_ in component.__annotations__.items():
+                if n.startswith('_') or isinstance(getattr(type(component), n, True), property):
+                    continue
+
+                if hasattr(type(component), n):
+                    continue
+
+                injectable = self._injectables.get(n)
+                if injectable is None:
+                    if cname is not None:
+                        injectable = self._injectables.get('%s_%s' % (cname, n))
+
+                if injectable is None:
+                    raise ValueError("Component %s has variable %s (type %s), which is not present in %s" %
+                                     (cname, n, type_, self))
+
+                if not isinstance(injectable, type_):
+                    raise ValueError("Component %s variable %s in %s are not the same types! (Got %s, expected %s)" %
+                                     (cname, n, self, type(injectable), type_))
+
+
+                setattr(component, n, injectable)
+                self.logger.debug("-> %s as %s.%s", injectable, cname, n)
+
         # XXX
         #if is_autosend:
             # where to store the nt key?
