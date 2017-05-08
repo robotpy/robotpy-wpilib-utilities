@@ -431,8 +431,10 @@ class MagicRobot(wpilib.SampleRobot,
         
         self.logger.debug("Injecting magic variables into %s", cname)
         
+        component_type = type(component)
+        
         for n in dir(component):
-            if n.startswith('_') or isinstance(getattr(type(component), n, True), property):
+            if n.startswith('_') or isinstance(getattr(component_type, n, True), property):
                 continue
             
             inject_type = getattr(component, n)
