@@ -433,55 +433,58 @@ class MagicRobot(wpilib.SampleRobot,
         
         component_type = type(component)
         
+        # Iterate over variables with type annotations
+        for n, inject_type in getattr(component, '__annotations__', {}).items():
+
+
+            # If the variable is private ignore it
+            if n.startswith('_'):
+                continue
+
+            if hasattr(component_type, n):
+                attr = getattr(component_type, n)
+                # If the value given to the variable is an instance of a type and isn't a property
+                # raise an error. No double declaring types, e.g foo: type = type
+                if isinstance(attr, type) and not isinstance(attr, property):
+                    raise ValueError("Double Declaration: %s.%s has two type declarations" %(component_type .__name__, n))
+                continue
+
+            self._inject(n, inject_type, cname, component_type)
+
+        # Iterate over static variables
         for n in dir(component):
+            # If the variable is private or a proprty, don't inject
             if n.startswith('_') or isinstance(getattr(component_type, n, True), property):
                 continue
             
             inject_type = getattr(component, n)
             
+            # If the value assigned isn't a type, don't inject
             if not isinstance(inject_type, type):
                 continue
 
-            injectable = self._injectables.get(n)
-            if injectable is None:
-                if cname is not None:
-                    injectable = self._injectables.get('%s_%s' % (cname, n))
+            self._inject(n, inject_type, cname, component)
 
-            if injectable is None:
-                raise ValueError("Component %s has variable %s (type %s), which is not present in %s" %
-                                 (cname, n, inject_type, self))
+    def _inject(self, n, inject_type, cname, component):
+        # Retrieve injectable object
+        injectable = self._injectables.get(n)
+        if injectable is None:
+            if cname is not None:
+                # Try for mangled names
+                injectable = self._injectables.get('%s_%s' % (cname, n))
 
-            if not isinstance(injectable, inject_type):
-                raise ValueError("Component %s variable %s in %s are not the same types! (Got %s, expected %s)" %
-                                 (cname, n, self, type(injectable), inject_type))
-
-            setattr(component, n, injectable)
-            self.logger.debug("-> %s as %s.%s", injectable, cname, n)
+        # Raise error if injectable syntax used but no injectable was found.
+        if injectable is None:
+            raise ValueError("Component %s has variable %s (type %s), which is not present in %s" %
+                             (cname, n, inject_type, self))
         
-        if hasattr(component, '__annotations__'):
-            for n, type_ in component.__annotations__.items():
-                if n.startswith('_') or isinstance(getattr(type(component), n, True), property):
-                    continue
-
-                if hasattr(type(component), n):
-                    continue
-
-                injectable = self._injectables.get(n)
-                if injectable is None:
-                    if cname is not None:
-                        injectable = self._injectables.get('%s_%s' % (cname, n))
-
-                if injectable is None:
-                    raise ValueError("Component %s has variable %s (type %s), which is not present in %s" %
-                                     (cname, n, type_, self))
-
-                if not isinstance(injectable, type_):
-                    raise ValueError("Component %s variable %s in %s are not the same types! (Got %s, expected %s)" %
-                                     (cname, n, self, type(injectable), type_))
-
-
-                setattr(component, n, injectable)
-                self.logger.debug("-> %s as %s.%s", injectable, cname, n)
+        # Raise error if injectable declared with type different than the initial type
+        if not isinstance(injectable, inject_type):
+            raise ValueError("Component %s variable %s in %s are not the same types! (Got %s, expected %s)" %
+                             (cname, n, self, type(injectable), inject_type))
+        # Perform injection
+        setattr(component, n, injectable)
+        self.logger.debug("%s -> %s as %s.%s", injectable, cname, n)
 
         # XXX
         #if is_autosend:
