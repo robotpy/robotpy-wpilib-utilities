@@ -1,8 +1,9 @@
 
 from magicbot.state_machine import (
-    state, timed_state,
+    default_state, state, timed_state,
     AutonomousStateMachine, StateMachine,
-    IllegalCallError, NoFirstStateError, MultipleFirstStatesError,
+    IllegalCallError, NoFirstStateError,
+    MultipleFirstStatesError, MultipleDefaultStatesError,
     InvalidWrapperError, InvalidStateName
 )
 
@@ -373,5 +374,131 @@ def test_mixins():
     assert 'state2' in states
     assert 'first_state' in states
     
+
+def test_multiple_default_states():
+    class _SM(StateMachine):
+        
+        @state(first=True)
+        def state(self):
+            pass
+        
+        @default_state
+        def state1(self):
+            pass
     
+        @default_state
+        def state2(self):
+            pass
+
+    with pytest.raises(MultipleDefaultStatesError):
+        _SM()
+
+def test_default_state_machine():
+    class _SM(StateMachine):
+        
+        def __init__(self):
+            self.didOne = None
+            self.didDefault = None
+            self.defaultInit = None
+            self.didDone = None
+        
+        @state(first=True)
+        def stateOne(self):
+            self.didOne = True
+            self.didDefault = False
+            self.didDone = False
+            
+        @state
+        def doneState(self):
+            self.didOne = False
+            self.didDefault = False
+            self.didDone = True
+            self.done()
+        
+        @default_state
+        def defaultState(self, initial_call):
+            self.didOne = False
+            self.didDefault = True
+            self.defaultInit = initial_call
+            self.didDone = False
+            
+    sm = _SM()
+    setup_tunables(sm, 'cname')
     
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == True
+    assert sm.defaultInit == True
+    assert sm.didDone == False
+
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == True
+    assert sm.defaultInit == False
+    assert sm.didDone == False
+
+    # do a thing
+    sm.engage()
+    sm.execute()
+    assert sm.didOne == True
+    assert sm.didDefault == False
+    assert sm.didDone == False
+
+    # should go back (test for initial)
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == True
+    assert sm.defaultInit == True
+    assert sm.didDone == False
+
+    # should happen again (no initial)
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == True
+    assert sm.defaultInit == False
+    assert sm.didDone == False
+
+
+    # do another thing
+    sm.engage()
+    sm.execute()
+    assert sm.didOne == True
+    assert sm.didDefault == False
+    assert sm.didDone == False
+
+    # should go back (test for initial)
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == True
+    assert sm.defaultInit == True
+    assert sm.didDone == False
+
+    # should happen again (no initial)
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == True
+    assert sm.defaultInit == False
+    assert sm.didDone == False
+
+    # enagage a state that will call done, check to see
+    # if we come back
+    sm.engage("doneState")
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == False
+    assert sm.defaultInit == False
+    assert sm.didDone == True
+
+    # should go back (test for initial)
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == True
+    assert sm.defaultInit == True
+    assert sm.didDone == False
+
+    # should happen again (no initial)
+    sm.execute()
+    assert sm.didOne == False
+    assert sm.didDefault == True
+    assert sm.defaultInit == False
+    assert sm.didDone == False
