@@ -221,7 +221,8 @@ class StatefulAutonomous:
             for k,v in components.items():
                 setattr(self, k, v)
         
-        self.__table = networktables.NetworkTable.getTable('SmartDashboard')
+        self.__table = networktables.NetworkTable.getTable('autonomous/%s/stateful' % getattr(self, 'MODE_NAME'  ))
+        
         self.__sd_args = []
 
         self.__build_states()
@@ -273,7 +274,7 @@ class StatefulAutonomous:
         sd_name = name
         
         if add_prefix:
-            sd_name = '%s\\%s' % (self.MODE_NAME, name) 
+            sd_name = name
         
         if isinstance(default, bool):
             self.__table.putBoolean(sd_name, default)
@@ -341,10 +342,10 @@ class StatefulAutonomous:
         
         sorted_states = sorted(states.items())
         
-        self.__table.putStringArray(self.MODE_NAME + '_durations',
+        self.__table.putStringArray('durations',
                                     (name for _, (name, desc) in sorted_states))
         
-        self.__table.putStringArray(self.MODE_NAME + '_descriptions',
+        self.__table.putStringArray('descriptions',
                                     (desc for _, (name, desc) in sorted_states))
         
         if not has_first:
