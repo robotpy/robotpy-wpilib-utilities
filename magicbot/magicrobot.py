@@ -438,7 +438,7 @@ class MagicRobot(wpilib.SampleRobot,
 
 
             # If the variable is private ignore it
-            if n.startswith('_'):
+            if n.startswith('_') or not isinstance(inject_type, type):
                 continue
 
             if hasattr(component_type, n):
