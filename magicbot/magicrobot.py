@@ -436,17 +436,21 @@ class MagicRobot(wpilib.SampleRobot,
         # Iterate over variables with type annotations
         for n, inject_type in getattr(component, '__annotations__', {}).items():
 
-
             # If the variable is private ignore it
             if n.startswith('_'):
                 continue
+
+            # If the type is not actually a type, give a meaningful error
+            if not isinstance(inject_type, type):
+                raise TypeError('Component %s has a non-type annotation on %s (%s); lone non-injection variable annotations are disallowed, did you want to assign a static variable?' %
+                                (cname, n, inject_type))
 
             if hasattr(component_type, n):
                 attr = getattr(component_type, n)
                 # If the value given to the variable is an instance of a type and isn't a property
                 # raise an error. No double declaring types, e.g foo: type = type
                 if isinstance(attr, type) and not isinstance(attr, property):
-                    raise ValueError("Double Declaration: %s.%s has two type declarations" %(component_type .__name__, n))
+                    raise ValueError("%s.%s has two type declarations" % (component_type.__name__, n))
                 continue
 
             self._inject(n, inject_type, cname, component_type)
