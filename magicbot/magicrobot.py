@@ -437,7 +437,7 @@ class MagicRobot(wpilib.SampleRobot,
         for n, inject_type in getattr(component, '__annotations__', {}).items():
 
             # If the variable is private ignore it
-            if n.startswith('_'):
+            if n.startswith('_') or not isinstance(inject_type, type):
                 continue
 
             # If the type is not actually a type, give a meaningful error
