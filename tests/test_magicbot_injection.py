@@ -78,3 +78,30 @@ def test_multilevel_inject():
     assert bot.dup1.var == (1,2)
     assert bot.dup2.var == (3,4)
     assert bot.dup3.var == (5,6)
+
+
+def test_inherited_inject():
+    class SuperComponent:
+        intvar = int
+
+        def execute(self):
+            pass
+
+    class Component(SuperComponent):
+        tupvar = tuple
+
+        def execute(self):
+            pass
+
+    class Bot(magicbot.MagicRobot):
+        component = Component
+
+        def createObjects(self):
+            self.intvar = 1
+            self.tupvar = (1, 2)
+
+    bot = Bot()
+    bot.robotInit()
+
+    assert bot.component.tupvar == (1, 2)
+    assert bot.component.intvar == 1
