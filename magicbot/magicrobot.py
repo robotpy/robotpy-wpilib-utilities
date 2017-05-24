@@ -9,6 +9,7 @@ from robotpy_ext.misc import PreciseDelay
 from robotpy_ext.autonomous import AutonomousModeSelector
 
 from robotpy_ext.misc.orderedclass import OrderedClass
+from robotpy_ext.misc.annotations import get_class_annotations
 
 from networktables import NetworkTable
 
@@ -434,7 +435,7 @@ class MagicRobot(wpilib.SampleRobot,
         component_type = type(component)
         
         # Iterate over variables with type annotations
-        for n, inject_type in getattr(component, '__annotations__', {}).items():
+        for n, inject_type in get_class_annotations(component_type).items():
 
             # If the variable is private ignore it
             if n.startswith('_'):
