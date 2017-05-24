@@ -448,6 +448,10 @@ class MagicRobot(wpilib.SampleRobot,
                     raise ValueError("%s.%s has two type declarations" % (component_type.__name__, n))
                 continue
 
+            # If the class variable has been assigned in __init__, skip it
+            if hasattr(component, n):
+                continue
+
             # If the type is not actually a type, give a meaningful error
             if not isinstance(inject_type, type):
                 raise TypeError('Component %s has a non-type annotation on %s (%s); lone non-injection variable annotations are disallowed, did you want to assign a static variable?' %
