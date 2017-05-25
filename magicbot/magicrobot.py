@@ -365,6 +365,35 @@ class MagicRobot(wpilib.SampleRobot,
         # Identify all of the types, and create them
         cls = self.__class__
 
+        # - Iterate over class variables with type annotations
+        for m, ctyp in get_class_annotations(cls).items():
+            # Ignore private variables
+            if m.startswith('_'):
+                continue
+
+            if hasattr(cls, m):
+                attr = getattr(cls, m)
+                # If the value given to the variable is an instance of a type and isn't a property
+                # raise an error. No double declaring types, e.g foo: type = type
+                if isinstance(attr, type) and not isinstance(attr, property):
+                    raise ValueError("%s.%s has two type declarations" % (cls.__name__, m))
+                continue
+
+            # If the class variable has been assigned in __init__, skip it
+            if hasattr(self, m):
+                continue
+
+            # If the type is not actually a type, give a meaningful error
+            if not isinstance(ctyp, type):
+                raise TypeError('%s has a non-type annotation on %s (%s); lone non-injection variable annotations are disallowed, did you want to assign a static variable?' %
+                                (cls.__name__, m, ctyp))
+
+            component = self._create_component(m, ctyp)
+
+            # Store for later
+            components.append((m, component))
+
+        # - Iterate over set class variables
         for m in self.members:
             if m.startswith('_') or isinstance(getattr(cls, m, None), _TunableProperty):
                 continue
@@ -373,23 +402,10 @@ class MagicRobot(wpilib.SampleRobot,
             if not isinstance(ctyp, type):
                 continue
 
-            # Create instance, set it on self
-            component = ctyp()
-            setattr(self, m, component)
-
-            # Ensure that mandatory methods are there
-            if not hasattr(component, 'execute') or \
-               not callable(component.execute):
-                raise ValueError("Component %s (%s) must have a method named 'execute'" % (m, component))
-
-            # Automatically inject a logger object
-            component.logger = logging.getLogger(m)
-            component._Magicbot__autosend = {}
+            component = self._create_component(m, ctyp)
 
             # Store for later
             components.append((m, component))
-            
-            self.logger.info("-> %s (class: %s)", m, ctyp.__name__)
 
         # Collect attributes of this robot that are injectable
         self._injectables = {}
@@ -427,6 +443,23 @@ class MagicRobot(wpilib.SampleRobot,
         for cname, component in components:
             if hasattr(component, 'setup'):
                 component.setup()
+
+    def _create_component(self, name, ctyp):
+        # Create instance, set it on self
+        component = ctyp()
+        setattr(self, name, component)
+
+        # Ensure that mandatory methods are there
+        if not callable(getattr(component, 'execute', None)):
+            raise ValueError("Component %s (%s) must have a method named 'execute'" % (name, component))
+
+        # Automatically inject a logger object
+        component.logger = logging.getLogger(name)
+        component._Magicbot__autosend = {}
+
+        self.logger.info("-> %s (class: %s)", name, ctyp.__name__)
+
+        return component
     
     def _setup_vars(self, cname, component):
         
