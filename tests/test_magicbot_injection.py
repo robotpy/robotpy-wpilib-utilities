@@ -105,3 +105,25 @@ def test_inherited_inject():
 
     assert bot.component.tupvar == (1, 2)
     assert bot.component.intvar == 1
+
+
+def test_botinherit_inject():
+    class Component:
+        def execute(self):
+            pass
+
+    class BotBase(magicbot.MagicRobot):
+        component_a = Component
+
+        def createObjects(self):
+            pass
+
+    class Bot(BotBase):
+        component_b = Component
+
+    bot = Bot()
+    bot.robotInit()
+
+    assert isinstance(bot.component_a, Component)
+    assert isinstance(bot.component_b, Component)
+    assert bot.component_a is not bot.component_b
