@@ -458,7 +458,7 @@ class MagicRobot(wpilib.SampleRobot,
                 raise TypeError('Component %s has a non-type annotation on %s (%s); lone non-injection variable annotations are disallowed, did you want to assign a static variable?' %
                                 (cname, n, inject_type))
 
-            self._inject(n, inject_type, cname, component_type)
+            self._inject(n, inject_type, cname, component)
 
         # Iterate over static variables
         for n in dir(component):
