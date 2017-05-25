@@ -493,7 +493,7 @@ class MagicRobot(wpilib.SampleRobot,
                              (cname, n, self, type(injectable), inject_type))
         # Perform injection
         setattr(component, n, injectable)
-        self.logger.debug("%s -> %s as %s.%s", injectable, cname, n)
+        self.logger.debug("-> %s as %s.%s", injectable, cname, n)
 
         # XXX
         #if is_autosend:
