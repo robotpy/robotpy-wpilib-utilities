@@ -117,7 +117,7 @@ class MagicRobot(wpilib.SampleRobot,
         """
         func = self.teleopPeriodic.__func__
         if not hasattr(func, "firstRun"):
-            self.logger.warn("Default MagicRobot.teleopPeriodic() method... Overload me!")
+            self.logger.warning("Default MagicRobot.teleopPeriodic() method... Overload me!")
             func.firstRun = False
 
     def disabledInit(self):
@@ -144,7 +144,7 @@ class MagicRobot(wpilib.SampleRobot,
         """
         func = self.disabledPeriodic.__func__
         if not hasattr(func, "firstRun"):
-            self.logger.warn("Default MagicRobot.disabledPeriodic() method... Overload me!")
+            self.logger.warning("Default MagicRobot.disabledPeriodic() method... Overload me!")
             func.firstRun = False
 
     def onException(self, forceReport=False):

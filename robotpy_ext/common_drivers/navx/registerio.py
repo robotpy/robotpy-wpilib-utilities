@@ -84,7 +84,7 @@ class RegisterIO:
             # initial device configuration
             self.setUpdateRateHz(self.update_rate_hz)
             if not self.getConfiguration():
-                logger.warn("-- Did not get configuration data")
+                logger.warning("-- Did not get configuration data")
             else:
                 logger.info("-- Board is %s (rev %s)",
                             IMURegisters.model_type(self.board_id.type),
@@ -135,7 +135,7 @@ class RegisterIO:
                 config = self.io_provider.read(IMURegisters.NAVX_REG_WHOAMI,
                                                IMURegisters.NAVX_REG_SENSOR_STATUS_H+1)
             except IOError as e:
-                logger.warn("Error reading configuration data, retrying (%s)", e)
+                logger.warning("Error reading configuration data, retrying (%s)", e)
                 success = False
                 Timer.delay(0.5)
             else:
