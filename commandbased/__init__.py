@@ -1,3 +1,3 @@
 from .commandbasedrobot import CommandBasedRobot
 
-from .stopcommand import StopCommand
+from .cancelcommand import CancelCommand
