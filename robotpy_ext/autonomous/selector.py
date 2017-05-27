@@ -9,6 +9,7 @@ logger = logging.getLogger('autonomous')
 
 from ..misc.precise_delay import PreciseDelay
 
+from ..misc.periodic_filter import PeriodicFilter
 import wpilib
 
 
@@ -66,6 +67,7 @@ class AutonomousModeSelector:
                   
                       from robotpy_ext.autonomous.selector_tests import *
     '''
+    logging_interval = 1.0
     
     def __init__(self, autonomous_pkgname, *args, **kwargs):
         '''
@@ -79,6 +81,9 @@ class AutonomousModeSelector:
         self.active_mode = None
         
         logger.info("Begin initializing autonomous mode switcher")
+        
+        self.__last_log = -10
+        self.loggingLoop = False
         
         # load all modules in specified module
         modules = []
@@ -118,7 +123,9 @@ class AutonomousModeSelector:
             #    on the field.. 
             
             for name, obj in inspect.getmembers(module, inspect.isclass):
-
+                obj.logger = logging.getLogger(name)
+                obj.logger.addFilter(PeriodicFilter(self))
+                
                 if hasattr(obj, 'MODE_NAME') :
                     
                     # don't allow the driver to select this mode 
@@ -230,7 +237,7 @@ class AutonomousModeSelector:
         delay = PreciseDelay(control_loop_wait_time)
         
         while self.ds.isAutonomous() and self.ds.isEnabled():
- 
+            
             try:            
                 self._on_iteration(timer.get())
             except:
@@ -293,3 +300,11 @@ class AutonomousModeSelector:
         if not self.ds.isFMSAttached():
             raise
 
+    def _refresh_logger(self):
+        now = wpilib.Timer.getFPGATimestamp()
+            #self._update_autosend()
+        self.loggingLoop = False
+        if now - self.__last_log > self.logging_interval:
+            self.loggingLoop = True
+            self.__last_log = now
+            
