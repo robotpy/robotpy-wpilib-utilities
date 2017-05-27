@@ -90,7 +90,7 @@ class AutonomousModeSelector:
                 raise
             
             # Don't kill the robot because they didn't create an autonomous package
-            logger.warn("Cannot load the '%s' package", autonomous_pkgname)
+            logger.warning("Cannot load the '%s' package", autonomous_pkgname)
         else:
             if hasattr(autonomous_pkg, '__file__'):
                 modules_path = os.path.dirname(os.path.abspath(autonomous_pkg.__file__))
@@ -123,7 +123,7 @@ class AutonomousModeSelector:
                     
                     # don't allow the driver to select this mode 
                     if hasattr(obj, 'DISABLED') and obj.DISABLED:
-                        logger.warn("autonomous mode %s is marked as disabled", obj.MODE_NAME)
+                        logger.warning("autonomous mode %s is marked as disabled", obj.MODE_NAME)
                         continue
                     
                     try:
@@ -167,7 +167,7 @@ class AutonomousModeSelector:
             mode_names.append(k)
         
         if len(self.modes) == 0:
-            logger.warn("-- no autonomous modes were loaded!")
+            logger.warning("-- no autonomous modes were loaded!")
                 
         self.chooser.addObject('None', None)
         
@@ -274,7 +274,7 @@ class AutonomousModeSelector:
             logger.info("Enabling '%s'" % self.active_mode.MODE_NAME)
             self.active_mode.on_enable()
         else:
-            logger.warn("No autonomous modes were selected, not enabling autonomous mode")
+            logger.warning("No autonomous modes were selected, not enabling autonomous mode")
  
     def _on_autonomous_disable(self):
         '''Disable the active autonomous mode'''
