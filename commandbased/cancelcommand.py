@@ -1,6 +1,6 @@
 from wpilib.command import InstantCommand
 
-class StopCommand(InstantCommand):
+class CancelCommand(InstantCommand):
     '''
     When this command is run, it cancels the command it was passed, even if that
     command is part of a :class:`wpilib.CommandGroup`.
@@ -9,9 +9,9 @@ class StopCommand(InstantCommand):
 
     def __init__(self, command):
         '''
-            :param command: The :class:`wpilib.Command` to stop.
+            :param command: The :class:`wpilib.Command` to cancel.
         '''
-        super().__init__('Stop %s' % command)
+        super().__init__('Cancel %s' % command)
 
         self.command = command
 
