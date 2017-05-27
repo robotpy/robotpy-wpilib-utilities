@@ -30,51 +30,46 @@ class InvalidStateName(Exception):
 
 
 def _create_wrapper(f, first, must_finish):
-    
+    # inspect the args, provide a correct call implementation
+    allowed_args = 'self', 'tm', 'state_tm', 'initial_call'
+    sig = inspect.signature(f)
+    name = f.__name__
+
+    args = []
+    invalid_args = []
+    for i, arg in enumerate(sig.parameters.values()):
+        if i == 0 and arg.name != 'self':
+            raise ValueError("First argument to %s must be 'self'" % name)
+        if arg.kind is arg.VAR_POSITIONAL:
+            raise ValueError("Cannot use *args in signature for function %s" % name)
+        if arg.kind is arg.VAR_KEYWORD:
+            raise ValueError("Cannot use **kwargs in signature for function %s" % name)
+        if arg.kind is arg.KEYWORD_ONLY:
+            raise ValueError("Currently cannot use keyword-only parameters for function %s" % name)
+        if arg.name in allowed_args:
+            args.append(arg.name)
+        else:
+            invalid_args.append(arg.name)
+
+    if invalid_args:
+        raise ValueError("Invalid parameter names in %s: %s" % (name, ','.join(invalid_args)))
+
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         raise IllegalCallError("Do not call states directly, use begin/next_state instead")
-    
+
     # store state variables here
     wrapper.origin = __name__
-    wrapper.name = f.__name__
+    wrapper.name = name
     wrapper.description = f.__doc__
     wrapper.first = first
     wrapper.must_finish = must_finish
     wrapper.is_default = False
-    
-    # inspect the args, provide a correct call implementation
-    args, varargs, keywords, _ = inspect.getargspec(f)
-    
-    if keywords is not None:
-        raise ValueError("Cannot use keyword arguments for function %s" % wrapper.name)
-    
-    if varargs is not None:
-        raise ValueError("Cannot use *args arguments for function %s" % wrapper.name)
-    
-    if args[0] != 'self':
-        raise ValueError("First argument must be 'self'")
-    
-    # TODO: there has to be a better way to do this. oh well. it only runs once.
-    
-    if len(args) > 4:
-        raise ValueError("Too many parameters for %s" % wrapper.name)
-    
-    wrapper_creator = 'w = lambda self, tm, state_tm, initial_call: f(%s)' % ','.join(args)
-    
-    for arg in ['self', 'tm', 'state_tm', 'initial_call']:
-        try:
-            args.remove(arg)
-        except ValueError:
-            pass
-    
-    if len(args) != 0:
-        raise ValueError("Invalid parameter names in %s: %s" % (wrapper.name, ','.join(args)))
-    
+
     varlist = {'f': f}
-    exec(wrapper_creator, varlist, varlist)
-    
-    wrapper.run = varlist['w']    
+    wrapper_creator = 'lambda self, tm, state_tm, initial_call: f(%s)' % ','.join(args)
+    wrapper.run = eval(wrapper_creator, varlist, varlist)
+
     return wrapper
 
 class _StateData:
