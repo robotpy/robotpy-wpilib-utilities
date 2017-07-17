@@ -11,7 +11,7 @@ class PeriodicFilter:
         The logger will always print logging levels of WARNING or higher
     """
 
-    def __init__(self, period):
+    def __init__(self, period, bypassLevel=logging.WARN):
         '''
          :param period: Wait period (in seconds) between logs
         '''
@@ -19,11 +19,12 @@ class PeriodicFilter:
         self.period = period
         self.loggingLoop = True
         self._last_log = -period
+        self.bypassLevel = bypassLevel
 
     def filter(self, record):
         """Performs filtering action for logger"""
         self._refresh_logger()
-        return self.parent.loggingLoop or record.levelno > logging.INFO
+        return self.parent.loggingLoop or record.levelno >= self.bypassLevel
 
     def _refresh_logger(self):
         """Determine if the log wait period has passed"""
