@@ -14,6 +14,7 @@ class PeriodicFilter:
     def __init__(self, period, bypassLevel=logging.WARN):
         '''
          :param period: Wait period (in seconds) between logs
+         :param bypassLevel: Lowest logging level that the filter should ignore
         '''
 
         self.period = period
