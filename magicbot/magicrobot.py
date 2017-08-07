@@ -17,6 +17,21 @@ from .magic_tunable import setup_tunables, _TunableProperty
 
 __all__ = ['MagicRobot']
 
+def feedback(key=None):
+    def decorator(func):
+        nt_key = key
+        if nt_key is None:
+            # If no key is passed, get key from method name.
+            # -1 instead of 1 in case 'get_' is not present,
+            # in which case the key will be the method name
+            nt_key = func.__name__.split('get_')[-1]
+        # Set '__feedback__ attribute to be checked during injection
+        setattr(func, '__feedback__', True)
+        # Store key within the function to avoid using class dictionary
+        setattr(func, '__key__', nt_key)
+        return func
+    return decorator
+
 class MagicRobot(wpilib.SampleRobot,
                  metaclass=OrderedClass):
     """
@@ -59,6 +74,7 @@ class MagicRobot(wpilib.SampleRobot,
         self.__last_error_report = -10
 
         self._components = []
+        self._feedbacks = []
 
         # Create the user's objects and stuff here
         self.createObjects()
@@ -507,6 +523,10 @@ class MagicRobot(wpilib.SampleRobot,
 
             self._inject(n, inject_type, cname, component)
 
+        for (name, method) in inspect.getmembers(component, predicate=inspect.ismethod):
+            if getattr(method, '__feedback__', False):
+                self._feedbacks.append((component, cname, name))
+
     def _inject(self, n, inject_type, cname, component):
         # Retrieve injectable object
         injectable = self._injectables.get(n)
@@ -539,6 +559,11 @@ class MagicRobot(wpilib.SampleRobot,
     #        d = component._Magicbot__autosend
     #        for f in d.keys():
     #            d[f] = f(component)     
+
+    def update_feedback(self):
+        for (component, cname, name) in self._feedbacks:
+            # Put ntvalue at /robot/components/component/key
+            self.__nt.putValue('/components/{0}/{1}'.format(cname, getattr(component, name).__key__), getattr(component, name)())
 
     def _execute_components(self):
         for component in self._components:
