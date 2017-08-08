@@ -594,8 +594,9 @@ class MagicRobot(wpilib.SampleRobot,
 
     def _update_feedback(self):
         for (component, cname, name) in self._feedbacks:
+            func = getattr(component, name)
             # Put ntvalue at /robot/components/component/key
-            self.__nt.putValue('/components/{0}/{1}'.format(cname, getattr(component, name).__key__), getattr(component, name)())
+            self.__nt.putValue('/components/{0}/{1}'.format(cname, func.__key__), func())
 
     def _execute_components(self):
         for component in self._components:
