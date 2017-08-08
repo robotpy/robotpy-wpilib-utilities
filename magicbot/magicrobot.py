@@ -18,6 +18,34 @@ from .magic_tunable import setup_tunables, _TunableProperty
 __all__ = ['MagicRobot']
 
 def feedback(key=None):
+    """
+    If this decorator is applied to a function,
+    it's return value will automatically be sent
+    to NetworkTables at key ``/robot/component/component/key``
+
+    ``key`` is an optional parameter, and if it is not supplied,
+    the key will default to the method name with 'get_' removed.
+    If the method does not start with 'get_', the key will be the full
+    name of the method
+
+    The functions will automatically be called in disabled,
+    autonomous, and teleop.
+
+    The functions should only act as a getter, and accept
+    no arguments
+
+    Example
+
+    class Component1:
+
+        @feedback()
+        def get_angle(self):
+            return self.navx.getYaw()
+
+
+    In this example, the NetworkTable key is stored at
+    ``/robot/components/component1/angle``
+    """
     def decorator(func):
         nt_key = key
         if nt_key is None:
@@ -262,6 +290,7 @@ class MagicRobot(wpilib.SampleRobot,
                             self._execute_components,
                             self.onException)
 
+        self._update_feedback()
         self._on_mode_disable_components()
 
 
@@ -296,6 +325,7 @@ class MagicRobot(wpilib.SampleRobot,
             except:
                 self.onException()
 
+            self._update_feedback()
             delay.wait()
 
     def operatorControl(self):
@@ -332,6 +362,8 @@ class MagicRobot(wpilib.SampleRobot,
                 self.onException()
 
             self._execute_components()
+            self._update_feedback()
+
             delay.wait()
 
         self._on_mode_disable_components()
@@ -560,7 +592,7 @@ class MagicRobot(wpilib.SampleRobot,
     #        for f in d.keys():
     #            d[f] = f(component)     
 
-    def update_feedback(self):
+    def _update_feedback(self):
         for (component, cname, name) in self._feedbacks:
             # Put ntvalue at /robot/components/component/key
             self.__nt.putValue('/components/{0}/{1}'.format(cname, getattr(component, name).__key__), getattr(component, name)())
