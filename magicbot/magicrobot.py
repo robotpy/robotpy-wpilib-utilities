@@ -28,11 +28,11 @@ def feedback(key=None):
     If the method does not start with 'get_', the key will be the full
     name of the method
 
-    The functions will automatically be called in disabled,
+    .. note:: The function will automatically be called in disabled,
     autonomous, and teleop.
 
-    The functions should only act as a getter, and accept
-    no arguments
+    .. warning:: The function should only act as a getter, and accept
+    no arguments.
 
     Example
 
@@ -52,7 +52,11 @@ def feedback(key=None):
             # If no key is passed, get key from method name.
             # -1 instead of 1 in case 'get_' is not present,
             # in which case the key will be the method name
-            nt_key = func.__name__.split('get_')[-1]
+            name = func.__name__
+            if name.startswith('get_'):
+                nt_key = name.split('get_')[1]
+            else:
+                nt_key = name
         # Set '__feedback__ attribute to be checked during injection
         setattr(func, '__feedback__', True)
         # Store key within the function to avoid using class dictionary
