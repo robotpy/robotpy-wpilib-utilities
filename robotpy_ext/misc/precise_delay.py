@@ -46,7 +46,7 @@ class PreciseDelay:
             
         else:
             self.delay = time.sleep
-            self.get_now = time.time  
+            self.get_now = time.monotonic
         
         self.delay_period = float(delay_period)
         if self.delay_period < 0.001:
