@@ -47,14 +47,25 @@ def feedback(key=None):
     ``/robot/components/component1/angle``
     """
     def decorator(func):
+        if not hasattr(func, '__call__'):
+            raise ValueError('Illegal use of feedback decorator on {}'.format(func.__name__))
+        sig = inspect.signature(func)
+        name = func.__name__
+
+        for i, arg in enumerate(sig.parameters.values()):
+            if i == 0 and arg.name != 'self':
+                raise ValueError("First argument to %s must be 'self'" % name)
+            elif i != 0:
+                raise ValueError('Only \'self\' is allowed for {}'.format(name))
+
         nt_key = key
         if nt_key is None:
             # If no key is passed, get key from method name.
             # -1 instead of 1 in case 'get_' is not present,
             # in which case the key will be the method name
-            name = func.__name__
+
             if name.startswith('get_'):
-                nt_key = name.split('get_')[1]
+                nt_key = name[4:]
             else:
                 nt_key = name
         # Set '__feedback__ attribute to be checked during injection
