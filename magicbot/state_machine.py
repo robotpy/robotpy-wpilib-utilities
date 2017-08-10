@@ -1,14 +1,22 @@
 
 import functools
+import hal
 import inspect
 
 import networktables
 
 from robotpy_ext.misc.orderedclass import OrderedClass
-from wpilib import Timer
+
 
 from .magic_tunable import tunable
 
+if hal.HALIsSimulation():
+    from wpilib import Timer
+    getTime = Timer.getFPGATimestamp
+
+else:
+    import time
+    getTime = time.monotonic
 
 class IllegalCallError(Exception):
     pass
@@ -459,7 +467,7 @@ class StateMachine(metaclass=OrderedClass):
             @default_state mechanism instead.
         '''
         
-        now = Timer.getFPGATimestamp()
+        now = getTime()
         
         if not self.__engaged:
             if self.__should_engage:
