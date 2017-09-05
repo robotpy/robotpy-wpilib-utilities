@@ -17,6 +17,64 @@ from .magic_tunable import setup_tunables, _TunableProperty
 
 __all__ = ['MagicRobot']
 
+def feedback(key=None):
+    """
+    If this decorator is applied to a function,
+    it's return value will automatically be sent
+    to NetworkTables at key ``/robot/component/component/key``
+
+    ``key`` is an optional parameter, and if it is not supplied,
+    the key will default to the method name with 'get_' removed.
+    If the method does not start with 'get_', the key will be the full
+    name of the method
+
+    .. note:: The function will automatically be called in disabled,
+    autonomous, and teleop.
+
+    .. warning:: The function should only act as a getter, and accept
+    no arguments.
+
+    Example
+
+    class Component1:
+
+        @feedback()
+        def get_angle(self):
+            return self.navx.getYaw()
+
+
+    In this example, the NetworkTable key is stored at
+    ``/robot/components/component1/angle``
+    """
+    def decorator(func):
+        if not hasattr(func, '__call__'):
+            raise ValueError('Illegal use of feedback decorator on {}'.format(func.__name__))
+        sig = inspect.signature(func)
+        name = func.__name__
+
+        for i, arg in enumerate(sig.parameters.values()):
+            if i == 0 and arg.name != 'self':
+                raise ValueError("First argument to %s must be 'self'" % name)
+            elif i != 0:
+                raise ValueError('Only \'self\' is allowed for {}'.format(name))
+
+        nt_key = key
+        if nt_key is None:
+            # If no key is passed, get key from method name.
+            # -1 instead of 1 in case 'get_' is not present,
+            # in which case the key will be the method name
+
+            if name.startswith('get_'):
+                nt_key = name[4:]
+            else:
+                nt_key = name
+        # Set '__feedback__ attribute to be checked during injection
+        setattr(func, '__feedback__', True)
+        # Store key within the function to avoid using class dictionary
+        setattr(func, '__key__', nt_key)
+        return func
+    return decorator
+
 class MagicRobot(wpilib.SampleRobot,
                  metaclass=OrderedClass):
     """
@@ -59,6 +117,7 @@ class MagicRobot(wpilib.SampleRobot,
         self.__last_error_report = -10
 
         self._components = []
+        self._feedbacks = []
 
         # Create the user's objects and stuff here
         self.createObjects()
@@ -246,6 +305,7 @@ class MagicRobot(wpilib.SampleRobot,
                             self._execute_components,
                             self.onException)
 
+        self._update_feedback()
         self._on_mode_disable_components()
 
 
@@ -280,6 +340,7 @@ class MagicRobot(wpilib.SampleRobot,
             except:
                 self.onException()
 
+            self._update_feedback()
             delay.wait()
 
     def operatorControl(self):
@@ -316,6 +377,8 @@ class MagicRobot(wpilib.SampleRobot,
                 self.onException()
 
             self._execute_components()
+            self._update_feedback()
+
             delay.wait()
 
         self._on_mode_disable_components()
@@ -507,6 +570,10 @@ class MagicRobot(wpilib.SampleRobot,
 
             self._inject(n, inject_type, cname, component)
 
+        for (name, method) in inspect.getmembers(component, predicate=inspect.ismethod):
+            if getattr(method, '__feedback__', False):
+                self._feedbacks.append((component, cname, name))
+
     def _inject(self, n, inject_type, cname, component):
         # Retrieve injectable object
         injectable = self._injectables.get(n)
@@ -539,6 +606,15 @@ class MagicRobot(wpilib.SampleRobot,
     #        d = component._Magicbot__autosend
     #        for f in d.keys():
     #            d[f] = f(component)     
+
+    def _update_feedback(self):
+        for (component, cname, name) in self._feedbacks:
+            try:
+                func = getattr(component, name)
+            except:
+                continue
+            # Put ntvalue at /robot/components/component/key
+            self.__nt.putValue('/components/{0}/{1}'.format(cname, func.__key__), func())
 
     def _execute_components(self):
         for component in self._components:
