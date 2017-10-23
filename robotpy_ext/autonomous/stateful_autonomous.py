@@ -272,16 +272,16 @@ class StatefulAutonomous:
         
         if isinstance(default, bool):
             self.__table.putBoolean(sd_name, default)
-            args = (name, sd_name, self.__table.getBoolean)
+            args = (name, sd_name, self.__table.getBoolean, default)
             
         elif isinstance(default, int) or isinstance(default, float):
             self.__table.putNumber(sd_name, default)
-            args = (name, sd_name, self.__table.getNumber)
+            args = (name, sd_name, self.__table.getNumber, default)
             is_number = True
             
         elif isinstance(default, str):
             self.__table.putString(sd_name, default)
-            args = (name, sd_name, self.__table.getString)
+            args = (name, sd_name, self.__table.getString, default)
             
         else:
             raise ValueError("Invalid default value")
@@ -381,8 +381,8 @@ class StatefulAutonomous:
         logger.info("Tunable values:")
         
         # read smart dashboard values, print them
-        for name, sd_name, fn in self.__sd_args:
-            val =  fn(sd_name)
+        for name, sd_name, fn, default in self.__sd_args:
+            val =  fn(sd_name, default)
             setattr(self, name, val)
             logger.info("-> %25s: %s" % (name, val))
     
