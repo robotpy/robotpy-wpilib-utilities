@@ -216,7 +216,7 @@ class StatefulAutonomous:
             for k,v in components.items():
                 setattr(self, k, v)
         
-        self.__table = networktables.NetworkTable.getTable('SmartDashboard')
+        self.__table = networktables.NetworkTables.getTable('SmartDashboard')
         self.__sd_args = []
 
         self.__build_states()

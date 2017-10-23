@@ -11,7 +11,7 @@ from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.misc.orderedclass import OrderedClass
 from robotpy_ext.misc.annotations import get_class_annotations
 
-from networktables import NetworkTable
+from networktables import NetworkTables
 
 from .magic_tunable import setup_tunables, _TunableProperty
 from .magic_reset import will_reset_to
@@ -130,7 +130,7 @@ class MagicRobot(wpilib.SampleRobot,
         # Next, create the robot components and wire them together
         self._create_components()
         
-        self.__nt = NetworkTable.getTable('/robot')
+        self.__nt = NetworkTables.getTable('/robot')
         self.__nt.putBoolean('is_simulation', self.isSimulation())
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
 

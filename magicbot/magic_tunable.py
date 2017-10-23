@@ -1,5 +1,6 @@
 
 from networktables import NetworkTables
+from ntcore.value import Value
 
 # Only used as a marker
 class _TunableProperty(property):
@@ -61,13 +62,14 @@ def tunable(default, *, writeDefault=True, subtable=None, doc=None):
     # robot class
     
     nt = NetworkTables
+    mkv = Value.getFactory(default)
     
     def _get(self):
         return getattr(self, prop._ntattr).value
     
     def _set(self, value):
         v = getattr(self, prop._ntattr)
-        nt._api.setEntryValue(v.key, v._valuefn(value))
+        nt._api.setEntryValueById(v._local_id, mkv(value))
         
     prop = _TunableProperty(fget=_get, fset=_set, doc=doc)
     prop._ntdefault = default

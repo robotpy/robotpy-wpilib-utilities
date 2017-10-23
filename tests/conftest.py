@@ -11,11 +11,14 @@ class FakeSensorBase:
 
 def pytest_runtest_setup():
     import networktables
-    networktables.NetworkTables.setTestMode()
+    networktables.NetworkTables.startTestMode()
     
 def pytest_runtest_teardown():
     import networktables
     networktables.NetworkTables.shutdown()
+    
+    from wpilib import SmartDashboard
+    SmartDashboard._reset()
 
 @pytest.fixture(scope="function")
 def wpimock(monkeypatch):
