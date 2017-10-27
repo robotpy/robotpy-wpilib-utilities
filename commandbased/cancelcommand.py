@@ -1,6 +1,15 @@
-from wpilib.command import InstantCommand
+from wpilib.command import Command
 
-class CancelCommand(InstantCommand):
+
+def checkIfCanceled(self):
+    if self.forceCancel:
+        self.forceCancel = False
+        return True
+
+    return self._isFinished()
+
+
+class CancelCommand(Command):
     '''
     When this command is run, it cancels the command it was passed, even if that
     command is part of a :class:`wpilib.CommandGroup`.
@@ -14,7 +23,18 @@ class CancelCommand(InstantCommand):
         super().__init__('Cancel %s' % command)
 
         self.command = command
+        if hasattr(self.command, '_isFinished'):
+            return
+
+        self.command._isFinished = self.command.isFinished
+        self.command.isFinished = checkIfCanceled.__get__(self.command)
+        self.command.forceCancel = False
 
 
     def initialize(self):
-        self.command._cancel()
+        if self.command.isRunning():
+            self.command.forceCancel = True
+
+
+    def isFinished(self):
+        return not self.command.isRunning()
