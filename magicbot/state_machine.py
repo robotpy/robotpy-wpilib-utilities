@@ -192,14 +192,23 @@ def default_state(f=None):
 
 class StateMachine(metaclass=OrderedClass):
     '''
-        This object is designed to be used to easily implement magicbot
-        components that are basically a big state machine.
+        The StateMachine class is used to implement magicbot components that
+        allow one to easily define a `finite state machine (FSM)
+        <https://en.wikipedia.org/wiki/Finite-state_machine>`_ that can be
+        executed via the magicbot framework.
         
-        You use this by defining a class that inherits from ``StateMachine``.
-        To define each state, you use the :func:`timed_state` decorator on a
-        function. When each state is run, the decorated function will be
-        called. Decorated state functions can receive the following
-        parameters:
+        You create a component class that inherits from ``StateMachine``.
+        Each state is represented as a single function, and you indicate that
+        a function is a particular state by decorating it with one of the
+        following decorators:
+        
+        * :func:`@default_state <.default_state>`
+        * :func:`@state <.state>`
+        * :func:`@timed_state <.timed_state>`
+        
+        As the state machine executes, the decorated function representing the
+        current state will be called. Decorated state functions can receive the
+        following parameters (all of which are optional):
         
         - ``tm`` - The number of seconds since autonomous has started
         - ``state_tm`` - The number of seconds since this state has been active
@@ -209,20 +218,30 @@ class StateMachine(metaclass=OrderedClass):
           will be set to True at the start of each state.
           
         To be consistent with the magicbot philosophy, in order for the
-        state machine to execute its states you must call the
-        :func:`engage` function upon each execution of the main
-        robot control loop. If you do not call this function, then
-        execution will cease unless the current executing state is
-        marked as ``must_finish``.
+        state machine to execute its states you must call the :func:`engage`
+        function upon each execution of the main robot control loop. If you do
+        not call this function, then execution of the FSM will cease.
         
-        When execution ceases, the :func:`done` function will be called
-        unless execution was stopped by calling the ``done`` function.
+        .. note:: If you wish for the FSM to continue executing state functions
+                  regardless whether ``engage()`` is called, you must set the
+                  ``must_finish`` parameter in your state decorator to be True.
         
-        As a magicbot component, this contains an ``execute`` function that
+        When execution ceases (because ``engage()`` was not called), the
+        :func:`done` function will be called and the FSM will be reset to the
+        starting state. The state functions will not be called again unless
+        ``engage`` is called.
+        
+        As a magicbot component, StateMachine contains an ``execute`` function that
         will be called on each control loop. All state execution occurs from
-        within that function call. If you call other components from this
-        component, you should ensure that your component occurs *before*
-        the other components in your Robot class.
+        within that function call. If you call other components from a
+        StateMachine component, you should ensure that your component is defined
+        *before* the other components in your Robot class.
+        
+        .. warning:: As StateMachine already contains an execute function,
+                     there is no need to define your own ``execute`` function for
+                     a state machine component -- if you override ``execute``,
+                     then the state machine may not work correctly. Instead,
+                     use the :func:`@default_state <.default_state>` decorator.
         
         Here's a very simple example of how you might implement a shooter
         automation component that moves a ball into a shooter when the
@@ -240,16 +259,25 @@ class StateMachine(metaclass=OrderedClass):
                     
                 @state(first=True)
                 def begin_firing(self):
+                    """This function will only be called IFF fire is called and
+                       the FSM isn't currently in the 'firing' state. If fire
+                       was not called, this function will not execute."""
                     self.shooter.enable()
                     if self.shooter.ready():
                         self.next_state('firing')
                     
                 @timed_state(duration=1.0, must_finish=True)
                 def firing(self):
-                    """This state will continue executing even if engage isn't called"""
+                    """Because must_finish=True, once the FSM has reached this
+                       state, this state will continue executing even if engage
+                       isn't called"""
                     self.shooter.enable()
                     self.ball_pusher.push()
-            
+                
+                #
+                # Note that there is no execute function defined as part of
+                # this component
+                #
             ...
                 
             class MyRobot(magicbot.MagicRobot):
