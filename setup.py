@@ -53,4 +53,15 @@ setup(
     keywords='frc first robotics',
     install_requires=install_requires if not os.environ.get('ROBOTPY_NO_DEPS') else None,
     packages=find_packages(),
+    license='BSD',
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Education",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Topic :: Scientific/Engineering",
+    ],
     )
