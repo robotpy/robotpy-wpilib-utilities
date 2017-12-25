@@ -342,8 +342,8 @@ class AHRS(wpilib.SensorBase):
         an actual rate of 66Hz (200 / (200 / 58), using integer
         math.
         
-        :returns: Returns the current actual update rate in Hz
-        (cycles per second).
+        :returns: Returns the current actual update rate in Hz (cycles per second).
+
         """
         actual_update_rate = self._getActualUpdateRateInternal(self.getRequestedUpdateRate())
         return int(actual_update_rate & 0xFF)
@@ -364,8 +364,8 @@ class AHRS(wpilib.SensorBase):
         To determine the actual update rate, use the
         {@link #getActualUpdateRate()} method.
         
-        :returns: Returns the requested update rate in Hz
-        (cycles per second).
+        :returns: Returns the requested update rate in Hz (cycles per second).
+
         """
         return int(self.update_rate_hz & 0xFF)
     
