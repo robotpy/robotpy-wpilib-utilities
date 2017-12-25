@@ -10,6 +10,7 @@
 #----------------------------------------------------------------------------
 
 import threading
+import inspect
 
 import wpilib
 from wpilib.interfaces import PIDSource
@@ -275,6 +276,8 @@ class AHRS(wpilib.SensorBase):
         subtracted from subsequent yaw values reported by
         the getYaw() method.
         """
+        if 'disabled' not in inspect.stack()[1][3]:
+            logging.warning("You may be calling navx reset from a method other than disabled. This call has a 5 second sleep")
         if self._isBoardYawResetSupported():
             self.io.zeroYaw()
             # Notification is deferred until action is complete.
@@ -826,6 +829,8 @@ class AHRS(wpilib.SensorBase):
         there is significant drift in the gyro and it needs to be recalibrated
         after it has been running.
         """
+        if 'disabled' not in inspect.stack()[1][3]:
+            logging.warning("You may be calling navx reset from a method other than disabled. This call has a 5 second sleep")
         self.zeroYaw()
     
     def getRawGyroX(self):
