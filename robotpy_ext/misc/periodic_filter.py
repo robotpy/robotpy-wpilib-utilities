@@ -11,20 +11,20 @@ class PeriodicFilter:
         The logger will always print logging levels of WARNING or higher,
         unless given a different bypass level
         
-        Example
+        Example::
         
-        class Component1:
-            
-            def setup(self):
-                # Set period to 3 seconds, set bypass_level to WARN
-                self.logger.addFilter(PeriodicFilter(3, bypass_level=logging.WARN))
-            
-            def execute(self):
-                # This message will be printed once every three seconds
-                self.logger.info('Component1 Executing')
-                
-                # This message will be printed out every loop
-                self.logger.warn('Uh oh, this shouldn't have happened...')
+            class Component1:
+
+                def setup(self):
+                    # Set period to 3 seconds, set bypass_level to WARN
+                    self.logger.addFilter(PeriodicFilter(3, bypass_level=logging.WARN))
+
+                def execute(self):
+                    # This message will be printed once every three seconds
+                    self.logger.info('Component1 Executing')
+
+                    # This message will be printed out every loop
+                    self.logger.warn("Uh oh, this shouldn't have happened...")
         
     """
 

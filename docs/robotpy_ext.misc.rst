@@ -16,3 +16,11 @@ robotpy_ext.misc.precise_delay module
     :members:
     :undoc-members:
     :show-inheritance:
+
+robotpy_ext.misc.periodic_filter module
+---------------------------------------
+
+.. automodule:: robotpy_ext.misc.periodic_filter
+    :members:
+    :undoc-members:
+    :show-inheritance:
