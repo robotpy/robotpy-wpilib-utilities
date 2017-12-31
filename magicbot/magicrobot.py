@@ -209,6 +209,19 @@ class MagicRobot(wpilib.SampleRobot,
             self.logger.warning("Default MagicRobot.disabledPeriodic() method... Overload me!")
             func.firstRun = False
 
+    def robotPeriodic(self):
+        """
+            Periodic code for all modes should go here.
+
+`           Users must override this method to utilize it
+            but it is not required.
+
+            This function gets called last in each mode.
+            You may use it for any code you need to run
+            during all modes of the robot (e.g NetworkTables updates)
+        """
+        pass
+
     def onException(self, forceReport=False):
         '''
             This function must *only* be called when an unexpected exception
@@ -304,10 +317,9 @@ class MagicRobot(wpilib.SampleRobot,
         self._on_mode_enable_components()
 
         self._automodes.run(self.control_loop_wait_time,
-                            self._execute_components,
+                            (self._execute_components, self._update_feedback, self.robotPeriodic),
                             self.onException)
 
-        self._update_feedback()
         self._on_mode_disable_components()
 
 
@@ -343,6 +355,7 @@ class MagicRobot(wpilib.SampleRobot,
                 self.onException()
 
             self._update_feedback()
+            self.robotPeriodic()
             delay.wait()
 
     def operatorControl(self):
@@ -380,6 +393,7 @@ class MagicRobot(wpilib.SampleRobot,
 
             self._execute_components()
             self._update_feedback()
+            self.robotPeriodic()
 
             delay.wait()
 

@@ -1,5 +1,6 @@
 
 from glob import glob
+from collections import Iterable
 import importlib
 import inspect
 import os
@@ -196,8 +197,8 @@ class AutonomousModeSelector:
             
             This function will NOT exit until autonomous mode has ended. If
             you need to execute code in all autonomous modes, pass a function
-            as the ``iter_fn`` parameter, and it will be called once per
-            autonomous mode iteration.
+            or list of functions as the ``iter_fn`` parameter, and they will be
+            called once per autonomous mode iteration.
                           
             :param control_loop_wait_time: Amount of time between iterations
             :param iter_fn: Called at the end of every iteration while
@@ -236,7 +237,11 @@ class AutonomousModeSelector:
             except:
                 on_exception()
             
-            iter_fn()
+            if isinstance(iter_fn, Iterable):
+                for fn in iter_fn:
+                    fn()
+            else:
+                iter_fn()
              
             delay.wait()
             
