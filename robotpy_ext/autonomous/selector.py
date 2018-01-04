@@ -1,6 +1,5 @@
 
 from glob import glob
-from collections import Iterable
 import importlib
 import inspect
 import os
@@ -237,7 +236,7 @@ class AutonomousModeSelector:
             except:
                 on_exception()
             
-            if isinstance(iter_fn, Iterable):
+            if isinstance(iter_fn, (list, tuple)):
                 for fn in iter_fn:
                     fn()
             else:
