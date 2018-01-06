@@ -98,23 +98,31 @@ class InheritedBot(BotBase):
 
 class TypeHintedBot(magicbot.MagicRobot):
     some_int: int = 1
+    some_float: float
 
     component: DumbComponent
 
     def createObjects(self):
-        pass
+        self.some_float = 0.5
 
 
 class TypeHintedComponent:
     injectable: Injectable
 
     some_int: int = 1
+    maybe_float: float = None
+    calculated_num: float
+
+    def __init__(self):
+        self.calculated_num = 1 - self.some_int
 
     def execute(self):
         pass
 
 
 class TypeHintsBot(magicbot.MagicRobot):
+    injectable: Injectable
+
     component: TypeHintedComponent
 
     def createObjects(self):

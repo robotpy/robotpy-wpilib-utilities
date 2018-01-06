@@ -456,16 +456,17 @@ class MagicRobot(wpilib.SampleRobot,
                 # raise an error. No double declaring types, e.g foo: type = type
                 if isinstance(attr, type) and not isinstance(attr, property):
                     raise ValueError("%s.%s has two type declarations" % (cls.__name__, m))
+                # Otherwise, skip this set class variable
                 continue
 
-            # If the class variable has been assigned in __init__, skip it
+            # If the variable has been assigned in __init__ or createObjects, skip it
             if hasattr(self, m):
                 continue
 
             # If the type is not actually a type, give a meaningful error
             if not isinstance(ctyp, type):
-                raise TypeError('%s has a non-type annotation on %s (%s); lone non-injection variable annotations are disallowed, did you want to assign a static variable?' %
-                                (cls.__name__, m, ctyp))
+                raise TypeError('%s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?'
+                                % (cls.__name__, m, ctyp))
 
             component = self._create_component(m, ctyp)
 
@@ -531,7 +532,7 @@ class MagicRobot(wpilib.SampleRobot,
 
         # Ensure that mandatory methods are there
         if not callable(getattr(component, 'execute', None)):
-            raise ValueError("Component %s (%s) must have a method named 'execute'" % (name, component))
+            raise ValueError("Component %s (%r) must have a method named 'execute'" % (name, component))
 
         # Automatically inject a logger object
         component.logger = logging.getLogger(name)
@@ -560,16 +561,17 @@ class MagicRobot(wpilib.SampleRobot,
                 # raise an error. No double declaring types, e.g foo: type = type
                 if isinstance(attr, type) and not isinstance(attr, property):
                     raise ValueError("%s.%s has two type declarations" % (component_type.__name__, n))
+                # Otherwise, skip this set class variable
                 continue
 
-            # If the class variable has been assigned in __init__, skip it
+            # If the variable has been assigned in __init__, skip it
             if hasattr(component, n):
                 continue
 
             # If the type is not actually a type, give a meaningful error
             if not isinstance(inject_type, type):
-                raise TypeError('Component %s has a non-type annotation on %s (%s); lone non-injection variable annotations are disallowed, did you want to assign a static variable?' %
-                                (cname, n, inject_type))
+                raise TypeError('Component %s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?'
+                                % (cname, n, inject_type))
 
             self._inject(n, inject_type, cname, component)
 
