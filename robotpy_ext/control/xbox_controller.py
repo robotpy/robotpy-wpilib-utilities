@@ -10,7 +10,8 @@ class XboxController:
     
         Mapping based on http://www.team358.org/files/programming/ControlSystem2015-2019/images/XBoxControlMapping.jpg
 
-        :deprecated: Use :class:`wpilib.XboxController <wpilib.xboxcontroller.XboxController>` instead
+        .. deprecated:: 2017.0.2
+           Use :class:`wpilib.XboxController <wpilib.xboxcontroller.XboxController>` instead.
     '''
     
     def __init__(self, port):
