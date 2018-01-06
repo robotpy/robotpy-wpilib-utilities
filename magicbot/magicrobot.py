@@ -21,43 +21,39 @@ __all__ = ['MagicRobot']
 def feedback(key=None):
     """
     If this decorator is applied to a function,
-    it's return value will automatically be sent
-    to NetworkTables at key ``/robot/component/component/key``
+    its return value will automatically be sent
+    to NetworkTables at key ``/robot/components/component/key``.
 
     ``key`` is an optional parameter, and if it is not supplied,
     the key will default to the method name with 'get_' removed.
     If the method does not start with 'get_', the key will be the full
-    name of the method
+    name of the method.
 
     .. note:: The function will automatically be called in disabled,
-    autonomous, and teleop.
+              autonomous, and teleop.
 
     .. warning:: The function should only act as a getter, and accept
-    no arguments.
+                 no arguments.
 
-    Example
+    Example::
 
-    class Component1:
+        class Component1:
 
-        @feedback()
-        def get_angle(self):
-            return self.navx.getYaw()
-
+            @feedback()
+            def get_angle(self):
+                return self.navx.getYaw()
 
     In this example, the NetworkTable key is stored at
-    ``/robot/components/component1/angle``
+    ``/robot/components/component1/angle``.
     """
     def decorator(func):
-        if not hasattr(func, '__call__'):
-            raise ValueError('Illegal use of feedback decorator on {}'.format(func.__name__))
+        if not callable(func):
+            raise ValueError('Illegal use of feedback decorator on non-callable {!r}'.format(func))
         sig = inspect.signature(func)
         name = func.__name__
 
-        for i, arg in enumerate(sig.parameters.values()):
-            if i == 0 and arg.name != 'self':
-                raise ValueError("First argument to %s must be 'self'" % name)
-            elif i != 0:
-                raise ValueError('Only \'self\' is allowed for {}'.format(name))
+        if len(sig.parameters) != 1:
+            raise ValueError("{} may not take arguments other than 'self' (must be a simple getter method)".format(name))
 
         nt_key = key
         if nt_key is None:
@@ -70,9 +66,9 @@ def feedback(key=None):
             else:
                 nt_key = name
         # Set '__feedback__ attribute to be checked during injection
-        setattr(func, '__feedback__', True)
+        func.__feedback__ = True
         # Store key within the function to avoid using class dictionary
-        setattr(func, '__key__', nt_key)
+        func.__key__ = nt_key
         return func
     return decorator
 
