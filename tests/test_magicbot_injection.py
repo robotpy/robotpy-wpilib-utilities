@@ -182,6 +182,7 @@ if sys.version_info >= (3, 6):
 
         assert isinstance(bot.component, DumbComponent)
         assert bot.some_int == 1
+        assert bot.some_float == 0.5
 
     def test_typehints_inject():
         from magicbot_annotation_tester import TypeHintsBot, TypeHintedComponent, Injectable
