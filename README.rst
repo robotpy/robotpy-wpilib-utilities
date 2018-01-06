@@ -44,4 +44,5 @@ Authors
 
 - Dustin Spicuzza (dustin@virtualroadside.com)
 - Tim Winters (twinters@wpi.edu)
+- David Vo (@auscompgeek)
 - Insert your name here!
