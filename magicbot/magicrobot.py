@@ -3,6 +3,7 @@ import contextlib
 import inspect
 import logging
 
+import hal
 import wpilib
 
 from robotpy_ext.misc import PreciseDelay
@@ -58,8 +59,8 @@ def feedback(key=None):
         nt_key = key
         if nt_key is None:
             # If no key is passed, get key from method name.
-            # -1 instead of 1 in case 'get_' is not present,
-            # in which case the key will be the method name
+            # If the name does not start with 'get_', the
+            # entire method name will be used
 
             if name.startswith('get_'):
                 nt_key = name[4:]
@@ -72,7 +73,7 @@ def feedback(key=None):
         return func
     return decorator
 
-class MagicRobot(wpilib.SampleRobot,
+class MagicRobot(wpilib.IterativeRobotBase,
                  metaclass=OrderedClass):
     """
         Robots that use the MagicBot framework should use this as their
@@ -130,6 +131,19 @@ class MagicRobot(wpilib.SampleRobot,
         self.__nt.putBoolean('is_simulation', self.isSimulation())
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
 
+    def robotPeriodic(self):
+        """
+            Periodic code for all modes should go here.
+
+`           Users must override this method to utilize it
+            but it is not required.
+
+            This function gets called last in each mode.
+            You may use it for any code you need to run
+            during all modes of the robot (e.g NetworkTables updates)
+        """
+        pass
+
     def createObjects(self):
         """
             You should override this and initialize all of your wpilib
@@ -151,6 +165,15 @@ class MagicRobot(wpilib.SampleRobot,
         """
         raise NotImplementedError
 
+    def autonomousInit(self):
+        self.__nt.putString('mode', 'auto')
+        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+
+    def autonomousPeriodic(self, *args):
+        self._automodes.run(self.control_loop_wait_time,
+                            [self._execute_components, self._update_feedback, self.robotPeriodic].append(args),
+                            self.onException)
+
     def teleopInit(self):
         """
             Initialization code for teleop control code may go here.
@@ -161,7 +184,15 @@ class MagicRobot(wpilib.SampleRobot,
             .. note:: The ``on_enable`` functions of all components are called
                       before this function is called.
         """
-        pass
+        self.__nt.putString('mode', 'teleop')
+        # don't need to update this during teleop -- presumably will switch
+        # modes when ds is no longer attached
+        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+
+        delay = PreciseDelay(self.control_loop_wait_time)
+
+        # initialize things
+        self._on_mode_enable_components()
 
     def teleopPeriodic(self):
         """
@@ -188,7 +219,7 @@ class MagicRobot(wpilib.SampleRobot,
             .. note:: The ``on_disable`` functions of all components are called
                       before this function is called.
         """
-        pass
+        self.__nt.putString('mode', 'disabled')
 
     def disabledPeriodic(self):
         """
@@ -205,18 +236,10 @@ class MagicRobot(wpilib.SampleRobot,
             self.logger.warning("Default MagicRobot.disabledPeriodic() method... Overload me!")
             func.firstRun = False
 
-    def robotPeriodic(self):
-        """
-            Periodic code for all modes should go here.
-
-`           Users must override this method to utilize it
-            but it is not required.
-
-            This function gets called last in each mode.
-            You may use it for any code you need to run
-            during all modes of the robot (e.g NetworkTables updates)
-        """
-        pass
+    def testInit(self):
+        """Called when the robot enters test mode"""
+        self.__nt.putString('mode', 'test')
+        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
 
     def onException(self, forceReport=False):
         '''
@@ -299,111 +322,79 @@ class MagicRobot(wpilib.SampleRobot,
     # Internal API
     #
 
-    def autonomous(self):
-        """
-            MagicRobot will do The Right Thing and automatically load all
-            autonomous mode routines defined in the autonomous folder.
+    def loopFunc(self):
+        """Call the appropriate function depending upon the current robot mode"""
 
-            .. warning:: Internal API, don't override
-        """
-        
-        self.__nt.putString('mode', 'auto')
-        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
-
-        self._on_mode_enable_components()
-
-        self._automodes.run(self.control_loop_wait_time,
-                            (self._execute_components, self._update_feedback, self.robotPeriodic),
-                            self.onException)
-
-        self._on_mode_disable_components()
-
-
-    def disabled(self):
-        """
-            This function is called in disabled mode. You should not
-            override this function; rather, you should override the
-            :meth:`disabledPeriodic` function instead.
-
-            .. warning:: Internal API, don't override
-        """
-        
-        self.__nt.putString('mode', 'disabled')
-        ds_attached = None
-
-        delay = PreciseDelay(self.control_loop_wait_time)
-
-        self._on_mode_disable_components()
-        try:
-            self.disabledInit()
-        except:
-            self.onException(forceReport=True)
-
-        while self.isDisabled():
-            
-            if ds_attached != self.ds.isDSAttached():
-                ds_attached = not ds_attached
-                self.__nt.putBoolean('is_ds_attached', ds_attached)
-            
+        if self.isDisabled():
+            if self.last_mode is not self.Mode.kDisabled:
+                wpilib.LiveWindow.setEnabled(False)
+                self._on_mode_disable_components()
+                try:
+                    self.disabledInit()
+                except:
+                    self.onException(forceReport=True)
+                self.last_mode = self.Mode.kDisabled
+            hal.observeUserProgramDisabled()
             try:
                 self.disabledPeriodic()
             except:
                 self.onException()
-
-            self._update_feedback()
-            self.robotPeriodic()
-            delay.wait()
-
-    def operatorControl(self):
-        """
-            This function is called in teleoperated mode. You should not
-            override this function; rather, you should override the
-            :meth:`teleopPeriodics` function instead.
-
-            .. warning:: Internal API, don't override
-        """
-        
-        self.__nt.putString('mode', 'teleop')
-        # don't need to update this during teleop -- presumably will switch
-        # modes when ds is no longer attached
-        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
-
-        delay = PreciseDelay(self.control_loop_wait_time)
-
-        # initialize things
-        self._on_mode_enable_components()
-
-        try:
-            self.teleopInit()
-        except:
-            self.onException(forceReport=True)
-
-        while self.isOperatorControl() and self.isEnabled():
-            
-            #self._update_autosend()
-            
+        elif self.isAutonomous():
+            if self.last_mode is not self.Mode.kAutonomous:
+                wpilib.LiveWindow.setEnabled(False)
+                self._on_mode_enable_components()
+                try:
+                    self.autonomousInit()
+                except:
+                    self.onException(forceReport=True)
+                self.last_mode = self.Mode.kAutonomous
+            hal.observeUserProgramAutonomous()
             try:
-                self.teleopPeriodic()
+                self.autonomousPeriodic()
             except:
                 self.onException()
-
-            self._execute_components()
-            self._update_feedback()
+        elif self.isOperatorControl():
+            if self.last_mode is not self.Mode.kTeleop:
+                wpilib.LiveWindow.setEnabled(False)
+                self._on_mode_enable_components()
+                try:
+                    self.teleopInit()
+                except:
+                    self.onException(forceReport=True)
+                self.last_mode = self.Mode.kTeleop
+            hal.observeUserProgramTeleop()
+            try:
+                self.autonomousPeriodic()
+            except:
+                self.onException()
+        else:
+            if self.last_mode is not self.Mode.kTest:
+                wpilib.LiveWindow.setEnabled(False)
+                try:
+                    self.testInit()
+                except:
+                    self.onException()
+                self.last_mode = self.Mode.kTest
+            hal.observeUserProgramTest()
+            try:
+                self.autonomousPeriodic()
+            except:
+                self.onException()
+        try:
             self.robotPeriodic()
+        except:
+            self.onException()
+        wpilib.SmartDashboard.updateValues()
+        wpilib.LiveWindow.updateValues()
 
+    def startCompetition(self):
+        """Provide an alternate "main loop" via startCompetition()."""
+        self.robotInit()
+        delay = PreciseDelay(self.control_loop_wait_time)
+
+        while True:
+            self.loopFunc()
             delay.wait()
-
-        self._on_mode_disable_components()
-
-    def test(self):
-        '''Called when the robot is in test mode'''
-        
-        self.__nt.putString('mode', 'test')
-        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
-        
-        while self.isTest() and self.isEnabled():
-            wpilib.LiveWindow.run()
-            wpilib.Timer.delay(.01)
 
     def _on_mode_enable_components(self):
         # initialize things
