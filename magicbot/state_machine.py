@@ -516,12 +516,19 @@ class StateMachine(metaclass=OrderedClass):
         # determine if the time has passed to execute the next state
         # -> intentionally comes first, 
         if state is not None and state.expires < tm:
+
+            previous_state = state
+
             if state.next_state is None:
                 state = None
             else:
                 self.next_state(state.next_state)
                 new_state_start = state.expires
                 state = self.__state
+
+            # Reset the expired time to prevent the state from expiring
+            # immediately if it's ran a second time
+            previous_state.expires = 0xffffffff
         
         # deactivate the current state unless engage was called or
         # must_finish was set
