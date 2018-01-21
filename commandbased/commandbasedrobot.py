@@ -23,6 +23,9 @@ class CommandBasedRobot(IterativeRobot):
         self.scheduler = Scheduler.getInstance()
         self.robotInit()
 
+        for subsystem in self.scheduler.subsystems:
+            subsystem.initDefaultCommand()
+
         # Tell the DS that the robot is ready to be enabled
         hal.observeUserProgramStarting()
 
