@@ -25,6 +25,14 @@ Tunable
     :undoc-members:
     :show-inheritance:
 
+Resettable
+~~~~~
+
+.. automodule:: magicbot.magic_reset
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 State machines
 ~~~~~~~~~~~~~~
 
