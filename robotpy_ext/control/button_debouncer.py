@@ -34,3 +34,5 @@ class ButtonDebouncer:
                 self.latest = now
                 return True
         return False
+
+    __bool__ = get
