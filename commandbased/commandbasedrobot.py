@@ -1,67 +1,21 @@
 import hal
 
-from wpilib.iterativerobot import IterativeRobot
+from wpilib.timedrobot import TimedRobot
 from wpilib.command.scheduler import Scheduler
 from wpilib.livewindow import LiveWindow
 
 
-class CommandBasedRobot(IterativeRobot):
+class CommandBasedRobot(TimedRobot):
     '''
     The base class for a Command-Based Robot. To use, instantiate commands and
     trigger them.
     '''
 
     def startCompetition(self):
-        """
-        Provide an alternate "main loop" via startCompetition(). Rewritten
-        from IterativeRobot for readability and to initialize scheduler.
-        """
-
-        hal.report(hal.HALUsageReporting.kResourceType_Framework,
-                   hal.HALUsageReporting.kFramework_Iterative)
+        """Initalizes the scheduler before starting robotInit()"""
 
         self.scheduler = Scheduler.getInstance()
-        self.robotInit()
-
-        # Tell the DS that the robot is ready to be enabled
-        hal.observeUserProgramStarting()
-
-        # loop forever, calling the appropriate mode-dependent function
-        while True:
-            if self.ds.isDisabled():
-                hal.observeUserProgramDisabled()
-                self.disabledInit()
-                while self.ds.isDisabled():
-                    self.disabledPeriodic()
-                    self.ds.waitForData()
-
-            elif self.ds.isAutonomous():
-                hal.observeUserProgramAutonomous()
-                self.autonomousInit()
-                while self.ds.isEnabled() and self.ds.isAutonomous():
-                    self.autonomousPeriodic()
-                    self.ds.waitForData()
-
-            elif self.ds.isTest():
-                hal.observeUserProgramTest()
-                LiveWindow.setEnabled(True)
-
-                self.testInit()
-                while self.ds.isEnabled() and self.ds.isTest():
-                    self.testPeriodic()
-                    self.ds.waitForData()
-
-                LiveWindow.setEnabled(False)
-
-            else:
-                hal.observeUserProgramTeleop()
-                self.teleopInit()
-                # isOperatorControl checks "not autonomous or test", so we need
-                # to check isEnabled as well, since otherwise it will continue
-                # looping while disabled.
-                while self.ds.isEnabled() and self.ds.isOperatorControl():
-                    self.teleopPeriodic()
-                    self.ds.waitForData()
+        super().startCompetition()
 
 
     def commandPeriodic(self):
