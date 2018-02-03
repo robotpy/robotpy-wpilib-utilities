@@ -13,64 +13,11 @@ from robotpy_ext.misc.annotations import get_class_annotations
 
 from networktables import NetworkTables
 
-from .magic_tunable import setup_tunables, _TunableProperty
+from .magic_tunable import setup_tunables, _TunableProperty, collect_feedbacks
 from .magic_reset import will_reset_to
 
 __all__ = ['MagicRobot']
 
-def feedback(key=None):
-    """
-    If this decorator is applied to a function,
-    its return value will automatically be sent
-    to NetworkTables at key ``/robot/components/component/key``.
-
-    ``key`` is an optional parameter, and if it is not supplied,
-    the key will default to the method name with 'get_' removed.
-    If the method does not start with 'get_', the key will be the full
-    name of the method.
-
-    .. note:: The function will automatically be called in disabled,
-              autonomous, and teleop.
-
-    .. warning:: The function should only act as a getter, and accept
-                 no arguments.
-
-    Example::
-
-        class Component1:
-
-            @feedback()
-            def get_angle(self):
-                return self.navx.getYaw()
-
-    In this example, the NetworkTable key is stored at
-    ``/robot/components/component1/angle``.
-    """
-    def decorator(func):
-        if not callable(func):
-            raise ValueError('Illegal use of feedback decorator on non-callable {!r}'.format(func))
-        sig = inspect.signature(func)
-        name = func.__name__
-
-        if len(sig.parameters) != 1:
-            raise ValueError("{} may not take arguments other than 'self' (must be a simple getter method)".format(name))
-
-        nt_key = key
-        if nt_key is None:
-            # If no key is passed, get key from method name.
-            # -1 instead of 1 in case 'get_' is not present,
-            # in which case the key will be the method name
-
-            if name.startswith('get_'):
-                nt_key = name[4:]
-            else:
-                nt_key = name
-        # Set '__feedback__ attribute to be checked during injection
-        func.__feedback__ = True
-        # Store key within the function to avoid using class dictionary
-        func.__key__ = nt_key
-        return func
-    return decorator
 
 class MagicRobot(wpilib.SampleRobot,
                  metaclass=OrderedClass):
@@ -380,8 +327,6 @@ class MagicRobot(wpilib.SampleRobot,
 
         while self.isOperatorControl() and self.isEnabled():
             
-            #self._update_autosend()
-            
             try:
                 self.teleopPeriodic()
             except:
@@ -504,6 +449,7 @@ class MagicRobot(wpilib.SampleRobot,
         for cname, component in components:
             self._components.append(component)
             setup_tunables(component, cname, 'components')
+            self._feedbacks += collect_feedbacks(component, cname, 'components')
             self._setup_vars(cname, component)
             self._setup_reset_vars(component)
 
@@ -515,6 +461,7 @@ class MagicRobot(wpilib.SampleRobot,
 
         # And for self too
         setup_tunables(self, 'robot', None)
+        self._feedbacks += collect_feedbacks(self, 'robot', None)
             
         # Call setup functions for components
         for cname, component in components:
@@ -532,7 +479,6 @@ class MagicRobot(wpilib.SampleRobot,
 
         # Automatically inject a logger object
         component.logger = logging.getLogger(name)
-        component._Magicbot__autosend = {}
 
         self.logger.info("-> %s (class: %s)", name, ctyp.__name__)
 
@@ -585,10 +531,6 @@ class MagicRobot(wpilib.SampleRobot,
 
             self._inject(n, inject_type, cname, component)
 
-        for (name, method) in inspect.getmembers(component, predicate=inspect.ismethod):
-            if getattr(method, '__feedback__', False):
-                self._feedbacks.append((component, cname, name))
-
     def _inject(self, n, inject_type, cname, component):
         # Retrieve injectable object
         injectable = self._injectables.get(n)
@@ -610,11 +552,6 @@ class MagicRobot(wpilib.SampleRobot,
         setattr(component, n, injectable)
         self.logger.debug("-> %s as %s.%s", injectable, cname, n)
 
-        # XXX
-        #if is_autosend:
-            # where to store the nt key?
-        #    component._Magicbot__autosend[prop.f] = None
-    
     def _setup_reset_vars(self, component):
         reset_dict = {}
         
@@ -629,22 +566,15 @@ class MagicRobot(wpilib.SampleRobot,
         if reset_dict:
             component.__dict__.update(reset_dict)
             self._reset_components.append((reset_dict, component))
-    
-    #def _update_autosend(self):
-    #    # seems like this should just be a giant list instead
-    #    for component in self._components:
-    #        d = component._Magicbot__autosend
-    #        for f in d.keys():
-    #            d[f] = f(component)     
 
     def _update_feedback(self):
-        for (component, cname, name) in self._feedbacks:
+        for method, entry in self._feedbacks:
             try:
-                func = getattr(component, name)
+                value = method()
             except:
+                self.onException()
                 continue
-            # Put ntvalue at /robot/components/component/key
-            self.__nt.putValue('/components/{0}/{1}'.format(cname, func.__key__), func())
+            entry.setValue(value)
 
     def _execute_components(self):
         for component in self._components:
