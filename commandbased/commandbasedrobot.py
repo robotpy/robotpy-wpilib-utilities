@@ -1,8 +1,5 @@
-import hal
-
-from wpilib.timedrobot import TimedRobot
-from wpilib.command.scheduler import Scheduler
-from wpilib.livewindow import LiveWindow
+from wpilib import TimedRobot
+from wpilib.command import Scheduler
 
 
 class CommandBasedRobot(TimedRobot):
@@ -16,7 +13,6 @@ class CommandBasedRobot(TimedRobot):
 
         self.scheduler = Scheduler.getInstance()
         super().startCompetition()
-
 
     def commandPeriodic(self):
         '''
@@ -35,20 +31,10 @@ class CommandBasedRobot(TimedRobot):
 
             self.handleCrash(error)
 
-
     autonomousPeriodic = commandPeriodic
     teleopPeriodic = commandPeriodic
     disabledPeriodic = commandPeriodic
-
-
-    def testPeriodic(self):
-        '''
-        Test mode will not run normal commands, but motors can be controlled
-        and sensors viewed with the SmartDashboard.
-        '''
-
-        LiveWindow.run()
-
+    # testPeriodic deliberately omitted
 
     def handleCrash(self, error):
         '''
