@@ -9,6 +9,15 @@ robotpy_ext.misc.asyncio_policy module
     :undoc-members:
     :show-inheritance:
 
+robotpy_ext.misc.looptimer module
+---------------------------------------
+
+.. automodule:: robotpy_ext.misc.looptimer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 robotpy_ext.misc.precise_delay module
 -------------------------------------
 
