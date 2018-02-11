@@ -1,13 +1,13 @@
 
 git+git://github.com/robotpy/pynetworktables.git
 
-git+git://github.com/robotpy/robotpy-wpilib.git#subdirectory=wpilib
 git+git://github.com/robotpy/robotpy-wpilib.git#subdirectory=hal-base
 git+git://github.com/robotpy/robotpy-wpilib.git#subdirectory=hal-sim
-
-git+git://github.com/robotpy/pyfrc.git
+git+git://github.com/robotpy/robotpy-wpilib.git#subdirectory=wpilib
 
 -e .
+
+git+git://github.com/robotpy/pyfrc.git
 
 pytest>=2.8
 coverage
