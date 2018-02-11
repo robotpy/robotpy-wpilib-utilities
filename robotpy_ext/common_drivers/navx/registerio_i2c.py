@@ -1,4 +1,4 @@
-# validated: 2017-02-19 DS 3b0fc57cd0e0 roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO_I2C.java
+# validated: 2018-02-11 DV 73aa4ea84010 roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO_I2C.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
@@ -37,7 +37,10 @@ class RegisterIO_I2C:
     
     def write(self, address, value):
         with self.mutex:
-            return self.port.write(address | 0x80, value)
+            aborted = self.port.write(address | 0x80, value)
+        if aborted:
+            logger.warn("navX-MXP I2C write error")
+        return not aborted
     
     def read(self, first_address, count):
         buffer = []

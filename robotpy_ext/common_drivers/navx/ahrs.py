@@ -1,4 +1,4 @@
-# validated: 2017-02-19 DV a2358399f5a3 roborio/java/navx_frc/src/com/kauailabs/navx/frc/AHRS.java
+# validated: 2018-02-11 DV d8fa37624f03 roborio/java/navx_frc/src/com/kauailabs/navx/frc/AHRS.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
@@ -996,7 +996,13 @@ class AHRS(wpilib.SensorBase):
         :returns: The firmware version in the format [MajorVersion].[MinorVersion]
         """
         return '%s.%s' % (self.fw_ver_major, self.fw_ver_minor)
-    
+
+    def getGyroFullScaleRangeDPS(self) -> int:
+        return self.gyro_fsr_dps
+
+    def getAccelFullScaleRangeG(self) -> int:
+        return self.accel_fsr_g
+
     #
     # Internal API
     #
@@ -1069,14 +1075,9 @@ class AHRS(wpilib.SensorBase):
         self.yaw_angle_tracker.reset()
     
     #
-    # LiveWindow 
+    # LiveWindow
     #
-    
-    def getSmartDashboardType(self):
-        return "Gyro"
-    
-    def updateTable(self):
-        table = self.getTable()
-        if table is not None:
-            table.putNumber("Value", self.getYaw())
-        
+
+    def initSendable(self, builder):
+        builder.setSmartDashboardType("Gyro")
+        builder.addDoubleProperty("Value", self.getAngle, None)

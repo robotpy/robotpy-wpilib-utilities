@@ -1,4 +1,4 @@
-# validated: 2017-02-19 DS c5e3a8a9b642 roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO.java
+# validated: 2018-02-11 DV d8fa37624f03 roborio/java/navx_frc/src/com/kauailabs/navx/frc/RegisterIO.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
@@ -219,8 +219,8 @@ class RegisterIO:
         board_state.selftest_status = curr_data[IMURegisters.NAVX_REG_SELFTEST_STATUS-first_address]
         board_state.sensor_status   = AHRSProtocol.decodeBinaryUint16(curr_data,IMURegisters.NAVX_REG_SENSOR_STATUS_L-first_address)
         board_state.update_rate_hz  = curr_data[IMURegisters.NAVX_REG_UPDATE_RATE_HZ-first_address]
-        board_state.gyro_fsr_dps    = AHRSProtocol.decodeBinaryUint16(curr_data,IMURegisters.NAVX_REG_GYRO_FSR_DPS_L)
-        board_state.accel_fsr_g     = curr_data[IMURegisters.NAVX_REG_ACCEL_FSR_G]
+        board_state.gyro_fsr_dps    = AHRSProtocol.decodeBinaryUint16(curr_data,IMURegisters.NAVX_REG_GYRO_FSR_DPS_L-first_address)
+        board_state.accel_fsr_g     = curr_data[IMURegisters.NAVX_REG_ACCEL_FSR_G-first_address]
         board_state.capability_flags= AHRSProtocol.decodeBinaryUint16(curr_data,IMURegisters.NAVX_REG_CAPABILITY_FLAGS_L-first_address)
         self.notify_sink._setBoardState(board_state)
         
