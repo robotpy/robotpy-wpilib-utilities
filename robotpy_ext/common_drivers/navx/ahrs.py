@@ -103,7 +103,9 @@ class AHRS(wpilib.SensorBase):
         
         if update_rate_hz is None:
             update_rate_hz = self.NAVX_DEFAULT_UPDATE_RATE_HZ
-        
+
+        super().__init__(addLiveWindow=False)
+
         # Internal variables
         
         self.yaw = 0
@@ -167,8 +169,6 @@ class AHRS(wpilib.SensorBase):
         self.last_update_time = 0
         
         self.pidSource = self.PIDSourceType.kDisplacement
-        
-        self.mutex = threading.RLock()
         
         self.integrator = InertialDataIntegrator()
         self.yaw_offset_tracker = OffsetTracker(self.YAW_HISTORY_LENGTH)
