@@ -509,6 +509,7 @@ class MagicRobot(wpilib.SampleRobot,
 
         # Do it for autonomous modes too
         for mode in self._automodes.modes.values():
+            mode.MODE_NAME = getattr(mode, 'MODE_NAME', mode.__class__.__name__)
             mode.logger = logging.getLogger(mode.MODE_NAME)
             setup_tunables(mode, mode.MODE_NAME, 'autonomous')
             self._setup_vars(mode.MODE_NAME, mode)
