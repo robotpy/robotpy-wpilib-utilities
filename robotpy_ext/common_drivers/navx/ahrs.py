@@ -1,4 +1,4 @@
-# validated: 2017-02-19 DS 45685cfce2a1 roborio/java/navx_frc/src/com/kauailabs/navx/frc/AHRS.java
+# validated: 2017-02-19 DV a2358399f5a3 roborio/java/navx_frc/src/com/kauailabs/navx/frc/AHRS.java
 #----------------------------------------------------------------------------
 # Copyright (c) Kauai Labs 2015. All Rights Reserved.
 #
