@@ -1,3 +1,5 @@
+import functools
+import inspect
 
 from networktables import NetworkTables
 from ntcore.value import Value
@@ -123,34 +125,93 @@ def setup_tunables(component, cname, prefix='components'):
         prop._ntattr = ntattr
 
 
-# TODO
-#def autosend(f=None):
-#    '''
-#        Decorator used to send variables to DS::
-#        
-#            
-#        
-#            class MyComponent:
-#            
-#                @autosend
-#                def my_sensor(self):
-#                    return self.limit_switch.get()
-#                    
-#                ...
-#                    
-#            class MyRobot:
-#            
-#                mine = MyComponent 
-#                
-#        This will cause the output of this function to be sent
-#        to ``/components/mine/my_sensor``
-#    '''
-#    
-#    
-#    def _get(self):
-#        return self._Magicbot__autosend.get(f)
-#    
-#    prop = _AutosendProperty(fget=_get)
-#    prop.f = f
-#    
-#    return prop
+def feedback(f=None, *, key: str = None):
+    """
+    This decorator allows you to create NetworkTables values that are
+    automatically updated with the return value of a method.
+
+    ``key`` is an optional parameter, and if it is not supplied,
+    the key will default to the method name with a leading ``get_`` removed.
+    If the method does not start with ``get_``, the key will be the full
+    name of the method.
+
+    The key of the NetworkTables value will vary based on what kind of
+    object the decorated method belongs to:
+
+    * A component: ``/components/COMPONENTNAME/VARNAME``
+    * Your main robot class: ``/robot/VARNAME``
+
+    The NetworkTables value will be auto-updated in all modes (except test mode).
+
+    .. warning:: The function should only act as a getter, and must not
+                 take any arguments (other than self).
+
+    Example::
+
+        from magicbot import feedback
+
+        class MyComponent:
+            navx: ...
+
+            @feedback
+            def get_angle(self):
+                return self.navx.getYaw()
+
+        class MyRobot(magicbot.MagicRobot):
+            my_component: MyComponent
+
+            ...
+
+    In this example, the NetworkTable key is stored at
+    ``/components/my_component/angle``.
+
+    .. seealso:: :class:`~wpilib.livewindow.LiveWindow` may suit your needs,
+                 especially if you wish to monitor WPILib objects.
+
+    .. versionadded:: 2018.1.0
+    """
+    if f is None:
+        return functools.partial(feedback, key=key)
+
+    if not callable(f):
+        raise TypeError('Illegal use of feedback decorator on non-callable {!r}'.format(f))
+    sig = inspect.signature(f)
+    name = f.__name__
+
+    if len(sig.parameters) != 1:
+        raise ValueError("{} may not take arguments other than 'self' (must be a simple getter method)".format(name))
+
+    # Set attributes to be checked during injection
+    f.__feedback__ = True
+    f.__key__ = key
+
+    return f
+
+
+def collect_feedbacks(component, cname: str, prefix='components'):
+    """
+    Finds all methods decorated with :func:`feedback` on an object
+    and returns a list of 2-tuples (method, NetworkTables entry).
+
+    .. note:: This isn't useful for normal use.
+    """
+    if prefix is None:
+        prefix = '/%s' % cname
+    else:
+        prefix = '/%s/%s' % (prefix, cname)
+
+    feedbacks = []
+
+    for name, method in inspect.getmembers(component, inspect.ismethod):
+        if getattr(method, '__feedback__', False):
+            key = method.__key__
+            if key is None:
+                if name.startswith('get_'):
+                    key = name[4:]
+                else:
+                    key = name
+
+            entry = NetworkTables.getEntry('%s/%s' % (prefix, key))
+            feedbacks.append((method, entry))
+
+    return feedbacks
