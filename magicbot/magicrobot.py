@@ -162,8 +162,11 @@ class MagicRobot(wpilib.SampleRobot,
             This function gets called last in each mode.
             You may use it for any code you need to run
             during all modes of the robot (e.g NetworkTables updates)
+
+            The default implementation will update SmartDashboard and LiveWindow.
         """
-        pass
+        wpilib.SmartDashboard.updateValues()
+        wpilib.LiveWindow.updateValues()
 
     def onException(self, forceReport=False):
         '''
@@ -256,6 +259,7 @@ class MagicRobot(wpilib.SampleRobot,
         
         self.__nt.putString('mode', 'auto')
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+        wpilib.LiveWindow.setEnabled(False)
 
         self._on_mode_enable_components()
 
@@ -277,6 +281,7 @@ class MagicRobot(wpilib.SampleRobot,
         
         self.__nt.putString('mode', 'disabled')
         ds_attached = None
+        wpilib.LiveWindow.setEnabled(False)
 
         delay = PreciseDelay(self.control_loop_wait_time)
 
@@ -314,6 +319,7 @@ class MagicRobot(wpilib.SampleRobot,
         # don't need to update this during teleop -- presumably will switch
         # modes when ds is no longer attached
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+        wpilib.LiveWindow.setEnabled(False)
 
         delay = PreciseDelay(self.control_loop_wait_time)
 
@@ -345,9 +351,9 @@ class MagicRobot(wpilib.SampleRobot,
         
         self.__nt.putString('mode', 'test')
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+        wpilib.LiveWindow.setEnabled(True)
         
         while self.isTest() and self.isEnabled():
-            wpilib.LiveWindow.run()
             self._update_feedback()
             self.robotPeriodic()
             wpilib.Timer.delay(self.control_loop_wait_time)
