@@ -350,7 +350,7 @@ class MagicRobot(wpilib.SampleRobot,
             wpilib.LiveWindow.run()
             self._update_feedback()
             self.robotPeriodic()
-            wpilib.Timer.delay(.01)
+            wpilib.Timer.delay(self.control_loop_wait_time)
 
     def _on_mode_enable_components(self):
         # initialize things
