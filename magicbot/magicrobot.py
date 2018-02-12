@@ -348,6 +348,8 @@ class MagicRobot(wpilib.SampleRobot,
         
         while self.isTest() and self.isEnabled():
             wpilib.LiveWindow.run()
+            self._update_feedback()
+            self.robotPeriodic()
             wpilib.Timer.delay(.01)
 
     def _on_mode_enable_components(self):
