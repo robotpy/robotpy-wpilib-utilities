@@ -2,5 +2,5 @@
 validation_root = robotpy_ext/common_drivers/navx
 exclude_commits_file = devtools/exclude_commits_navx
 upstream_root = ../navxmxp
-upstream_commit = 09abe90221cb9d0ae104776af037d0b8a7f2d720
+upstream_commit = d8fa37624f03379ed0e2a8f6f458e3cecbb59247
 
