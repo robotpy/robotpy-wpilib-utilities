@@ -26,7 +26,7 @@ Tunable
     :show-inheritance:
 
 Resettable
-~~~~~
+~~~~~~~~~~
 
 .. automodule:: magicbot.magic_reset
     :members:

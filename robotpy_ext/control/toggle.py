@@ -1,35 +1,36 @@
 from _functools import partial
-from wpilib.timer import Timer
+
+import wpilib
 
 
 class Toggle:
-    """Utility class for button toggle
+    """Utility class for joystick button toggle
 
-        Usage:
+        Usage::
 
-        foo = Toggle(joystick, 3)
+            foo = Toggle(joystick, 3)
 
-        if foo:
-            toggleFunction()
+            if foo:
+                toggleFunction()
 
-        if foo.on:
-            onToggle()
+            if foo.on:
+                onToggle()
 
-        if foo.off:
-            offToggle()
+            if foo.off:
+                offToggle()
     """
     class _SteadyDebounce:
-        '''
+        """
             Similar to ButtonDebouncer, but the output stays steady for
             the given periodic_filter. E.g, if you set the period to 2
             and press the button, the value will return true for 2 seconds.
 
             Steady debounce will return true for the given period, allowing it to be
             used with Toggle
-        '''
+        """
 
         def __init__(self, joystick, button, period=0.5):
-            '''
+            """
             :param joystick:  Joystick object
             :type  joystick:  :class:`wpilib.Joystick`
             :param button: Number of button to retrieve
@@ -37,25 +38,25 @@ class Toggle:
             :param period:    Period of time (in seconds) to wait before allowing new button
                               presses. Defaults to 0.5 seconds.
             :type  period:    float
-            '''
+            """
             self.joystick = joystick
             self.button = button
 
             self.debounce_period = float(period)
             self.latest = - self.debounce_period # Negative latest prevents get from returning true until joystick is presed for the first time
-            self.timer = Timer
             self.enabled = False
 
         def set_debounce_period(self, period):
-            '''Set number of seconds to hold return value'''
+            """Set number of seconds to hold return value"""
             self.debounce_period = float(period)
 
         def get(self):
-            '''Returns the value of the joystick button. Once the button is pressed,
-            the return value will be True until the time expires
-            '''
+            """
+            :returns: The value of the joystick button. Once the button is pressed,
+            the return value will be `True` until the time expires
+            """
 
-            now = self.timer.getFPGATimestamp()
+            now = wpilib.Timer.getFPGATimestamp()
             if now - self.latest < self.debounce_period:
                 return True
 
@@ -65,14 +66,15 @@ class Toggle:
             else:
                 return False
 
-    def __init__(self, joystick, button, debouncePeriod=None):
+    def __init__(self, joystick: wpilib.Joystick, button: int, debounce_period=None):
         """
-        :param joystick: wpilib.Joystick that contains the button to toggle
-        :param button: Value of button that will act as toggle. Same value used in getRawButton()
+        :param joystick: :class:`wpilib.Joystick` that contains the button to toggle
+        :param button: Number of button that will act as toggle. Same value used in `getRawButton()`
+        :param debounce_period: Period to wait before registering a new button press.
         """
 
-        if debouncePeriod is not None:
-            self.joystick = Toggle._SteadyDebounce(joystick, button, debouncePeriod)
+        if debounce_period is not None:
+            self.joystick = Toggle._SteadyDebounce(joystick, button, debounce_period)
         else:
             self.joystick = joystick
             self.joystick.get = partial(self.joystick.getRawButton, button)
@@ -100,11 +102,17 @@ class Toggle:
 
     @property
     def on(self):
+        """
+        Equates to true if toggle is in the 'on' state
+        """
         self.get()
         return self.state
 
     @property
     def off(self):
+        """
+        Equates to true if toggle is in the 'off' state
+        """
         self.get()
         return not self.state
 

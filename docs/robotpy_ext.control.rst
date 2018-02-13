@@ -8,6 +8,13 @@ robotpy_ext.control.button_debouncer module
     :members:
     :undoc-members:
 
+robotpy_ext.control.toggle module
+---------------------------------
+
+.. automodule:: robotpy_ext.control.toggle
+    :members:
+    :undoc-members:
+
 
 robotpy_ext.control.xbox_controller module
 ------------------------------------------
