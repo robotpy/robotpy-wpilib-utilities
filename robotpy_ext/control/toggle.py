@@ -6,18 +6,18 @@ import wpilib
 class Toggle:
     """Utility class for joystick button toggle
 
-        Usage::
+    Usage::
 
-            foo = Toggle(joystick, 3)
+        foo = Toggle(joystick, 3)
 
-            if foo:
-                toggleFunction()
+        if foo:
+            toggleFunction()
 
-            if foo.on:
-                onToggle()
+        if foo.on:
+            onToggle()
 
-            if foo.off:
-                offToggle()
+        if foo.off:
+            offToggle()
     """
     class _SteadyDebounce:
         """
@@ -29,7 +29,7 @@ class Toggle:
             used with Toggle
         """
 
-        def __init__(self, joystick, button, period=0.5):
+        def __init__(self, joystick: wpilib.Joystick, button: int, period: float):
             """
             :param joystick:  Joystick object
             :type  joystick:  :class:`wpilib.Joystick`
@@ -45,10 +45,6 @@ class Toggle:
             self.debounce_period = float(period)
             self.latest = - self.debounce_period # Negative latest prevents get from returning true until joystick is presed for the first time
             self.enabled = False
-
-        def set_debounce_period(self, period):
-            """Set number of seconds to hold return value"""
-            self.debounce_period = float(period)
 
         def get(self):
             """
@@ -66,18 +62,18 @@ class Toggle:
             else:
                 return False
 
-    def __init__(self, joystick: wpilib.Joystick, button: int, debounce_period=None):
+    def __init__(self, joystick: wpilib.Joystick, button: int, debounce_period: float=None):
         """
         :param joystick: :class:`wpilib.Joystick` that contains the button to toggle
         :param button: Number of button that will act as toggle. Same value used in `getRawButton()`
-        :param debounce_period: Period to wait before registering a new button press.
+        :param debounce_period: Period in seconds to wait before registering a new button press.
         """
 
         if debounce_period is not None:
-            self.joystick = Toggle._SteadyDebounce(joystick, button, debounce_period)
+            self.joystickget = Toggle._SteadyDebounce(joystick, button, debounce_period).get
         else:
             self.joystick = joystick
-            self.joystick.get = partial(self.joystick.getRawButton, button)
+            self.joystickget = partial(self.joystick.getRawButton, button)
 
         self.released = False
         self.toggle = False
@@ -88,7 +84,7 @@ class Toggle:
          :return: State of toggle
          :rtype: bool
          """
-        current_state = self.joystick.get()
+        current_state = self.joystickget()
 
         if current_state and not self.released:
             self.released = True

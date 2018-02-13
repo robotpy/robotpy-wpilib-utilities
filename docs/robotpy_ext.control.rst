@@ -15,7 +15,6 @@ robotpy_ext.control.toggle module
     :members:
     :undoc-members:
 
-
 robotpy_ext.control.xbox_controller module
 ------------------------------------------
 

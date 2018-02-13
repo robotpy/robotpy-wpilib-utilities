@@ -2,29 +2,34 @@ from robotpy_ext.control.toggle import Toggle
 from robotpy_ext.misc.precise_delay import PreciseDelay
 class FakeJoystick:
     def __init__(self):
-        self._pressed = False 
-    
+        self._pressed = [False] * 2
+
     def getRawButton(self, num):
-        return self._pressed
+        return self._pressed[num]
     
-    def press(self):
-        self._pressed = True
+    def press(self, num):
+        self._pressed[num] = True
     
-    def release(self):
-        self._pressed = False
+    def release(self, num):
+        self._pressed[num] = False
     
 def test_toggle():
     joystick = FakeJoystick()
-    toggleButton = Toggle(joystick, 1)
+    toggleButton = Toggle(joystick, 0)
+    toggleButton2 = Toggle(joystick, 1)
     assert toggleButton.off
-    joystick.press()
+    joystick.press(0)
     assert toggleButton.on
-    joystick.release()
+    assert toggleButton2.off
+    joystick.release(0)
     assert toggleButton.on
-    joystick.press()
+    joystick.press(0)
     assert toggleButton.off
-    joystick.release()
+    joystick.release(0)
     assert toggleButton.off
+    joystick.press(1)
+    assert toggleButton.off
+    assert toggleButton2.on
 
 
 def test_toggle_debounce():
@@ -32,13 +37,13 @@ def test_toggle_debounce():
     joystick = FakeJoystick()
     toggleButton = Toggle(joystick, 1, 2)
     assert toggleButton.off
-    joystick.press()
+    joystick.press(1)
     assert toggleButton.on
-    joystick.release()
-    joystick.press()
-    joystick.release()
+    joystick.release(1)
+    joystick.press(1)
+    joystick.release(1)
     assert toggleButton.on
     delay.wait()
     assert toggleButton.on
-    joystick.press()
+    joystick.press(1)
     assert toggleButton.off
