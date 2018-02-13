@@ -141,7 +141,7 @@ def feedback(f=None, *, key: str = None):
     * A component: ``/components/COMPONENTNAME/VARNAME``
     * Your main robot class: ``/robot/VARNAME``
 
-    The NetworkTables value will be auto-updated in all modes (except test mode).
+    The NetworkTables value will be auto-updated in all modes.
 
     .. warning:: The function should only act as a getter, and must not
                  take any arguments (other than self).
