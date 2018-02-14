@@ -77,5 +77,44 @@ class PreciseDelay:
         # - TODO: should we just always use this in simulated mode?
         
         wpilib.Timer.delay(self.delay_period)
-        
-        
+
+
+class NotifierDelay:
+    """Synchronizes a timing loop against interrupts from the FPGA.
+
+    This will delay so that the next invocation of your loop happens at
+    precisely the same period, assuming that your loop does not take longer
+    than the specified period.
+    """
+
+    def __init__(self, delay_period: float) -> None:
+        """:param delay_period: The period's amount of time (in seconds)."""
+        if delay_period < 0.001:
+            raise ValueError("You probably don't want to delay less than 1ms!")
+
+        # Convert the delay period to microseconds, as FPGA timestamps are microseconds
+        self.delay_period = int(delay_period * 1e6)
+        self._notifier = hal.initializeNotifier()
+        self._expiry_time = wpilib.RobotController.getFPGATime() + self.delay_period
+        self._update_alarm()
+
+        wpilib.Resource._add_global_resource(self)
+
+    def free(self) -> None:
+        """Clean up the notifier.
+
+        Call this method once you are done using this object.
+        Do not use this object after this method is called.
+        """
+        handle = self._notifier
+        hal.stopNotifier(handle)
+        hal.cleanNotifier(handle)
+
+    def wait(self) -> None:
+        """Wait until the delay period has passed."""
+        hal.waitForNotifierAlarm(self._notifier)
+        self._expiry_time += self.delay_period
+        self._update_alarm()
+
+    def _update_alarm(self) -> None:
+        hal.updateNotifierAlarm(self._notifier, self._expiry_time)

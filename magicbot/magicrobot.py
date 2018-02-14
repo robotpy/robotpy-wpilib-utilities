@@ -5,7 +5,7 @@ import logging
 
 import wpilib
 
-from robotpy_ext.misc import PreciseDelay
+from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.autonomous import AutonomousModeSelector
 
 from robotpy_ext.misc.orderedclass import OrderedClass
@@ -295,7 +295,7 @@ class MagicRobot(wpilib.SampleRobot,
         ds_attached = None
         wpilib.LiveWindow.setEnabled(False)
 
-        delay = PreciseDelay(self.control_loop_wait_time)
+        delay = NotifierDelay(self.control_loop_wait_time)
 
         self._on_mode_disable_components()
         try:
@@ -318,6 +318,8 @@ class MagicRobot(wpilib.SampleRobot,
             self.robotPeriodic()
             delay.wait()
 
+        delay.free()
+
     def operatorControl(self):
         """
             This function is called in teleoperated mode. You should not
@@ -333,7 +335,7 @@ class MagicRobot(wpilib.SampleRobot,
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
         wpilib.LiveWindow.setEnabled(False)
 
-        delay = PreciseDelay(self.control_loop_wait_time)
+        delay = NotifierDelay(self.control_loop_wait_time)
 
         # initialize things
         self._on_mode_enable_components()
@@ -356,6 +358,7 @@ class MagicRobot(wpilib.SampleRobot,
 
             delay.wait()
 
+        delay.free()
         self._on_mode_disable_components()
 
     def test(self):
@@ -364,6 +367,8 @@ class MagicRobot(wpilib.SampleRobot,
         self.__nt.putString('mode', 'test')
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
         wpilib.LiveWindow.setEnabled(True)
+
+        delay = NotifierDelay(self.control_loop_wait_time)
 
         try:
             self.testInit()
@@ -378,7 +383,9 @@ class MagicRobot(wpilib.SampleRobot,
 
             self._update_feedback()
             self.robotPeriodic()
-            wpilib.Timer.delay(self.control_loop_wait_time)
+            delay.wait()
+
+        delay.free()
 
     def _on_mode_enable_components(self):
         # initialize things

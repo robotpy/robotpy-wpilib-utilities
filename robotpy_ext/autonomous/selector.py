@@ -7,7 +7,7 @@ import os
 import logging
 logger = logging.getLogger('autonomous')
 
-from ..misc.precise_delay import PreciseDelay
+from ..misc.precise_delay import NotifierDelay
 
 import wpilib
 
@@ -227,7 +227,7 @@ class AutonomousModeSelector:
         # Autonomous control loop
         #
         
-        delay = PreciseDelay(control_loop_wait_time)
+        delay = NotifierDelay(control_loop_wait_time)
         
         while self.ds.isAutonomous() and self.ds.isEnabled():
  
@@ -254,6 +254,7 @@ class AutonomousModeSelector:
             on_exception(forceReport=True)
             
         logger.info("Autonomous mode ended")
+        delay.free()
         
     #
     #   Internal methods used to implement autonomous mode switching, and
