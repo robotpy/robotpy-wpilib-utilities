@@ -152,11 +152,23 @@ class MagicRobot(wpilib.SampleRobot,
             self.logger.warning("Default MagicRobot.disabledPeriodic() method... Overload me!")
             func.firstRun = False
 
+    def testInit(self):
+        """Initialization code for test mode should go here.
+
+        Users should override this method for initialization code which will be
+        called each time the robot enters disabled mode.
+        """
+        pass
+
+    def testPeriodic(self):
+        """Periodic code for test mode should go here."""
+        pass
+
     def robotPeriodic(self):
         """
             Periodic code for all modes should go here.
 
-`           Users must override this method to utilize it
+            Users must override this method to utilize it
             but it is not required.
 
             This function gets called last in each mode.
@@ -352,8 +364,18 @@ class MagicRobot(wpilib.SampleRobot,
         self.__nt.putString('mode', 'test')
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
         wpilib.LiveWindow.setEnabled(True)
+
+        try:
+            self.testInit()
+        except:
+            self.onException(forceReport=True)
         
         while self.isTest() and self.isEnabled():
+            try:
+                self.testPeriodic()
+            except:
+                self.onException()
+
             self._update_feedback()
             self.robotPeriodic()
             wpilib.Timer.delay(self.control_loop_wait_time)
