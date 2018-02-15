@@ -1,9 +1,13 @@
-
+import pyfrc.config
+import pytest
 from networktables.util import ChooserControl
 
 autonomous_seconds = 15
+_gsms = pyfrc.config.config_obj['pyfrc']['game_specific_messages']
 
-def test_all_autonomous(control, fake_time, robot):
+
+@pytest.mark.parametrize('gamedata', _gsms or [''])
+def test_all_autonomous(control, fake_time, robot, gamedata):
     '''
         This test runs all possible autonomous modes that can be selected
         by the autonomous switcher.
@@ -34,7 +38,7 @@ def test_all_autonomous(control, fake_time, robot):
                 return False
             
             self.state = 'disabled'
-            self.currentChoice =  -1
+            self.currentChoice = -1
             self.until = tm
             self.init_time = tm
             self.initialized = True
@@ -68,7 +72,7 @@ def test_all_autonomous(control, fake_time, robot):
             
             return True
     
-    
+    control.game_specific_message = gamedata
     controller = control.run_test(AutonomousTester)
     
     # Make sure they ran for the correct amount of time
