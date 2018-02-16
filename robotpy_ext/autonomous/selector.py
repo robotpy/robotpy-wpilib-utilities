@@ -226,24 +226,22 @@ class AutonomousModeSelector:
         #
         # Autonomous control loop
         #
-        
-        delay = NotifierDelay(control_loop_wait_time)
-        
-        while self.ds.isAutonomous() and self.ds.isEnabled():
- 
-            try:            
-                self._on_iteration(timer.get())
-            except:
-                on_exception()
-            
-            if isinstance(iter_fn, (list, tuple)):
-                for fn in iter_fn:
-                    fn()
-            else:
-                iter_fn()
-             
-            delay.wait()
-            
+
+        with NotifierDelay(control_loop_wait_time) as delay:
+            while self.ds.isAutonomous() and self.ds.isEnabled():
+                try:
+                    self._on_iteration(timer.get())
+                except:
+                    on_exception()
+
+                if isinstance(iter_fn, (list, tuple)):
+                    for fn in iter_fn:
+                        fn()
+                else:
+                    iter_fn()
+
+                delay.wait()
+
         #
         # Done with autonomous, finish up
         #

@@ -295,30 +295,26 @@ class MagicRobot(wpilib.SampleRobot,
         ds_attached = None
         wpilib.LiveWindow.setEnabled(False)
 
-        delay = NotifierDelay(self.control_loop_wait_time)
-
         self._on_mode_disable_components()
         try:
             self.disabledInit()
         except:
             self.onException(forceReport=True)
 
-        while self.isDisabled():
-            
-            if ds_attached != self.ds.isDSAttached():
-                ds_attached = not ds_attached
-                self.__nt.putBoolean('is_ds_attached', ds_attached)
-            
-            try:
-                self.disabledPeriodic()
-            except:
-                self.onException()
+        with NotifierDelay(self.control_loop_wait_time) as delay:
+            while self.isDisabled():
+                if ds_attached != self.ds.isDSAttached():
+                    ds_attached = not ds_attached
+                    self.__nt.putBoolean('is_ds_attached', ds_attached)
 
-            self._update_feedback()
-            self.robotPeriodic()
-            delay.wait()
+                try:
+                    self.disabledPeriodic()
+                except:
+                    self.onException()
 
-        delay.free()
+                self._update_feedback()
+                self.robotPeriodic()
+                delay.wait()
 
     def operatorControl(self):
         """
@@ -335,8 +331,6 @@ class MagicRobot(wpilib.SampleRobot,
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
         wpilib.LiveWindow.setEnabled(False)
 
-        delay = NotifierDelay(self.control_loop_wait_time)
-
         # initialize things
         self._on_mode_enable_components()
 
@@ -345,20 +339,19 @@ class MagicRobot(wpilib.SampleRobot,
         except:
             self.onException(forceReport=True)
 
-        while self.isOperatorControl() and self.isEnabled():
-            
-            try:
-                self.teleopPeriodic()
-            except:
-                self.onException()
+        with NotifierDelay(self.control_loop_wait_time) as delay:
+            while self.isOperatorControl() and self.isEnabled():
+                try:
+                    self.teleopPeriodic()
+                except:
+                    self.onException()
 
-            self._execute_components()
-            self._update_feedback()
-            self.robotPeriodic()
+                self._execute_components()
+                self._update_feedback()
+                self.robotPeriodic()
 
-            delay.wait()
+                delay.wait()
 
-        delay.free()
         self._on_mode_disable_components()
 
     def test(self):
@@ -368,24 +361,21 @@ class MagicRobot(wpilib.SampleRobot,
         self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
         wpilib.LiveWindow.setEnabled(True)
 
-        delay = NotifierDelay(self.control_loop_wait_time)
-
         try:
             self.testInit()
         except:
             self.onException(forceReport=True)
-        
-        while self.isTest() and self.isEnabled():
-            try:
-                self.testPeriodic()
-            except:
-                self.onException()
 
-            self._update_feedback()
-            self.robotPeriodic()
-            delay.wait()
+        with NotifierDelay(self.control_loop_wait_time) as delay:
+            while self.isTest() and self.isEnabled():
+                try:
+                    self.testPeriodic()
+                except:
+                    self.onException()
 
-        delay.free()
+                self._update_feedback()
+                self.robotPeriodic()
+                delay.wait()
 
     def _on_mode_enable_components(self):
         # initialize things

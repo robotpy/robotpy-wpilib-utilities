@@ -85,6 +85,13 @@ class NotifierDelay:
     This will delay so that the next invocation of your loop happens at
     precisely the same period, assuming that your loop does not take longer
     than the specified period.
+
+    Example::
+
+        with NotifierDelay(0.02) as delay:
+            while something:
+                # do things here
+                delay.wait()
     """
 
     def __init__(self, delay_period: float) -> None:
@@ -100,15 +107,26 @@ class NotifierDelay:
 
         wpilib.Resource._add_global_resource(self)
 
+    def __del__(self):
+        self.free()
+
+    def __enter__(self) -> 'NotifierDelay':
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.free()
+
     def free(self) -> None:
         """Clean up the notifier.
 
-        Call this method once you are done using this object.
         Do not use this object after this method is called.
         """
         handle = self._notifier
+        if handle is None:
+            return
         hal.stopNotifier(handle)
         hal.cleanNotifier(handle)
+        self._notifier = None
 
     def wait(self) -> None:
         """Wait until the delay period has passed."""
