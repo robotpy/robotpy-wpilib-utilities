@@ -128,7 +128,7 @@ def test_sm(wpitime):
     assert sm.current_state == 'first_state'
     assert sm.is_executing
     
-    sm.execute() 
+    sm.execute()
     sm.execute()
     assert not sm.is_executing
     assert sm.current_state == ''
@@ -265,7 +265,7 @@ def test_next_fn():
         def first_state(self):
             self.next_state(self.second_state)
         
-        @state    
+        @state
         def second_state(self):
             self.done()
     
@@ -284,7 +284,7 @@ def test_next_fn():
 def test_next_fn2(wpitime):
     class _TM(StateMachine):
         
-        @state    
+        @state
         def second_state(self):
             pass
         
@@ -502,3 +502,49 @@ def test_default_state_machine():
     assert sm.didDefault == True
     assert sm.defaultInit == False
     assert sm.didDone == False
+
+def test_short_timed_state(wpitime):
+    '''
+        Tests two things:
+        - A timed state that expires before it executes
+        - Ensures that the default state won't execute if the machine is always
+          executing
+    '''
+    
+    class _SM(StateMachine):
+        
+        def __init__(self):
+            self.executed = []
+
+        @default_state
+        def d(self):
+            self.executed.append('d')
+
+        @state(first=True)
+        def a(self):
+            self.executed.append('a')
+            self.next_state('b')
+
+        @timed_state(duration=.01)
+        def b(self):
+            self.executed.append('b')
+    
+    sm = _SM()
+    setup_tunables(sm, 'cname')
+    assert sm.current_state == ''
+    assert not sm.is_executing
+
+    for _ in [1, 2, 3, 4]:
+        sm.engage()
+        sm.execute()
+        assert sm.current_state == 'b'
+        
+        wpitime.now += 0.02
+        
+        sm.engage()
+        sm.execute()
+        assert sm.current_state == 'b'
+        
+        wpitime.now += 0.02
+    
+    assert sm.executed == ['a', 'b', 'a', 'b', 'a', 'b', 'a', 'b']
