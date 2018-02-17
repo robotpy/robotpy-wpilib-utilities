@@ -96,7 +96,10 @@ def timed_state(f=None, *, duration=None, next_state=None, first=False, must_fin
     '''
         If this decorator is applied to a function in an object that inherits
         from :class:`.StateMachine`, it indicates that the function
-        is a state that will run for a set amount of time unless interrupted
+        is a state that will run for a set amount of time unless interrupted.
+        
+        It is guaranteed that a timed_state will execute at least once, even if
+        it expires prior to being executed.
         
         The decorated function can have the following arguments in any order:
         
@@ -170,8 +173,10 @@ def default_state(f=None):
         If this decorator is applied to a method in an object that inherits
         from :class:`.StateMachine`, it indicates that the method
         is a default state; that is, if no other states are executing, this
-        state will execute. There can only be a single default state in a
-        StateMachine object.
+        state will execute. If the state machine is always executing, the
+        default state will never execute.
+        
+        There can only be a single default state in a StateMachine object.
         
         The decorated function can have the following arguments in any order:
         
@@ -346,7 +351,7 @@ class StateMachine(metaclass=OrderedClass):
                 raise InvalidWrapperError(errmsg)
             
             # Can't define states that are named the same as things in the
-            # base class, will cause issues. Catch it early. 
+            # base class, will cause issues. Catch it early.
             if hasattr(StateMachine, state.name):
                 raise InvalidStateName("cannot have a state function named '%s'" % state.name)
 
@@ -514,21 +519,21 @@ class StateMachine(metaclass=OrderedClass):
         new_state_start = tm
         
         # determine if the time has passed to execute the next state
-        # -> intentionally comes first, 
-        if state is not None and state.expires < tm:
-
-            previous_state = state
+        # -> intentionally comes first
+        if state is not None and state.ran and state.expires < tm:
+            new_state_start = state.expires
 
             if state.next_state is None:
-                state = None
+                # If the state expires and it's the last state, if the machine
+                # is still engaged then it should cycle back to the beginning
+                if self.__should_engage:
+                    self.next_state(self.__first)
+                    state = self.__state
+                else:
+                    state = None
             else:
                 self.next_state(state.next_state)
-                new_state_start = state.expires
                 state = self.__state
-
-            # Reset the expired time to prevent the state from expiring
-            # immediately if it's ran a second time
-            previous_state.expires = 0xffffffff
         
         # deactivate the current state unless engage was called or
         # must_finish was set
@@ -583,7 +588,7 @@ class AutonomousStateMachine(StateMachine):
         self.__engaged = True
     
     def on_iteration(self, tm):
-        # TODO, remove the on_iteration function in 2017? 
+        # TODO, remove the on_iteration function in 2017?
         
         # Only engage the state machine until its execution finishes, otherwise
         # it will just keep repeating
