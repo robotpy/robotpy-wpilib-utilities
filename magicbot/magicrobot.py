@@ -18,6 +18,9 @@ from .magic_reset import will_reset_to
 
 __all__ = ['MagicRobot']
 
+class MagicInjectError(ValueError):
+    pass
+
 
 class MagicRobot(wpilib.SampleRobot,
                  metaclass=OrderedClass):
@@ -529,7 +532,7 @@ class MagicRobot(wpilib.SampleRobot,
                 # If the value given to the variable is an instance of a type and isn't a property
                 # raise an error. No double declaring types, e.g foo: type = type
                 if isinstance(attr, type) and not isinstance(attr, property):
-                    raise ValueError("%s.%s has two type declarations" % (component_type.__name__, n))
+                    raise MagicInjectError("%s.%s has two type declarations" % (component_type.__name__, n))
                 # Otherwise, skip this set class variable
                 continue
 
@@ -568,12 +571,12 @@ class MagicRobot(wpilib.SampleRobot,
 
         # Raise error if injectable syntax used but no injectable was found.
         if injectable is None:
-            raise ValueError("Component %s has variable %s (type %s), which is not present in %s" %
+            raise MagicInjectError("Component %s has variable %s (type %s), which is not present in %s" %
                              (cname, n, inject_type, self))
         
         # Raise error if injectable declared with type different than the initial type
         if not isinstance(injectable, inject_type):
-            raise ValueError("Component %s variable %s in %s are not the same types! (Got %s, expected %s)" %
+            raise MagicInjectError("Component %s variable %s in %s are not the same types! (Got %s, expected %s)" %
                              (cname, n, self, type(injectable), inject_type))
         # Perform injection
         setattr(component, n, injectable)
