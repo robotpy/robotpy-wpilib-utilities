@@ -479,6 +479,9 @@ class StateMachine(metaclass=OrderedClass):
     def done(self):
         '''Call this function to end execution of the state machine.
         
+        This function will always be called when a state machine ends. Even if
+        the engage function is called repeatedly, done() will be called.
+        
         .. note:: If you wish to do something each time execution ceases,
                   override this function (but be sure to call
                   ``super().done()``!)
@@ -512,6 +515,7 @@ class StateMachine(metaclass=OrderedClass):
         # tm is the number of seconds that the state machine has been executing
         tm = now - self.__start
         state = self.__state
+        done_called = False
         
         # we adjust this so that if we have states chained together,
         # then the total time it runs is the amount of time of the
@@ -526,6 +530,10 @@ class StateMachine(metaclass=OrderedClass):
             if state.next_state is None:
                 # If the state expires and it's the last state, if the machine
                 # is still engaged then it should cycle back to the beginning
+                # ... but we should call done() first
+                done_called = True
+                self.done()
+                
                 if self.__should_engage:
                     self.next_state(self.__first)
                     state = self.__state
@@ -561,7 +569,7 @@ class StateMachine(metaclass=OrderedClass):
             
             # execute the state function, passing it the arguments
             state.run(self, tm, tm - state.start_time, initial_call)
-        else:
+        elif not done_called:
             # or clear the state
             self.done()
         
@@ -601,3 +609,8 @@ class AutonomousStateMachine(StateMachine):
             self.engage()
             self.execute()
             self.__engaged = self.is_executing
+    
+    def done(self):
+        super().done()
+        self._StateMachine__should_engage = False
+        self.__engaged = False

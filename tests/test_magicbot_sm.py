@@ -259,6 +259,43 @@ def test_autonomous_sm():
         sm.on_iteration(None)
         assert not sm.is_executing
     
+    assert sm.i == 6
+
+def test_autonomous_sm_end_timed_state(wpitime):
+    class _TM(AutonomousStateMachine):
+        
+        i = 0
+        j = 0
+        VERBOSE_LOGGING = False
+        
+        @state(first=True)
+        def something(self):
+            self.i += 1
+            if self.i == 3:
+                self.next_state('timed')
+        
+        @timed_state(duration=1)
+        def timed(self):
+            self.j += 1
+        
+    sm = _TM()
+    setup_tunables(sm, 'cname')
+    
+    sm.on_enable()
+    
+    for _ in range(5):
+        wpitime.now += 0.7
+        sm.on_iteration(None)
+        assert sm.is_executing
+    
+    for _ in range(5):
+        wpitime.now += 0.7
+        sm.on_iteration(None)
+        assert not sm.is_executing
+    
+    assert sm.i == 3
+    assert sm.j == 2
+
 def test_next_fn():
     class _TM(StateMachine):
         @state(first=True)
@@ -528,6 +565,10 @@ def test_short_timed_state(wpitime):
         @timed_state(duration=.01)
         def b(self):
             self.executed.append('b')
+            
+        def done(self):
+            super().done()
+            self.executed.append('d')
     
     sm = _SM()
     setup_tunables(sm, 'cname')
@@ -547,4 +588,4 @@ def test_short_timed_state(wpitime):
         
         wpitime.now += 0.02
     
-    assert sm.executed == ['a', 'b', 'a', 'b', 'a', 'b', 'a', 'b']
+    assert sm.executed == ['a', 'b', 'd', 'a', 'b', 'd', 'a', 'b', 'd', 'a', 'b']
