@@ -77,6 +77,12 @@ class PreciseDelay:
         # - TODO: should we just always use this in simulated mode?
         
         wpilib.Timer.delay(self.delay_period)
+    
+    def __enter__(self) -> 'PreciseDelay':
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
 
 
 class NotifierDelay:
@@ -136,3 +142,6 @@ class NotifierDelay:
 
     def _update_alarm(self) -> None:
         hal.updateNotifierAlarm(self._notifier, self._expiry_time)
+
+# HACK: NotifierDelay is broken, use PreciseDelay for the moment
+NotifierDelay = PreciseDelay
