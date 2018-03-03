@@ -142,6 +142,3 @@ class NotifierDelay:
 
     def _update_alarm(self) -> None:
         hal.updateNotifierAlarm(self._notifier, self._expiry_time)
-
-# HACK: NotifierDelay is broken, use PreciseDelay for the moment
-NotifierDelay = PreciseDelay
