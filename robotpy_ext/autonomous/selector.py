@@ -252,8 +252,7 @@ class AutonomousModeSelector:
             on_exception(forceReport=True)
             
         logger.info("Autonomous mode ended")
-        delay.free()
-        
+
     #
     #   Internal methods used to implement autonomous mode switching, and
     #   are called automatically
