@@ -44,7 +44,7 @@ class MagicComponent:
                       by the time this function is called.   
         """
     
-    def on_enabled(self):
+    def on_enable(self):
         """
             Called when the robot enters autonomous or teleoperated mode. This
             function should initialize your component to a "safe" state so
@@ -56,7 +56,7 @@ class MagicComponent:
         """
         
         
-    def on_disabled(self):
+    def on_disable(self):
         """
             Called when the robot leaves autonomous or teleoperated
         """
