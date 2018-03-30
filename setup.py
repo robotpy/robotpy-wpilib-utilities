@@ -40,8 +40,6 @@ else:
 with open(join(setup_dir, 'README.rst'), 'r') as readme_file:
     long_description = readme_file.read()
 
-install_requires = ['wpilib>=2018.1.5,<2019.0.0', 'pynetworktables>=2018.1.0']
-
 setup(
     name='robotpy-wpilib-utilities',
     version=__version__,
@@ -51,7 +49,7 @@ setup(
     author_email='robotpy@googlegroups.com',
     url='https://github.com/robotpy/robotpy-wpilib-utilities',
     keywords='frc first robotics',
-    install_requires=install_requires if not os.environ.get('ROBOTPY_NO_DEPS') else None,
+    install_requires=['pynetworktables>=2018.1.0', 'wpilib>=2018.1.5,<2019.0.0'],
     packages=find_packages(),
     license='BSD',
     classifiers=[
