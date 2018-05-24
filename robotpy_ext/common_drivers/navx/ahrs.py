@@ -10,7 +10,7 @@
 #----------------------------------------------------------------------------
 
 import threading
-
+import inspect
 import wpilib
 from wpilib.interfaces import PIDSource
 
@@ -275,6 +275,8 @@ class AHRS(wpilib.SensorBase):
         subtracted from subsequent yaw values reported by
         the getYaw() method.
         """
+        if 'disabled' not in inspect.stack()[1][3]:
+            logging.warning('You may be calling reset from a non-disabled method. This causes a 5 second delay')
         if self._isBoardYawResetSupported():
             self.io.zeroYaw()
             # Notification is deferred until action is complete.
@@ -339,8 +341,7 @@ class AHRS(wpilib.SensorBase):
         an actual rate of 66Hz (200 / (200 / 58), using integer
         math.
         
-        :returns: Returns the current actual update rate in Hz
-        (cycles per second).
+        :returns: Returns the current actual update rate in Hz (cycles per second).
         """
         actual_update_rate = self._getActualUpdateRateInternal(self.getRequestedUpdateRate())
         return int(actual_update_rate & 0xFF)
@@ -361,8 +362,7 @@ class AHRS(wpilib.SensorBase):
         To determine the actual update rate, use the
         {@link #getActualUpdateRate()} method.
         
-        :returns: Returns the requested update rate in Hz
-        (cycles per second).
+        :returns: Returns the requested update rate in Hz  (cycles per second).
         """
         return int(self.update_rate_hz & 0xFF)
     
@@ -826,6 +826,8 @@ class AHRS(wpilib.SensorBase):
         there is significant drift in the gyro and it needs to be recalibrated
         after it has been running.
         """
+        if 'disabled' not in inspect.stack()[1][3]:
+            logging.warning('You may be calling reset from a non-disabled method. This causes a 5 second delay')
         self.zeroYaw()
     
     def getRawGyroX(self):
