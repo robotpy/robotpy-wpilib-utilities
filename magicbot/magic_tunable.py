@@ -182,8 +182,8 @@ def feedback(f=None, *, key: str = None):
         raise ValueError("{} may not take arguments other than 'self' (must be a simple getter method)".format(name))
 
     # Set attributes to be checked during injection
-    f.__feedback__ = True
-    f.__key__ = key
+    f._magic_feedback = True
+    f._magic_feedback_key = key
 
     return f
 
@@ -200,18 +200,19 @@ def collect_feedbacks(component, cname: str, prefix='components'):
     else:
         prefix = '/%s/%s' % (prefix, cname)
 
+    nt = NetworkTables.getTable(prefix)
     feedbacks = []
 
     for name, method in inspect.getmembers(component, inspect.ismethod):
-        if getattr(method, '__feedback__', False):
-            key = method.__key__
+        if getattr(method, '_magic_feedback', False):
+            key = method._magic_feedback_key
             if key is None:
                 if name.startswith('get_'):
                     key = name[4:]
                 else:
                     key = name
 
-            entry = NetworkTables.getEntry('%s/%s' % (prefix, key))
+            entry = nt.getEntry(key)
             feedbacks.append((method, entry))
 
     return feedbacks
