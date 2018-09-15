@@ -498,6 +498,12 @@ class MagicRobot(wpilib.SampleRobot,
             if hasattr(component, 'setup'):
                 component.setup()
 
+        # Call setup functions for autonomous modes
+        for mode in self._automodes.modes.values():
+            if hasattr(component, 'setup'):
+                mode.setup()
+
+
     def _create_component(self, name, ctyp):
         # Create instance, set it on self
         component = ctyp()
