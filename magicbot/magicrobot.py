@@ -503,7 +503,6 @@ class MagicRobot(wpilib.SampleRobot,
             if hasattr(mode, 'setup'):
                 mode.setup()
 
-
     def _create_component(self, name, ctyp):
         # Create instance, set it on self
         component = ctyp()
