@@ -500,7 +500,7 @@ class MagicRobot(wpilib.SampleRobot,
 
         # Call setup functions for autonomous modes
         for mode in self._automodes.modes.values():
-            if hasattr(component, 'setup'):
+            if hasattr(mode, 'setup'):
                 mode.setup()
 
 
