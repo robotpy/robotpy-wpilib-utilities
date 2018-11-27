@@ -19,6 +19,7 @@ class Toggle:
         if foo.off:
             offToggle()
     """
+
     class _SteadyDebounce:
         """
             Similar to ButtonDebouncer, but the output stays steady for
@@ -43,7 +44,9 @@ class Toggle:
             self.button = button
 
             self.debounce_period = float(period)
-            self.latest = - self.debounce_period # Negative latest prevents get from returning true until joystick is presed for the first time
+            self.latest = (
+                -self.debounce_period
+            )  # Negative latest prevents get from returning true until joystick is presed for the first time
             self.enabled = False
 
         def get(self):
@@ -62,7 +65,9 @@ class Toggle:
             else:
                 return False
 
-    def __init__(self, joystick: wpilib.Joystick, button: int, debounce_period: float=None):
+    def __init__(
+        self, joystick: wpilib.Joystick, button: int, debounce_period: float = None
+    ):
         """
         :param joystick: :class:`wpilib.Joystick` that contains the button to toggle
         :param button: Number of button that will act as toggle. Same value used in `getRawButton()`
@@ -70,7 +75,9 @@ class Toggle:
         """
 
         if debounce_period is not None:
-            self.joystickget = Toggle._SteadyDebounce(joystick, button, debounce_period).get
+            self.joystickget = Toggle._SteadyDebounce(
+                joystick, button, debounce_period
+            ).get
         else:
             self.joystick = joystick
             self.joystickget = partial(self.joystick.getRawButton, button)
@@ -89,7 +96,7 @@ class Toggle:
         if current_state and not self.released:
             self.released = True
             self.toggle = not self.toggle
-            self.state = not self.state # Toggles between 1 and 0.
+            self.state = not self.state  # Toggles between 1 and 0.
 
         elif not current_state and self.released:
             self.released = False

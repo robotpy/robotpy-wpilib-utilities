@@ -19,7 +19,7 @@ def run_command(cmd):
 
 class CounterCommand(InstantCommand):
     def __init__(self):
-        super().__init__('Counter')
+        super().__init__("Counter")
         self.counter = 0
 
     def initialize(self):
@@ -34,7 +34,7 @@ def test_if():
         def __init__(self):
             nonlocal cmd1, cmd2
 
-            super().__init__('Test IF')
+            super().__init__("Test IF")
             self.setRunWhenDisabled(True)
 
             @fc.IF(lambda: False)
@@ -44,7 +44,6 @@ def test_if():
             @fc.IF(lambda: True)
             def increment_cmd2(self):
                 self.addSequential(cmd2)
-
 
     cmd = IfCommand()
 
@@ -62,7 +61,7 @@ def test_elif():
         def __init__(self):
             nonlocal cmd1, cmd2, cmd3
 
-            super().__init__('Test ELIF')
+            super().__init__("Test ELIF")
             self.setRunWhenDisabled(True)
 
             @fc.IF(lambda: False)
@@ -94,7 +93,7 @@ def test_else():
         def __init__(self):
             nonlocal cmd1, cmd2, cmd3
 
-            super().__init__('Test ELSE')
+            super().__init__("Test ELSE")
             self.setRunWhenDisabled(True)
 
             @fc.IF(lambda: False)
@@ -104,7 +103,6 @@ def test_else():
             @fc.ELIF(lambda: False)
             def increment_cmd2(self):
                 self.addSequential(cmd2)
-
 
             @fc.ELSE
             def increment_cmd3(self):
@@ -125,10 +123,11 @@ def test_while():
         def __init__(self):
             nonlocal cmd1
 
-            super().__init__('Test WHILE')
+            super().__init__("Test WHILE")
             self.setRunWhenDisabled(True)
 
             x = 5
+
             def do_loop():
                 nonlocal x
 
@@ -154,10 +153,11 @@ def test_break():
         def __init__(self):
             nonlocal cmd1, cmd2
 
-            super().__init__('Test BREAK')
+            super().__init__("Test BREAK")
             self.setRunWhenDisabled(True)
 
             x = 5
+
             def do_loop():
                 nonlocal x
 
@@ -194,7 +194,7 @@ def test_return():
         def __init__(self):
             nonlocal cmd1, cmd2, cmd3, cmd4, cmd5, cmd6
 
-            super().__init__('Test RETURN')
+            super().__init__("Test RETURN")
             self.setRunWhenDisabled(True)
 
             self.addSequential(cmd1)
@@ -202,14 +202,19 @@ def test_return():
             @fc.IF(lambda: True)
             def increment_cmd2(self):
                 self.addSequential(cmd2)
+
                 @fc.IF(lambda: True)
                 def increment_cmd3(self):
                     self.addSequential(cmd3)
+
                     @fc.IF(lambda: True)
                     def do_return(self):
                         fc.RETURN()
+
                     self.addSequential(cmd4)
+
                 self.addSequential(cmd5)
+
             self.addSequential(cmd6)
 
     cmd = ReturnCommand()
@@ -232,10 +237,11 @@ def test_break2():
         def __init__(self):
             nonlocal cmd1, cmd2, cmd3
 
-            super().__init__('Test BREAK 2')
+            super().__init__("Test BREAK 2")
             self.setRunWhenDisabled(True)
 
             x = 5
+
             def do_loop():
                 nonlocal x
 
@@ -250,6 +256,7 @@ def test_break2():
             @fc.WHILE(lambda: True)
             def loop_forever(self):
                 self.addSequential(cmd1)
+
                 @fc.WHILE(do_loop)
                 def count_to_four(self):
                     self.addSequential(cmd2)
@@ -278,7 +285,7 @@ def test_contained_return():
         def __init__(self):
             nonlocal cmd2, cmd3
 
-            super().__init__('Test RETURN')
+            super().__init__("Test RETURN")
             self.setRunWhenDisabled(True)
 
             self.addSequential(cmd2)
@@ -289,13 +296,12 @@ def test_contained_return():
         def __init__(self):
             nonlocal cmd1, cmd4
 
-            super().__init__('Test Contained RETURN')
+            super().__init__("Test Contained RETURN")
             self.setRunWhenDisabled(True)
 
             self.addSequential(cmd1)
             self.addSequential(ReturnCommand())
             self.addSequential(cmd4)
-
 
     cmd = ContainerCommand()
 
@@ -307,10 +313,9 @@ def test_contained_return():
 
 
 def test_safety():
-
     class ElifBeforeIfCommand(CommandGroup):
         def __init__(self):
-            super().__init__('Test ELIF before IF')
+            super().__init__("Test ELIF before IF")
 
             @fc.ELIF(lambda: True)
             def do_nothing(self):
@@ -321,7 +326,7 @@ def test_safety():
 
     class ElseBeforeIfCommand(CommandGroup):
         def __init__(self):
-            super().__init__('Test ELSE before IF')
+            super().__init__("Test ELSE before IF")
 
             @fc.ELSE
             def do_nothing(self):
@@ -332,7 +337,7 @@ def test_safety():
 
     class BreakTooBigCommand(CommandGroup):
         def __init__(self):
-            super().__init__('Test BREAK too large')
+            super().__init__("Test BREAK too large")
             self.setRunWhenDisabled(True)
 
             @fc.WHILE(lambda: True)
@@ -346,7 +351,7 @@ def test_safety():
 
     class BreakWithoutLoop(CommandGroup):
         def __init__(self):
-            super().__init__('Test BREAK outside loop')
+            super().__init__("Test BREAK outside loop")
             self.setRunWhenDisabled(True)
 
             fc.BREAK()
@@ -356,10 +361,11 @@ def test_safety():
 
     class BreakAfterLoop(CommandGroup):
         def __init__(self):
-            super().__init__('Test BREAK after loop')
+            super().__init__("Test BREAK after loop")
             self.setRunWhenDisabled(True)
 
             x = 5
+
             def do_loop():
                 nonlocal x
 

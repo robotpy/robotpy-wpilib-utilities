@@ -8,11 +8,13 @@ from ntcore.value import Value
 class _TunableProperty(property):
     pass
 
+
 class _AutosendProperty(_TunableProperty):
     pass
 
+
 def tunable(default, *, writeDefault=True, subtable=None, doc=None):
-    '''
+    """
         This allows you to define simple properties that allow you to easily
         communicate with other programs via NetworkTables.
     
@@ -52,37 +54,37 @@ def tunable(default, *, writeDefault=True, subtable=None, doc=None):
                   you will want to use setup_tunables to set the object up.
                   In normal usage, MagicRobot does this for you, so you don't
                   have to do anything special.
-    '''
-    
+    """
+
     # the way this works is we use a special class to indicate that it
     # is a tunable, and MagicRobot adds _ntattr and _global_table variables
     # to the class property
-    
+
     # The tricky bit is that you need to do late binding on these, because
     # the networktables key is not known when the object is created. Instead,
     # the name of the key is related to the name of the variable name in the
     # robot class
-    
+
     nt = NetworkTables
     mkv = Value.getFactory(default)
-    
+
     def _get(self):
         return getattr(self, prop._ntattr).value
-    
+
     def _set(self, value):
         v = getattr(self, prop._ntattr)
         nt._api.setEntryValueById(v._local_id, mkv(value))
-        
+
     prop = _TunableProperty(fget=_get, fset=_set, doc=doc)
     prop._ntdefault = default
     prop._ntsubtable = subtable
     prop._ntwritedefault = writeDefault
-    
-    return prop 
+
+    return prop
 
 
-def setup_tunables(component, cname, prefix='components'):
-    '''
+def setup_tunables(component, cname, prefix="components"):
+    """
         Connects the tunables on an object to NetworkTables.
 
         :param component:   Component object
@@ -93,33 +95,33 @@ def setup_tunables(component, cname, prefix='components'):
     
         .. note:: This is not needed in normal use, only useful
                   for testing
-    '''
-    
+    """
+
     cls = component.__class__
 
     if prefix is None:
-        prefix = '/%s' % cname
+        prefix = "/%s" % cname
     else:
-        prefix = '/%s/%s' % (prefix, cname)
-    
+        prefix = "/%s/%s" % (prefix, cname)
+
     for n in dir(cls):
-        if n.startswith('_'):
+        if n.startswith("_"):
             continue
-    
+
         prop = getattr(cls, n)
         if not isinstance(prop, _TunableProperty):
             continue
-        
+
         if prop._ntsubtable:
-            key = '%s/%s/%s' % (prefix, prop._ntsubtable, n)
+            key = "%s/%s/%s" % (prefix, prop._ntsubtable, n)
         else:
-            key = '%s/%s' % (prefix, n)
-        
-        ntattr = '_Tunable__%s' % n
-        
-        ntvalue = NetworkTables.getGlobalAutoUpdateValue(key,
-                                                         prop._ntdefault,
-                                                         prop._ntwritedefault)
+            key = "%s/%s" % (prefix, n)
+
+        ntattr = "_Tunable__%s" % n
+
+        ntvalue = NetworkTables.getGlobalAutoUpdateValue(
+            key, prop._ntdefault, prop._ntwritedefault
+        )
         # double indirection
         setattr(component, ntattr, ntvalue)
         prop._ntattr = ntattr
@@ -174,12 +176,18 @@ def feedback(f=None, *, key: str = None):
         return functools.partial(feedback, key=key)
 
     if not callable(f):
-        raise TypeError('Illegal use of feedback decorator on non-callable {!r}'.format(f))
+        raise TypeError(
+            "Illegal use of feedback decorator on non-callable {!r}".format(f)
+        )
     sig = inspect.signature(f)
     name = f.__name__
 
     if len(sig.parameters) != 1:
-        raise ValueError("{} may not take arguments other than 'self' (must be a simple getter method)".format(name))
+        raise ValueError(
+            "{} may not take arguments other than 'self' (must be a simple getter method)".format(
+                name
+            )
+        )
 
     # Set attributes to be checked during injection
     f._magic_feedback = True
@@ -188,7 +196,7 @@ def feedback(f=None, *, key: str = None):
     return f
 
 
-def collect_feedbacks(component, cname: str, prefix='components'):
+def collect_feedbacks(component, cname: str, prefix="components"):
     """
     Finds all methods decorated with :func:`feedback` on an object
     and returns a list of 2-tuples (method, NetworkTables entry).
@@ -196,18 +204,18 @@ def collect_feedbacks(component, cname: str, prefix='components'):
     .. note:: This isn't useful for normal use.
     """
     if prefix is None:
-        prefix = '/%s' % cname
+        prefix = "/%s" % cname
     else:
-        prefix = '/%s/%s' % (prefix, cname)
+        prefix = "/%s/%s" % (prefix, cname)
 
     nt = NetworkTables.getTable(prefix)
     feedbacks = []
 
     for name, method in inspect.getmembers(component, inspect.ismethod):
-        if getattr(method, '_magic_feedback', False):
+        if getattr(method, "_magic_feedback", False):
             key = method._magic_feedback_key
             if key is None:
-                if name.startswith('get_'):
+                if name.startswith("get_"):
                     key = name[4:]
                 else:
                     key = name

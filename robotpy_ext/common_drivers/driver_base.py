@@ -15,4 +15,8 @@ class DriverBase(object):
         Constructor for DriverBase, all this does is print a message to console if the driver has not been verified yet.
         """
         if not self.verified:
-            print("Warning, device driver {} has not been verified yet, please use with caution!".format(self.__class__.__name__))
+            print(
+                "Warning, device driver {} has not been verified yet, please use with caution!".format(
+                    self.__class__.__name__
+                )
+            )

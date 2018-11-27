@@ -9,12 +9,14 @@ from wpilib import Timer
 
 class FPGATimedEventLoop(SelectorEventLoop):
     """An asyncio event loop that uses wpilib time rather than python time"""
+
     def time(self):
         return Timer.getFPGATimestamp()
 
 
 class FPGATimedEventLoopPolicy(AbstractEventLoopPolicy):
     """An asyncio event loop policy that uses FPGATimedEventLoop"""
+
     _loop_factory = FPGATimedEventLoop
 
 
