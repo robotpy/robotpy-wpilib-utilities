@@ -1,4 +1,3 @@
-
 # Autonomous mode switcher
 from .selector import AutonomousModeSelector
 

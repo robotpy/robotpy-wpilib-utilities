@@ -1,11 +1,10 @@
-
 import hal
 import time
 import wpilib
 
 
 class PreciseDelay:
-    '''
+    """
         Used to synchronize a timing loop. Will delay precisely so that
         the next invocation of your loop happens at the same period, as long
         as your code does not run longer than the length of the delay.
@@ -19,66 +18,66 @@ class PreciseDelay:
             while something:
                 # do things here
                 delay.wait()
-    '''
-    
+    """
+
     def __init__(self, delay_period):
-        '''
+        """
             :param delay_period: The amount of time (in seconds) to do a delay
             :type delay_period: float
-        '''
-        
+        """
+
         # The WPILib sleep/etc functions are slightly less stable as
         # they have more overhead, so only use them in simulation mode
         if hal.HALIsSimulation():
-            
+
             self.delay = wpilib.Timer.delay
             self.get_now = wpilib.Timer.getFPGATimestamp
-            
+
             # Test to see if we're in a unit test, and switch the wait function
             # to run more efficiently -- otherwise full tests are dog slow
             try:
                 import pyfrc.config
-                if pyfrc.config.mode in ('test', 'upload'):
+
+                if pyfrc.config.mode in ("test", "upload"):
                     self.wait = self._wait_unit_tests
             except:
                 pass
-            
-            
+
         else:
             self.delay = time.sleep
             self.get_now = time.monotonic
-        
+
         self.delay_period = float(delay_period)
         if self.delay_period < 0.001:
             raise ValueError("You probably don't want to delay less than 1ms!")
-        
+
         self.next_delay = self.get_now() + self.delay_period
-    
+
     def wait(self):
-        '''Waits until the delay period has passed'''
-        
+        """Waits until the delay period has passed"""
+
         # optimization -- avoid local lookups
         delay = self.delay
         get_now = self.get_now
         next_delay = self.next_delay
-        
+
         while True:
             # we must *always* yield here, so other things can run
             delay(0.0002)
-            
+
             if next_delay < get_now():
                 break
-        
+
         self.next_delay += self.delay_period
 
     def _wait_unit_tests(self):
-        
+
         # Not optimized -- just need the unit tests to run fast
         # - TODO: should we just always use this in simulated mode?
-        
+
         wpilib.Timer.delay(self.delay_period)
-    
-    def __enter__(self) -> 'PreciseDelay':
+
+    def __enter__(self) -> "PreciseDelay":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -116,7 +115,7 @@ class NotifierDelay:
     def __del__(self):
         self.free()
 
-    def __enter__(self) -> 'NotifierDelay':
+    def __enter__(self) -> "NotifierDelay":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

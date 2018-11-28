@@ -1,6 +1,5 @@
-
 class will_reset_to:
-    '''
+    """
         This marker indicates that this variable on a component will
         be reset to a default value after each time that execute is
         called.
@@ -23,7 +22,7 @@ class will_reset_to:
         
         
         .. note:: This will only work for MagicRobot components
-    '''
-    
+    """
+
     def __init__(self, default):
         self.default = default

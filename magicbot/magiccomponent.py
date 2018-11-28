@@ -1,5 +1,3 @@
-
-
 class MagicComponent:
     """
         To automagically retrieve variables defined in your base robot
@@ -28,7 +26,7 @@ class MagicComponent:
         .. note:: You don't need to inherit from ``MagicComponent``, it is only
                   provided for documentation's sake
     """
-    
+
     def setup(self):
         """
             This function is called after ``createObjects`` has been called in
@@ -43,7 +41,7 @@ class MagicComponent:
                       constructor is called. However, they will be initialized
                       by the time this function is called.   
         """
-    
+
     def on_enable(self):
         """
             Called when the robot enters autonomous or teleoperated mode. This
@@ -54,16 +52,13 @@ class MagicComponent:
                       function for autonomous and teleoperated modes. This is
                       intentional, as they should be the same.
         """
-        
-        
+
     def on_disable(self):
         """
             Called when the robot leaves autonomous or teleoperated
         """
-    
-    
+
     def execute(self):
         """
             This function is called at the end of the control loop
         """
-    

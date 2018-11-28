@@ -1,4 +1,3 @@
-
 import contextlib
 import inspect
 import logging
@@ -16,14 +15,14 @@ from networktables import NetworkTables
 from .magic_tunable import setup_tunables, _TunableProperty, collect_feedbacks
 from .magic_reset import will_reset_to
 
-__all__ = ['MagicRobot']
+__all__ = ["MagicRobot"]
+
 
 class MagicInjectError(ValueError):
     pass
 
 
-class MagicRobot(wpilib.SampleRobot,
-                 metaclass=OrderedClass):
+class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
     """
         Robots that use the MagicBot framework should use this as their
         base robot class. If you use this as your base, you must
@@ -57,9 +56,7 @@ class MagicRobot(wpilib.SampleRobot,
             .. warning:: Internal API, don't override; use :meth:`createObjects` instead
         """
 
-        self._exclude_from_injection = [
-            'logger', 'members'
-        ]
+        self._exclude_from_injection = ["logger", "members"]
 
         self.__last_error_report = -10
 
@@ -71,14 +68,14 @@ class MagicRobot(wpilib.SampleRobot,
         self.createObjects()
 
         # Load autonomous modes
-        self._automodes = AutonomousModeSelector('autonomous')
+        self._automodes = AutonomousModeSelector("autonomous")
 
         # Next, create the robot components and wire them together
         self._create_components()
-        
-        self.__nt = NetworkTables.getTable('/robot')
-        self.__nt.putBoolean('is_simulation', self.isSimulation())
-        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+
+        self.__nt = NetworkTables.getTable("/robot")
+        self.__nt.putBoolean("is_simulation", self.isSimulation())
+        self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
 
     def createObjects(self):
         """
@@ -125,7 +122,9 @@ class MagicRobot(wpilib.SampleRobot,
         """
         func = self.teleopPeriodic.__func__
         if not hasattr(func, "firstRun"):
-            self.logger.warning("Default MagicRobot.teleopPeriodic() method... Overload me!")
+            self.logger.warning(
+                "Default MagicRobot.teleopPeriodic() method... Overload me!"
+            )
             func.firstRun = False
 
     def disabledInit(self):
@@ -152,7 +151,9 @@ class MagicRobot(wpilib.SampleRobot,
         """
         func = self.disabledPeriodic.__func__
         if not hasattr(func, "firstRun"):
-            self.logger.warning("Default MagicRobot.disabledPeriodic() method... Overload me!")
+            self.logger.warning(
+                "Default MagicRobot.disabledPeriodic() method... Overload me!"
+            )
             func.firstRun = False
 
     def testInit(self):
@@ -184,7 +185,7 @@ class MagicRobot(wpilib.SampleRobot,
         wpilib.LiveWindow.updateValues()
 
     def onException(self, forceReport=False):
-        '''
+        """
             This function must *only* be called when an unexpected exception
             has occurred that would otherwise crash the robot code. Use this
             inside your :meth:`operatorActions` function.
@@ -214,7 +215,7 @@ class MagicRobot(wpilib.SampleRobot,
 
             :param forceReport: Always report the exception to the DS. Don't
                                 set this to True
-        '''
+        """
         # If the FMS is not attached, crash the robot program
         if not self.ds.isFMSAttached():
             raise
@@ -224,10 +225,13 @@ class MagicRobot(wpilib.SampleRobot,
         now = wpilib.Timer.getFPGATimestamp()
 
         try:
-            if forceReport or (now - self.__last_error_report) > self.error_report_interval:
+            if (
+                forceReport
+                or (now - self.__last_error_report) > self.error_report_interval
+            ):
                 wpilib.DriverStation.reportError("Unexpected exception", True)
         except:
-            pass    # ok, can't do anything here
+            pass  # ok, can't do anything here
 
         self.__last_error_report = now
 
@@ -271,19 +275,20 @@ class MagicRobot(wpilib.SampleRobot,
 
             .. warning:: Internal API, don't override
         """
-        
-        self.__nt.putString('mode', 'auto')
-        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+
+        self.__nt.putString("mode", "auto")
+        self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
         wpilib.LiveWindow.setEnabled(False)
 
         self._on_mode_enable_components()
 
-        self._automodes.run(self.control_loop_wait_time,
-                            (self._execute_components, self._update_feedback, self.robotPeriodic),
-                            self.onException)
+        self._automodes.run(
+            self.control_loop_wait_time,
+            (self._execute_components, self._update_feedback, self.robotPeriodic),
+            self.onException,
+        )
 
         self._on_mode_disable_components()
-
 
     def disabled(self):
         """
@@ -293,8 +298,8 @@ class MagicRobot(wpilib.SampleRobot,
 
             .. warning:: Internal API, don't override
         """
-        
-        self.__nt.putString('mode', 'disabled')
+
+        self.__nt.putString("mode", "disabled")
         ds_attached = None
         wpilib.LiveWindow.setEnabled(False)
 
@@ -308,7 +313,7 @@ class MagicRobot(wpilib.SampleRobot,
             while self.isDisabled():
                 if ds_attached != self.ds.isDSAttached():
                     ds_attached = not ds_attached
-                    self.__nt.putBoolean('is_ds_attached', ds_attached)
+                    self.__nt.putBoolean("is_ds_attached", ds_attached)
 
                 try:
                     self.disabledPeriodic()
@@ -327,11 +332,11 @@ class MagicRobot(wpilib.SampleRobot,
 
             .. warning:: Internal API, don't override
         """
-        
-        self.__nt.putString('mode', 'teleop')
+
+        self.__nt.putString("mode", "teleop")
         # don't need to update this during teleop -- presumably will switch
         # modes when ds is no longer attached
-        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+        self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
         wpilib.LiveWindow.setEnabled(False)
 
         # initialize things
@@ -358,10 +363,10 @@ class MagicRobot(wpilib.SampleRobot,
         self._on_mode_disable_components()
 
     def test(self):
-        '''Called when the robot is in test mode'''
-        
-        self.__nt.putString('mode', 'test')
-        self.__nt.putBoolean('is_ds_attached', self.ds.isDSAttached())
+        """Called when the robot is in test mode"""
+
+        self.__nt.putString("mode", "test")
+        self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
         wpilib.LiveWindow.setEnabled(True)
 
         try:
@@ -383,7 +388,7 @@ class MagicRobot(wpilib.SampleRobot,
     def _on_mode_enable_components(self):
         # initialize things
         for component in self._components:
-            if hasattr(component, 'on_enable'):
+            if hasattr(component, "on_enable"):
                 try:
                     component.on_enable()
                 except:
@@ -392,7 +397,7 @@ class MagicRobot(wpilib.SampleRobot,
     def _on_mode_disable_components(self):
         # deinitialize things
         for component in self._components:
-            if hasattr(component, 'on_disable'):
+            if hasattr(component, "on_disable"):
                 try:
                     component.on_disable()
                 except:
@@ -409,7 +414,7 @@ class MagicRobot(wpilib.SampleRobot,
         #       other components just in case
 
         components = []
-        
+
         self.logger.info("Creating magic components")
 
         # Identify all of the types, and create them
@@ -418,7 +423,7 @@ class MagicRobot(wpilib.SampleRobot,
         # - Iterate over class variables with type annotations
         for m, ctyp in get_class_annotations(cls).items():
             # Ignore private variables
-            if m.startswith('_'):
+            if m.startswith("_"):
                 continue
 
             if hasattr(cls, m):
@@ -426,7 +431,9 @@ class MagicRobot(wpilib.SampleRobot,
                 # If the value given to the variable is an instance of a type and isn't a property
                 # raise an error. No double declaring types, e.g foo: type = type
                 if isinstance(attr, type) and not isinstance(attr, property):
-                    raise ValueError("%s.%s has two type declarations" % (cls.__name__, m))
+                    raise ValueError(
+                        "%s.%s has two type declarations" % (cls.__name__, m)
+                    )
                 # Otherwise, skip this set class variable
                 continue
 
@@ -436,8 +443,10 @@ class MagicRobot(wpilib.SampleRobot,
 
             # If the type is not actually a type, give a meaningful error
             if not isinstance(ctyp, type):
-                raise TypeError('%s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?'
-                                % (cls.__name__, m, ctyp))
+                raise TypeError(
+                    "%s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?"
+                    % (cls.__name__, m, ctyp)
+                )
 
             component = self._create_component(m, ctyp)
 
@@ -446,9 +455,9 @@ class MagicRobot(wpilib.SampleRobot,
 
         # - Iterate over set class variables
         for m in self.members:
-            if m.startswith('_') or isinstance(getattr(cls, m, None), _TunableProperty):
+            if m.startswith("_") or isinstance(getattr(cls, m, None), _TunableProperty):
                 continue
-            
+
             ctyp = getattr(self, m)
             if not isinstance(ctyp, type):
                 continue
@@ -462,8 +471,11 @@ class MagicRobot(wpilib.SampleRobot,
         self._injectables = {}
 
         for n in dir(self):
-            if n.startswith('_') or n in self._exclude_from_injection or \
-               isinstance(getattr(cls, n, None), _TunableProperty):
+            if (
+                n.startswith("_")
+                or n in self._exclude_from_injection
+                or isinstance(getattr(cls, n, None), _TunableProperty)
+            ):
                 continue
 
             o = getattr(self, n)
@@ -478,29 +490,29 @@ class MagicRobot(wpilib.SampleRobot,
         # For each new component, perform magic injection
         for cname, component in components:
             self._components.append(component)
-            setup_tunables(component, cname, 'components')
-            self._feedbacks += collect_feedbacks(component, cname, 'components')
+            setup_tunables(component, cname, "components")
+            self._feedbacks += collect_feedbacks(component, cname, "components")
             self._setup_vars(cname, component)
             self._setup_reset_vars(component)
 
         # Do it for autonomous modes too
         for mode in self._automodes.modes.values():
             mode.logger = logging.getLogger(mode.MODE_NAME)
-            setup_tunables(mode, mode.MODE_NAME, 'autonomous')
+            setup_tunables(mode, mode.MODE_NAME, "autonomous")
             self._setup_vars(mode.MODE_NAME, mode)
 
         # And for self too
-        setup_tunables(self, 'robot', None)
-        self._feedbacks += collect_feedbacks(self, 'robot', None)
-            
+        setup_tunables(self, "robot", None)
+        self._feedbacks += collect_feedbacks(self, "robot", None)
+
         # Call setup functions for components
         for cname, component in components:
-            if hasattr(component, 'setup'):
+            if hasattr(component, "setup"):
                 component.setup()
 
         # Call setup functions for autonomous modes
         for mode in self._automodes.modes.values():
-            if hasattr(mode, 'setup'):
+            if hasattr(mode, "setup"):
                 mode.setup()
 
     def _create_component(self, name, ctyp):
@@ -509,8 +521,11 @@ class MagicRobot(wpilib.SampleRobot,
         setattr(self, name, component)
 
         # Ensure that mandatory methods are there
-        if not callable(getattr(component, 'execute', None)):
-            raise ValueError("Component %s (%r) must have a method named 'execute'" % (name, component))
+        if not callable(getattr(component, "execute", None)):
+            raise ValueError(
+                "Component %s (%r) must have a method named 'execute'"
+                % (name, component)
+            )
 
         # Automatically inject a logger object
         component.logger = logging.getLogger(name)
@@ -518,18 +533,18 @@ class MagicRobot(wpilib.SampleRobot,
         self.logger.info("-> %s (class: %s)", name, ctyp.__name__)
 
         return component
-    
+
     def _setup_vars(self, cname, component):
-        
+
         self.logger.debug("Injecting magic variables into %s", cname)
-        
+
         component_type = type(component)
-        
+
         # Iterate over variables with type annotations
         for n, inject_type in get_class_annotations(component_type).items():
 
             # If the variable is private ignore it
-            if n.startswith('_'):
+            if n.startswith("_"):
                 continue
 
             if hasattr(component_type, n):
@@ -537,7 +552,9 @@ class MagicRobot(wpilib.SampleRobot,
                 # If the value given to the variable is an instance of a type and isn't a property
                 # raise an error. No double declaring types, e.g foo: type = type
                 if isinstance(attr, type) and not isinstance(attr, property):
-                    raise MagicInjectError("%s.%s has two type declarations" % (component_type.__name__, n))
+                    raise MagicInjectError(
+                        "%s.%s has two type declarations" % (component_type.__name__, n)
+                    )
                 # Otherwise, skip this set class variable
                 continue
 
@@ -547,19 +564,23 @@ class MagicRobot(wpilib.SampleRobot,
 
             # If the type is not actually a type, give a meaningful error
             if not isinstance(inject_type, type):
-                raise TypeError('Component %s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?'
-                                % (cname, n, inject_type))
+                raise TypeError(
+                    "Component %s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?"
+                    % (cname, n, inject_type)
+                )
 
             self._inject(n, inject_type, cname, component)
 
         # Iterate over static variables
         for n in dir(component):
             # If the variable is private or a proprty, don't inject
-            if n.startswith('_') or isinstance(getattr(component_type, n, True), property):
+            if n.startswith("_") or isinstance(
+                getattr(component_type, n, True), property
+            ):
                 continue
-            
+
             inject_type = getattr(component, n)
-            
+
             # If the value assigned isn't a type, don't inject
             if not isinstance(inject_type, type):
                 continue
@@ -572,32 +593,36 @@ class MagicRobot(wpilib.SampleRobot,
         if injectable is None:
             if cname is not None:
                 # Try for mangled names
-                injectable = self._injectables.get('%s_%s' % (cname, n))
+                injectable = self._injectables.get("%s_%s" % (cname, n))
 
         # Raise error if injectable syntax used but no injectable was found.
         if injectable is None:
-            raise MagicInjectError("Component %s has variable %s (type %s), which is not present in %s" %
-                             (cname, n, inject_type, self))
-        
+            raise MagicInjectError(
+                "Component %s has variable %s (type %s), which is not present in %s"
+                % (cname, n, inject_type, self)
+            )
+
         # Raise error if injectable declared with type different than the initial type
         if not isinstance(injectable, inject_type):
-            raise MagicInjectError("Component %s variable %s in %s are not the same types! (Got %s, expected %s)" %
-                             (cname, n, self, type(injectable), inject_type))
+            raise MagicInjectError(
+                "Component %s variable %s in %s are not the same types! (Got %s, expected %s)"
+                % (cname, n, self, type(injectable), inject_type)
+            )
         # Perform injection
         setattr(component, n, injectable)
         self.logger.debug("-> %s as %s.%s", injectable, cname, n)
 
     def _setup_reset_vars(self, component):
         reset_dict = {}
-        
+
         for n in dir(component):
             if isinstance(getattr(type(component), n, True), property):
                 continue
-            
+
             a = getattr(component, n, None)
             if isinstance(a, will_reset_to):
                 reset_dict[n] = a.default
-        
+
         if reset_dict:
             component.__dict__.update(reset_dict)
             self._reset_components.append((reset_dict, component))
@@ -617,6 +642,6 @@ class MagicRobot(wpilib.SampleRobot,
                 component.execute()
             except:
                 self.onException()
-                
+
         for reset_dict, component in self._reset_components:
             component.__dict__.update(reset_dict)

@@ -25,14 +25,14 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
         :param output_units: The Unit instance specifying the format of value to return
         """
 
-        #Save value
+        # Save value
         self.output_units = output_units
 
-        #Setup the counter
+        # Setup the counter
         self.counter = wpilib.Counter(channel)
         self.counter.setSemiPeriodMode(highSemiPeriod=True)
 
-        #Call the parents
+        # Call the parents
         super().__init__()
 
     def free(self):
@@ -41,7 +41,7 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
 
     def get(self):
         """Return the current sonar sensor reading, in the units specified from the constructor"""
-        inches = self.counter.getPeriod()/0.000147
+        inches = self.counter.getPeriod() / 0.000147
         return units.convert(units.inch, self.output_units, inches)
 
 
@@ -52,7 +52,7 @@ class MaxSonarEZAnalog(wpilib.SensorBase, driver_base.DriverBase):
     To use this driver, pin 3 on the sensor must be mapped to an analog pin, and the sensor must be on a 5v supply.
     """
 
-    #This code has actually never been run, so it is extra not-verified!
+    # This code has actually never been run, so it is extra not-verified!
     verified = False
 
     def __init__(self, channel, output_units=units.inch):
@@ -62,13 +62,13 @@ class MaxSonarEZAnalog(wpilib.SensorBase, driver_base.DriverBase):
         :param output_units: The Unit instance specifying the format of value to return
         """
 
-        #Save value
+        # Save value
         self.output_units = output_units
 
-        #Setup the analog input
+        # Setup the analog input
         self.analog = wpilib.AnalogInput(channel)
-        
-        #Call the parents
+
+        # Call the parents
         super().__init__()
 
     def free(self):
@@ -77,6 +77,5 @@ class MaxSonarEZAnalog(wpilib.SensorBase, driver_base.DriverBase):
 
     def get(self):
         """Return the current sonar sensor reading, in the units specified from the constructor"""
-        centimeters = self.analog.getVoltage()/.0049
+        centimeters = self.analog.getVoltage() / 0.0049
         return units.convert(units.centimeter, self.output_units, centimeters)
-

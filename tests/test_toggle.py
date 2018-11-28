@@ -1,18 +1,21 @@
 from robotpy_ext.control.toggle import Toggle
 from robotpy_ext.misc.precise_delay import PreciseDelay
+
+
 class FakeJoystick:
     def __init__(self):
         self._pressed = [False] * 2
 
     def getRawButton(self, num):
         return self._pressed[num]
-    
+
     def press(self, num):
         self._pressed[num] = True
-    
+
     def release(self, num):
         self._pressed[num] = False
-    
+
+
 def test_toggle():
     joystick = FakeJoystick()
     toggleButton = Toggle(joystick, 0)

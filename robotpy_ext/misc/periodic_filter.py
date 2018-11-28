@@ -29,10 +29,10 @@ class PeriodicFilter:
     """
 
     def __init__(self, period, bypass_level=logging.WARN):
-        '''
+        """
          :param period: Wait period (in seconds) between logs
          :param bypass_level: Lowest logging level that the filter should not catch
-        '''
+        """
 
         self._period = period
         self._loggingLoop = True

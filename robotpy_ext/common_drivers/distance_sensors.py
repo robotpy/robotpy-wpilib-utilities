@@ -1,8 +1,9 @@
 import wpilib
 import math
 
+
 class SharpIR2Y0A02:
-    '''
+    """
         Sharp GP2Y0A02YK0F is an analog IR sensor capable of measuring
         distances from 20cm to 150cm. Output distance is measured in
         centimeters.
@@ -15,28 +16,28 @@ class SharpIR2Y0A02:
         .. warning:: FRC Teams: the case on these sensors is conductive and
                      grounded, and should not be mounted on a metallic
                      surface!
-    '''
-    
+    """
+
     def __init__(self, port):
-        ''':param port: Analog port number'''
+        """:param port: Analog port number"""
         self.distance = wpilib.AnalogInput(port)
-        
+
     def getDistance(self):
-        '''
+        """
             :returns: distance in centimeters. The output is constrained to
                       be between 22.5 and 145
-        '''
-        
+        """
+
         # Don't allow zero/negative values
         v = max(self.distance.getVoltage(), 0.00001)
-        d = 62.28*math.pow(v, -1.092)
-        
-        # Constrain output 
+        d = 62.28 * math.pow(v, -1.092)
+
+        # Constrain output
         return max(min(d, 145.0), 22.5)
 
 
 class SharpIRGP2Y0A41SK0F:
-    '''
+    """
         Sharp GP2Y0A41SK0F is an analog IR sensor capable of measuring
         distances from 4cm to 40cm. Output distance is measured in
         centimeters.
@@ -49,21 +50,21 @@ class SharpIRGP2Y0A41SK0F:
         .. warning:: FRC Teams: the case on these sensors is conductive and
                      grounded, and should not be mounted on a metallic
                      surface!
-    '''
-    
+    """
+
     def __init__(self, port):
-        ''':param port: Analog port number'''
+        """:param port: Analog port number"""
         self.distance = wpilib.AnalogInput(port)
 
     def getDistance(self):
-        '''
+        """
             :returns: distance in centimeters. The output is constrained to
                       be between 4.5 and 35
-        '''
-        
+        """
+
         # Don't allow zero/negative values
         v = max(self.distance.getVoltage(), 0.00001)
-        d = 12.84*math.pow(v, -0.9824)
-        
-        # Constrain output 
+        d = 12.84 * math.pow(v, -0.9824)
+
+        # Constrain output
         return max(min(d, 35.0), 4.5)

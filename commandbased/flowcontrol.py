@@ -9,7 +9,7 @@ from commandbased.cancelcommand import CancelCommand
 
 import inspect
 
-__all__ = ['IF', 'ELIF', 'ELSE', 'WHILE', 'RETURN', 'BREAK']
+__all__ = ["IF", "ELIF", "ELSE", "WHILE", "RETURN", "BREAK"]
 
 
 def _getCommandGroup():
@@ -20,19 +20,15 @@ def _getCommandGroup():
     # https://stackoverflow.com/a/14694234
     stack = inspect.stack()
     frame = stack[2].frame
-    while 'self' not in frame.f_locals:
+    while "self" not in frame.f_locals:
         frame = frame.f_back
         if frame is None:
-            raise ValueError(
-                'Could not find calling class for %s' %
-                stack[1].function
-            )
+            raise ValueError("Could not find calling class for %s" % stack[1].function)
 
-    cg = frame.f_locals['self']
+    cg = frame.f_locals["self"]
     if not isinstance(cg, CommandGroup):
         raise ValueError(
-            '%s may not be used outside of a CommandGroup' %
-            stack[1].function
+            "%s may not be used outside of a CommandGroup" % stack[1].function
         )
 
     return cg
@@ -88,13 +84,13 @@ def _popIfStack(cg):
         cmd = None
         for x in reversed(cg._ifStack):
             if x[0]:
-                cmd = ConditionalCommand('flowcontrolELIF', x[1], cmd)
+                cmd = ConditionalCommand("flowcontrolELIF", x[1], cmd)
                 cmd.condition = x[0]
 
             else:
                 cmd = x[1]
 
-        cmd = ConditionalCommand('flowcontrolIF', top[1], cmd)
+        cmd = ConditionalCommand("flowcontrolIF", top[1], cmd)
         cmd.condition = top[0]
 
         cg._addSequential(cmd)
@@ -182,7 +178,7 @@ def ELIF(condition):
         try:
             parent._ifStack.append((condition, cg))
         except AttributeError:
-            raise ValueError('Cannot use ELIF without IF')
+            raise ValueError("Cannot use ELIF without IF")
 
     return flowcontrolELIF
 
@@ -200,7 +196,7 @@ def ELSE(func):
     try:
         parent._ifStack.append((None, cg))
     except AttributeError:
-        raise ValueError('Cannot use ELSE without IF')
+        raise ValueError("Cannot use ELSE without IF")
 
     _popIfStack(parent)
 
@@ -232,10 +228,10 @@ def WHILE(condition):
         def cancelLoop(self):
             self.getGroup().forceCancel = True
 
-        end = Command('END WHILE')
+        end = Command("END WHILE")
         end.initialize = cancelLoop.__get__(end)
 
-        cond = ConditionalCommand('flowcontrolWHILE', cg, end)
+        cond = ConditionalCommand("flowcontrolWHILE", cg, end)
         cond.condition = condition
         cond.forceCancel = False
         cond.isFinished = _restartWhile.__get__(cond)
@@ -266,7 +262,7 @@ def BREAK(steps=1):
     """
 
     if steps < 1:
-        raise ValueError('Steps to BREAK cannot be < 1')
+        raise ValueError("Steps to BREAK cannot be < 1")
 
     parent = _getCommandGroup()
     source = _getSource(parent)
@@ -274,10 +270,10 @@ def BREAK(steps=1):
     try:
         loop = source._currentLoop
     except AttributeError:
-        raise ValueError('Cannot BREAK outside of a loop')
+        raise ValueError("Cannot BREAK outside of a loop")
 
     if loop is None:
-        raise ValueError('Cannot BREAK outside of a loop')
+        raise ValueError("Cannot BREAK outside of a loop")
 
     # We can't use CancelCommand here, because the conditionalCommand attribute
     # isn't yet bound to the CommandGroup, so we find it at initialization time
@@ -290,14 +286,13 @@ def BREAK(steps=1):
 
             if loop is None:
                 raise ValueError(
-                    'BREAK %i not possible with loop depth %i' %
-                    (steps, step)
+                    "BREAK %i not possible with loop depth %i" % (steps, step)
                 )
 
             step += 1
 
         loop.conditionalCommand.forceCancel = True
 
-    breakLoop = Command('flowcontrolBREAK')
+    breakLoop = Command("flowcontrolBREAK")
     breakLoop.initialize = cancelLoop
     parent.addSequential(breakLoop)
