@@ -14,10 +14,3 @@ robotpy_ext.control.toggle module
 .. automodule:: robotpy_ext.control.toggle
     :members:
     :undoc-members:
-
-robotpy_ext.control.xbox_controller module
-------------------------------------------
-
-.. automodule:: robotpy_ext.control.xbox_controller
-    :members:
-    :undoc-members:
