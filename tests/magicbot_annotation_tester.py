@@ -1,3 +1,5 @@
+from typing import List
+
 import magicbot
 
 
@@ -108,6 +110,7 @@ class TypeHintedBot(magicbot.MagicRobot):
 
 class TypeHintedComponent:
     injectable: Injectable
+    numbers: List[float]
 
     some_int: int = 1
     maybe_float: float = None
@@ -115,6 +118,7 @@ class TypeHintedComponent:
 
     def __init__(self):
         self.calculated_num = 1 - self.some_int
+        self.numbers = [1, 2.0, 3, 5.0]
 
     def execute(self):
         pass
@@ -122,8 +126,10 @@ class TypeHintedComponent:
 
 class TypeHintsBot(magicbot.MagicRobot):
     injectable: Injectable
+    injectables: List[Injectable]
 
     component: TypeHintedComponent
 
     def createObjects(self):
         self.injectable = Injectable(42)
+        self.injectables = [self.injectable]
