@@ -1,5 +1,6 @@
 import hal
 import time
+import warnings
 import wpilib
 
 
@@ -18,6 +19,9 @@ class PreciseDelay:
             while something:
                 # do things here
                 delay.wait()
+
+        .. deprecated:: 2019
+           PreciseDelay is terribly inefficient. Use :class:`NotifierDelay` instead.
     """
 
     def __init__(self, delay_period):
@@ -25,6 +29,11 @@ class PreciseDelay:
             :param delay_period: The amount of time (in seconds) to do a delay
             :type delay_period: float
         """
+        warnings.warn(
+            "PreciseDelay is deprecated, use NotifierDelay instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
 
         # The WPILib sleep/etc functions are slightly less stable as
         # they have more overhead, so only use them in simulation mode
