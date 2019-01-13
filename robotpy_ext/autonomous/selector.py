@@ -5,6 +5,8 @@ import os
 
 import logging
 
+import hal
+
 logger = logging.getLogger("autonomous")
 
 from ..misc.precise_delay import NotifierDelay
@@ -82,7 +84,6 @@ class AutonomousModeSelector:
 
         # load all modules in specified module
         modules = []
-
         try:
             autonomous_pkg = importlib.import_module(autonomous_pkgname)
         except ImportError as e:
@@ -92,9 +93,17 @@ class AutonomousModeSelector:
             # Don't kill the robot because they didn't create an autonomous package
             logger.warning("Cannot load the '%s' package", autonomous_pkgname)
         else:
-            if hasattr(autonomous_pkg, "__file__"):
+            if (
+                hasattr(autonomous_pkg, "__file__")
+                and autonomous_pkg.__file__ is not None
+            ):
                 modules_path = os.path.dirname(os.path.abspath(autonomous_pkg.__file__))
                 modules = glob(os.path.join(modules_path, "*.py"))
+            else:
+                if hal.isSimulation():
+                    raise AttributeError(
+                        "%s package has no __init__.py file" % autonomous_pkgname
+                    )
 
         for module_filename in modules:
 
