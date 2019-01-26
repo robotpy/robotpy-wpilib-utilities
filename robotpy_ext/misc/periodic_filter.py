@@ -17,14 +17,18 @@ class PeriodicFilter:
 
                 def setup(self):
                     # Set period to 3 seconds, set bypass_level to WARN
-                    self.logger.addFilter(PeriodicFilter(3, bypass_level=logging.WARN))
+                    self.filter = PeriodicFilter(3, bypass_level=logging.WARN)
+                    self.logger.addFilter(filter)
 
                 def execute(self):
-                    # This message will be printed once every three seconds
+                    # These messages will be printed once every three seconds
                     self.logger.info('Component1 Executing')
+                    self.logger.debug('Here are some values...')
 
                     # This message will be printed out every loop
                     self.logger.warn("Uh oh, this shouldn't have happened...")
+
+                    self.filter.refresh() # Not needed when using magicbot framework
         
     """
 
@@ -41,10 +45,9 @@ class PeriodicFilter:
 
     def filter(self, record):
         """Performs filtering action for logger"""
-        self._refresh_logger()
         return self._loggingLoop or record.levelno >= self._bypass_level
 
-    def _refresh_logger(self):
+    def refresh(self):
         """Determine if the log wait period has passed"""
         now = time.monotonic()
         self._loggingLoop = False

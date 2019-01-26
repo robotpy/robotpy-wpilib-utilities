@@ -4,7 +4,7 @@ import logging
 
 import wpilib
 
-from robotpy_ext.misc import NotifierDelay
+from robotpy_ext.misc import NotifierDelay, PeriodicFilter
 from robotpy_ext.autonomous import AutonomousModeSelector
 
 from robotpy_ext.misc.orderedclass import OrderedClass
@@ -640,6 +640,9 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         for component in self._components:
             try:
                 component.execute()
+                for f in component.logger.filters:
+                    if isinstance(f, PeriodicFilter):
+                        f.refresh()
             except:
                 self.onException()
 
