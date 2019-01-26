@@ -168,21 +168,21 @@ class AutonomousModeSelector:
 
             if hasattr(v, "DEFAULT") and v.DEFAULT == True:
                 logger.info(" -> %s [Default]", k)
-                self.chooser.addDefault(k, v)
+                self.chooser.setDefaultOption(k, v)
                 default_modes.append(k)
             else:
                 logger.info(" -> %s", k)
-                self.chooser.addObject(k, v)
+                self.chooser.addOption(k, v)
 
             mode_names.append(k)
 
         if len(self.modes) == 0:
             logger.warning("-- no autonomous modes were loaded!")
 
-        self.chooser.addObject("None", None)
+        self.chooser.addOption("None", None)
 
         if len(default_modes) == 0:
-            self.chooser.addDefault("None", None)
+            self.chooser.setDefaultOption("None", None)
         elif len(default_modes) != 1:
             if not self.ds.isFMSAttached():
                 raise RuntimeError(
