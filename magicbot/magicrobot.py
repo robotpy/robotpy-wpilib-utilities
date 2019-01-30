@@ -4,13 +4,14 @@ import logging
 
 import wpilib
 
+from networktables import NetworkTables
+from wpilib.shuffleboard import Shuffleboard
+
 from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.autonomous import AutonomousModeSelector
 
 from robotpy_ext.misc.orderedclass import OrderedClass
 from robotpy_ext.misc.annotations import get_class_annotations
-
-from networktables import NetworkTables
 
 from .magic_tunable import setup_tunables, _TunableProperty, collect_feedbacks
 from .magic_reset import will_reset_to
@@ -179,10 +180,12 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             You may use it for any code you need to run
             during all modes of the robot (e.g NetworkTables updates)
 
-            The default implementation will update SmartDashboard and LiveWindow.
+            The default implementation will update
+            SmartDashboard, LiveWindow and Shuffleboard.
         """
         wpilib.SmartDashboard.updateValues()
         wpilib.LiveWindow.updateValues()
+        Shuffleboard.update()
 
     def onException(self, forceReport=False):
         """
