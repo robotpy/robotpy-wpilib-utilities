@@ -281,7 +281,6 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         self.__nt.putString("mode", "auto")
         self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
-        wpilib.LiveWindow.setEnabled(False)
 
         self._on_mode_enable_components()
 
@@ -304,7 +303,6 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         self.__nt.putString("mode", "disabled")
         ds_attached = None
-        wpilib.LiveWindow.setEnabled(False)
 
         self._on_mode_disable_components()
         try:
@@ -340,7 +338,6 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         # don't need to update this during teleop -- presumably will switch
         # modes when ds is no longer attached
         self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
-        wpilib.LiveWindow.setEnabled(False)
 
         # initialize things
         self._on_mode_enable_components()
@@ -370,7 +367,6 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         self.__nt.putString("mode", "test")
         self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
-        wpilib.LiveWindow.setEnabled(True)
 
         try:
             self.testInit()
