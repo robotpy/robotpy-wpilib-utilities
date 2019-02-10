@@ -538,7 +538,6 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         # For each new component, perform magic injection
         for cname, component in components:
             setup_tunables(component, cname, "components")
-            self._feedbacks += collect_feedbacks(component, cname, "components")
             self._setup_vars(cname, component)
             self._setup_reset_vars(component)
 
@@ -554,8 +553,11 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         # Call setup functions for components
         for cname, component in components:
-            if hasattr(component, "setup"):
-                component.setup()
+            setup = getattr(component, "setup", None)
+            if setup is not None:
+                setup()
+            # ... and grab all the feedback methods
+            self._feedbacks += collect_feedbacks(component, cname, "components")
 
         # Call setup functions for autonomous modes
         for mode in self._automodes.modes.values():
