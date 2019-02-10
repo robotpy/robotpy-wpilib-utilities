@@ -118,11 +118,11 @@ class AutonomousModeSelector:
             #    on the field..
 
             for name, obj in inspect.getmembers(module, inspect.isclass):
-
-                if hasattr(obj, "MODE_NAME"):
+                mode_name = getattr(obj, "MODE_NAME", None)
+                if mode_name is not None:
 
                     # don't allow the driver to select this mode
-                    if hasattr(obj, "DISABLED") and obj.DISABLED:
+                    if getattr(obj, "DISABLED", False):
                         logger.warning(
                             "autonomous mode %s is marked as disabled", obj.MODE_NAME
                         )
@@ -137,16 +137,15 @@ class AutonomousModeSelector:
                         else:
                             continue
 
-                    if instance.MODE_NAME in self.modes:
+                    if mode_name in self.modes:
                         if not self.ds.isFMSAttached():
                             raise RuntimeError(
-                                "Duplicate name %s in %s"
-                                % (instance.MODE_NAME, module_filename)
+                                "Duplicate name %s in %s" % (mode_name, module_filename)
                             )
 
                         logger.error(
                             "Duplicate name %s specified by object type %s in module %s",
-                            instance.MODE_NAME,
+                            mode_name,
                             name,
                             module_filename,
                         )
@@ -166,7 +165,7 @@ class AutonomousModeSelector:
         logger.info("Loaded autonomous modes:")
         for k, v in sorted(self.modes.items()):
 
-            if hasattr(v, "DEFAULT") and v.DEFAULT == True:
+            if getattr(v, "DEFAULT", False):
                 logger.info(" -> %s [Default]", k)
                 self.chooser.setDefaultOption(k, v)
                 default_modes.append(k)
@@ -198,7 +197,13 @@ class AutonomousModeSelector:
 
         logger.info("Autonomous switcher initialized")
 
-    def run(self, control_loop_wait_time=0.020, iter_fn=None, on_exception=None):
+    def run(
+        self,
+        control_loop_wait_time=0.020,
+        iter_fn=None,
+        on_exception=None,
+        watchdog: wpilib.Watchdog = None,
+    ):
         """
             This function does everything required to implement autonomous
             mode behavior. You should call this from your autonomous mode
@@ -215,12 +220,17 @@ class AutonomousModeSelector:
                             autonomous mode is executing
             :param on_exception: Called when an uncaught exception is raised,
                                  must take a single keyword arg "forceReport"
+            :param watchdog: a WPILib Watchdog to feed every iteration
         """
+        if watchdog:
+            watchdog.reset()
 
         logger.info("Begin autonomous")
 
         if iter_fn is None:
             iter_fn = lambda: None
+        if not isinstance(iter_fn, (list, tuple)):
+            iter_fn = (iter_fn,)
 
         if on_exception is None:
             on_exception = self._on_exception
@@ -233,6 +243,8 @@ class AutonomousModeSelector:
             self._on_autonomous_enable()
         except:
             on_exception(forceReport=True)
+        if watchdog:
+            watchdog.addEpoch("auto on_enable")
 
         #
         # Autonomous control loop
@@ -245,14 +257,22 @@ class AutonomousModeSelector:
                     self._on_iteration(timer.get())
                 except:
                     on_exception()
+                if watchdog:
+                    watchdog.addEpoch("auto on_iteration")
 
-                if isinstance(iter_fn, (list, tuple)):
-                    for fn in iter_fn:
-                        fn()
-                else:
-                    iter_fn()
+                for fn in iter_fn:
+                    fn()
+
+                if watchdog:
+                    watchdog.addEpoch("robotPeriodic()")
+                    watchdog.disable()
+
+                    if watchdog.isExpired():
+                        watchdog.printEpochs()
 
                 delay.wait()
+                if watchdog:
+                    watchdog.reset()
 
         #
         # Done with autonomous, finish up
@@ -285,7 +305,7 @@ class AutonomousModeSelector:
             self.active_mode = self.chooser.getSelected()
 
         if self.active_mode is not None:
-            logger.info("Enabling '%s'" % self.active_mode.MODE_NAME)
+            logger.info("Enabling '%s'", self.active_mode.MODE_NAME)
             self.active_mode.on_enable()
         else:
             logger.warning(
