@@ -22,7 +22,11 @@ class will_reset_to:
         
         
         .. note:: This will only work for MagicRobot components
+
+        .. warning:: This will not work on classes that set ``__slots__``.
     """
+
+    __slots__ = ("default",)
 
     def __init__(self, default):
         self.default = default
