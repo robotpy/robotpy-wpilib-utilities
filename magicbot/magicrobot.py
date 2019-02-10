@@ -2,14 +2,14 @@ import contextlib
 import inspect
 import logging
 
+import hal
 import wpilib
 
 from networktables import NetworkTables
 from wpilib.shuffleboard import Shuffleboard
 
-from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.autonomous import AutonomousModeSelector
-
+from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.orderedclass import OrderedClass
 from robotpy_ext.misc.annotations import get_class_annotations
 
@@ -318,6 +318,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
                     ds_attached = not ds_attached
                     self.__nt.putBoolean("is_ds_attached", ds_attached)
 
+                hal.observeUserProgramDisabled()
                 try:
                     self.disabledPeriodic()
                 except:
@@ -352,6 +353,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while self.isOperatorControl() and self.isEnabled():
+                hal.observeUserProgramTeleop()
                 try:
                     self.teleopPeriodic()
                 except:
@@ -379,6 +381,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while self.isTest() and self.isEnabled():
+                hal.observeUserProgramTest()
                 try:
                     self.testPeriodic()
                 except:

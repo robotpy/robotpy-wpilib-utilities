@@ -1,15 +1,15 @@
-from glob import glob
 import importlib
 import inspect
-import os
-
 import logging
+import os
+from glob import glob
 
-logger = logging.getLogger("autonomous")
+import hal
+import wpilib
 
 from ..misc.precise_delay import NotifierDelay
 
-import wpilib
+logger = logging.getLogger("autonomous")
 
 
 class AutonomousModeSelector:
@@ -240,6 +240,7 @@ class AutonomousModeSelector:
 
         with NotifierDelay(control_loop_wait_time) as delay:
             while self.ds.isAutonomous() and self.ds.isEnabled():
+                hal.observeUserProgramAutonomous()
                 try:
                     self._on_iteration(timer.get())
                 except:
