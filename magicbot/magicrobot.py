@@ -2,14 +2,14 @@ import contextlib
 import inspect
 import logging
 
+import hal
 import wpilib
 
 from networktables import NetworkTables
 from wpilib.shuffleboard import Shuffleboard
 
-from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.autonomous import AutonomousModeSelector
-
+from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.orderedclass import OrderedClass
 from robotpy_ext.misc.annotations import get_class_annotations
 
@@ -34,8 +34,8 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         MagicRobot uses the :class:`.AutonomousModeSelector` to allow you
         to define multiple autonomous modes and to select one of them via
-        the SmartDashboard/SFX.
-        
+        the SmartDashboard/Shuffleboard.
+
         MagicRobot will set the following NetworkTables variables
         automatically:
         
@@ -77,6 +77,8 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         self.__nt = NetworkTables.getTable("/robot")
         self.__nt.putBoolean("is_simulation", self.isSimulation())
         self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
+
+        self.watchdog = wpilib.Watchdog(self.control_loop_wait_time, self._loop_overrun)
 
     def createObjects(self):
         """
@@ -183,9 +185,13 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             The default implementation will update
             SmartDashboard, LiveWindow and Shuffleboard.
         """
+        watchdog = self.watchdog
         wpilib.SmartDashboard.updateValues()
+        watchdog.addEpoch("SmartDashboard")
         wpilib.LiveWindow.updateValues()
+        watchdog.addEpoch("LiveWindow")
         Shuffleboard.update()
+        watchdog.addEpoch("Shuffleboard")
 
     def onException(self, forceReport=False):
         """
@@ -289,6 +295,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             self.control_loop_wait_time,
             (self._execute_components, self._update_feedback, self.robotPeriodic),
             self.onException,
+            watchdog=self.watchdog,
         )
 
         self._on_mode_disable_components()
@@ -301,6 +308,8 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
             .. warning:: Internal API, don't override
         """
+        watchdog = self.watchdog
+        watchdog.reset()
 
         self.__nt.putString("mode", "disabled")
         ds_attached = None
@@ -311,6 +320,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             self.disabledInit()
         except:
             self.onException(forceReport=True)
+        watchdog.addEpoch("disabledInit()")
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while self.isDisabled():
@@ -318,14 +328,23 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
                     ds_attached = not ds_attached
                     self.__nt.putBoolean("is_ds_attached", ds_attached)
 
+                hal.observeUserProgramDisabled()
                 try:
                     self.disabledPeriodic()
                 except:
                     self.onException()
+                watchdog.addEpoch("disabledPeriodic()")
 
                 self._update_feedback()
                 self.robotPeriodic()
+                watchdog.addEpoch("robotPeriodic()")
+                watchdog.disable()
+
+                if watchdog.isExpired():
+                    watchdog.printEpochs()
+
                 delay.wait()
+                watchdog.reset()
 
     def operatorControl(self):
         """
@@ -335,6 +354,8 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
             .. warning:: Internal API, don't override
         """
+        watchdog = self.watchdog
+        watchdog.reset()
 
         self.__nt.putString("mode", "teleop")
         # don't need to update this during teleop -- presumably will switch
@@ -349,24 +370,36 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             self.teleopInit()
         except:
             self.onException(forceReport=True)
+        watchdog.addEpoch("teleopInit()")
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while self.isOperatorControl() and self.isEnabled():
+                hal.observeUserProgramTeleop()
                 try:
                     self.teleopPeriodic()
                 except:
                     self.onException()
+                watchdog.addEpoch("teleopPeriodic()")
 
                 self._execute_components()
+
                 self._update_feedback()
                 self.robotPeriodic()
+                watchdog.addEpoch("robotPeriodic()")
+                watchdog.disable()
+
+                if watchdog.isExpired():
+                    watchdog.printEpochs()
 
                 delay.wait()
+                watchdog.reset()
 
         self._on_mode_disable_components()
 
     def test(self):
         """Called when the robot is in test mode"""
+        watchdog = self.watchdog
+        watchdog.reset()
 
         self.__nt.putString("mode", "test")
         self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
@@ -376,33 +409,45 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             self.testInit()
         except:
             self.onException(forceReport=True)
+        watchdog.addEpoch("testInit()")
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while self.isTest() and self.isEnabled():
+                hal.observeUserProgramTest()
                 try:
                     self.testPeriodic()
                 except:
                     self.onException()
+                watchdog.addEpoch("testPeriodic()")
 
                 self._update_feedback()
                 self.robotPeriodic()
+                watchdog.addEpoch("robotPeriodic()")
+                watchdog.disable()
+
+                if watchdog.isExpired():
+                    watchdog.printEpochs()
+
                 delay.wait()
+                watchdog.reset()
 
     def _on_mode_enable_components(self):
         # initialize things
-        for component in self._components:
-            if hasattr(component, "on_enable"):
+        for _, component in self._components:
+            on_enable = getattr(component, "on_enable", None)
+            if on_enable is not None:
                 try:
-                    component.on_enable()
+                    on_enable()
                 except:
                     self.onException(forceReport=True)
 
     def _on_mode_disable_components(self):
         # deinitialize things
-        for component in self._components:
-            if hasattr(component, "on_disable"):
+        for _, component in self._components:
+            on_disable = getattr(component, "on_disable", None)
+            if on_disable is not None:
                 try:
-                    component.on_disable()
+                    on_disable()
                 except:
                     self.onException(forceReport=True)
 
@@ -492,7 +537,6 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         # For each new component, perform magic injection
         for cname, component in components:
-            self._components.append(component)
             setup_tunables(component, cname, "components")
             self._feedbacks += collect_feedbacks(component, cname, "components")
             self._setup_vars(cname, component)
@@ -517,6 +561,8 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         for mode in self._automodes.modes.values():
             if hasattr(mode, "setup"):
                 mode.setup()
+
+        self._components = components
 
     def _create_component(self, name, ctyp):
         # Create instance, set it on self
@@ -638,13 +684,19 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
                 self.onException()
                 continue
             entry.setValue(value)
+        self.watchdog.addEpoch("@magicbot.feedback")
 
     def _execute_components(self):
-        for component in self._components:
+        for name, component in self._components:
             try:
                 component.execute()
             except:
                 self.onException()
+            self.watchdog.addEpoch(name)
 
         for reset_dict, component in self._reset_components:
             component.__dict__.update(reset_dict)
+
+    def _loop_overrun(self):
+        # TODO: print something here without making it extremely annoying
+        pass
