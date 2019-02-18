@@ -70,6 +70,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         # Load autonomous modes
         self._automodes = AutonomousModeSelector("autonomous")
+        self.auto_iter_fns = [self._execute_components, self._update_feedback, self.robotPeriodic]
 
         # Next, create the robot components and wire them together
         self._create_components()
@@ -292,7 +293,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         self._automodes.run(
             self.control_loop_wait_time,
-            (self._execute_components, self._update_feedback, self.robotPeriodic),
+            self.auto_iter_fns,
             self.onException,
             watchdog=self.watchdog,
         )
