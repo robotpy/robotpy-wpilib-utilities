@@ -52,6 +52,9 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
     #: uncaught exceptions be reported?
     error_report_interval = 0.5
 
+    #: If True, teleopPeriodic will be called in autonomous mode
+    use_teleop_in_autonomous = False
+
     def robotInit(self):
         """
             .. warning:: Internal API, don't override; use :meth:`createObjects` instead
@@ -122,6 +125,10 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
             This code executes before the ``execute`` functions of all
             components are called.
+
+            .. note:: If you want this function to be called in autonomous
+                      mode, set ``use_teleop_in_autonomous`` to True in your
+                      robot class.
         """
         func = self.teleopPeriodic.__func__
         if not hasattr(func, "firstRun"):
@@ -290,9 +297,17 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         self._on_mode_enable_components()
 
+        auto_functions = (
+            self._execute_components,
+            self._update_feedback,
+            self.robotPeriodic,
+        )
+        if self.use_teleop_in_autonomous:
+            auto_functions = (self.teleopPeriodic,) + auto_functions
+
         self._automodes.run(
             self.control_loop_wait_time,
-            (self._execute_components, self._update_feedback, self.robotPeriodic),
+            auto_functions,
             self.onException,
             watchdog=self.watchdog,
         )
