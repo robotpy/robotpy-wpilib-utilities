@@ -1,7 +1,7 @@
 import functools
 import inspect
 import warnings
-from typing import Generic, Optional, TypeVar
+from typing import Callable, Generic, Optional, TypeVar
 
 from networktables import NetworkTables
 from ntcore.value import Value
@@ -67,6 +67,7 @@ class tunable(Generic[V]):
         # "__doc__",
         "_mkv",
         "_nt",
+        "_update_cb",
     )
 
     def __init__(
@@ -87,15 +88,34 @@ class tunable(Generic[V]):
 
         self._mkv = Value.getFactory(default)
         self._nt = NetworkTables
+        self._update_cb = None
 
     def __get__(self, instance, owner) -> V:
         if instance is not None:
             return instance._tunables[self].value
         return self
 
-    def __set__(self, instance, value) -> None:
+    def __set__(self, instance, value: V) -> None:
         v = instance._tunables[self]
         self._nt._api.setEntryValueById(v._local_id, self._mkv(value))
+
+    def set_callback(self, callback: Callable[[V], None]) -> None:
+        """
+        Set a method to be called when the tunable is updated over NetworkTables.
+
+        This can be useful, for example, for changing PID gains on a
+        motor controller on the fly::
+
+            class Component:
+                pid: ...
+
+                kP = tunable(0.01)
+
+                @kP.set_callback
+                def set_kP(self, value: float) -> None:
+                    self.pid.setP(value)
+        """
+        self._update_cb = lambda inst, notif: callback(inst, notif.value.value)
 
 
 def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
@@ -136,6 +156,13 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
             key, prop._ntdefault, prop._ntwritedefault
         )
         tunables[prop] = ntvalue
+
+        if prop._update_cb:
+            prop._nt._api.addEntryListenerById(
+                ntvalue._local_id,
+                functools.partial(prop._update_cb, component),
+                NetworkTables.NotifyFlags.UPDATE,
+            )
 
     component._tunables = tunables
 
