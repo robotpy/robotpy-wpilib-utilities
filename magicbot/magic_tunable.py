@@ -1,5 +1,6 @@
 import functools
 import inspect
+import warnings
 from typing import Generic, Optional, TypeVar
 
 from networktables import NetworkTables
@@ -73,9 +74,12 @@ class tunable(Generic[V]):
         default: V,
         *,
         writeDefault: bool = True,
-        subtable: Optional[str] = None
-        # , doc: Optional[str] = None
+        subtable: Optional[str] = None,
+        doc=None
     ) -> None:
+        if doc is not None:
+            warnings.warn("tunable no longer uses the doc argument", stacklevel=2)
+
         self._ntdefault = default
         self._ntsubtable = subtable
         self._ntwritedefault = writeDefault
