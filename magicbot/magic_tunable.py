@@ -114,6 +114,13 @@ class tunable(Generic[V]):
                 @kP.set_callback
                 def set_kP(self, value: float) -> None:
                     self.pid.setP(value)
+
+        .. note::
+            The callback will be called on the NetworkTables I/O thread
+            (not the main robot thread).
+
+        .. warning::
+            This only supports instance methods on the same object as the tunable.
         """
         self._update_cb = callback
 
