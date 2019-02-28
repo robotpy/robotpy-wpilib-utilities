@@ -13,7 +13,7 @@ from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.orderedclass import OrderedClass
 from robotpy_ext.misc.annotations import get_class_annotations
 
-from .magic_tunable import setup_tunables, _TunableProperty, collect_feedbacks
+from .magic_tunable import setup_tunables, tunable, collect_feedbacks
 from .magic_reset import will_reset_to
 
 __all__ = ["MagicRobot"]
@@ -514,7 +514,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         # - Iterate over set class variables
         for m in self.members:
-            if m.startswith("_") or isinstance(getattr(cls, m, None), _TunableProperty):
+            if m.startswith("_") or isinstance(getattr(cls, m, None), tunable):
                 continue
 
             ctyp = getattr(self, m)
@@ -533,7 +533,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             if (
                 n.startswith("_")
                 or n in self._exclude_from_injection
-                or isinstance(getattr(cls, n, None), _TunableProperty)
+                or isinstance(getattr(cls, n, None), tunable)
             ):
                 continue
 

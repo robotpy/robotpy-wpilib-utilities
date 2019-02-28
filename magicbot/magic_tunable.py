@@ -1,19 +1,15 @@
 import functools
 import inspect
+import warnings
+from typing import Generic, Optional, TypeVar
 
 from networktables import NetworkTables
 from ntcore.value import Value
 
-# Only used as a marker
-class _TunableProperty(property):
-    pass
+V = TypeVar("V")
 
 
-class _AutosendProperty(_TunableProperty):
-    pass
-
-
-def tunable(default, *, writeDefault=True, subtable=None, doc=None):
+class tunable(Generic[V]):
     """
         This allows you to define simple properties that allow you to easily
         communicate with other programs via NetworkTables.
@@ -23,9 +19,9 @@ def tunable(default, *, writeDefault=True, subtable=None, doc=None):
         
             class MyRobot(magicbot.MagicRobot):
             
-                my_component = MyComponent
+                my_component: MyComponent
         
-            ... 
+            ...
             
             from magicbot import tunable
         
@@ -33,8 +29,7 @@ def tunable(default, *, writeDefault=True, subtable=None, doc=None):
         
                 # define the tunable property
                 foo = tunable(True)
-    
-    
+
                 def execute(self):
                 
                     # set the variable
@@ -65,33 +60,51 @@ def tunable(default, *, writeDefault=True, subtable=None, doc=None):
     # the name of the key is related to the name of the variable name in the
     # robot class
 
-    nt = NetworkTables
-    mkv = Value.getFactory(default)
+    __slots__ = (
+        "_ntdefault",
+        "_ntsubtable",
+        "_ntwritedefault",
+        # "__doc__",
+        "_mkv",
+        "_nt",
+    )
 
-    def _get(self):
-        return getattr(self, prop._ntattr).value
+    def __init__(
+        self,
+        default: V,
+        *,
+        writeDefault: bool = True,
+        subtable: Optional[str] = None,
+        doc=None
+    ) -> None:
+        if doc is not None:
+            warnings.warn("tunable no longer uses the doc argument", stacklevel=2)
 
-    def _set(self, value):
-        v = getattr(self, prop._ntattr)
-        nt._api.setEntryValueById(v._local_id, mkv(value))
+        self._ntdefault = default
+        self._ntsubtable = subtable
+        self._ntwritedefault = writeDefault
+        # self.__doc__ = doc
 
-    prop = _TunableProperty(fget=_get, fset=_set, doc=doc)
-    prop._ntdefault = default
-    prop._ntsubtable = subtable
-    prop._ntwritedefault = writeDefault
+        self._mkv = Value.getFactory(default)
+        self._nt = NetworkTables
 
-    return prop
+    def __get__(self, instance, owner) -> V:
+        if instance is not None:
+            return instance._tunables[self].value
+        return self
+
+    def __set__(self, instance, value) -> None:
+        v = instance._tunables[self]
+        self._nt._api.setEntryValueById(v._local_id, self._mkv(value))
 
 
-def setup_tunables(component, cname, prefix="components"):
+def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
     """
         Connects the tunables on an object to NetworkTables.
 
         :param component:   Component object
         :param cname:       Name of component
-        :type cname: str
         :param prefix:      Prefix to use, or no prefix if None
-        :type prefix: str    
     
         .. note:: This is not needed in normal use, only useful
                   for testing
@@ -104,12 +117,14 @@ def setup_tunables(component, cname, prefix="components"):
     else:
         prefix = "/%s/%s" % (prefix, cname)
 
+    tunables = {}
+
     for n in dir(cls):
         if n.startswith("_"):
             continue
 
         prop = getattr(cls, n)
-        if not isinstance(prop, _TunableProperty):
+        if not isinstance(prop, tunable):
             continue
 
         if prop._ntsubtable:
@@ -117,14 +132,12 @@ def setup_tunables(component, cname, prefix="components"):
         else:
             key = "%s/%s" % (prefix, n)
 
-        ntattr = "_Tunable__%s" % n
-
         ntvalue = NetworkTables.getGlobalAutoUpdateValue(
             key, prop._ntdefault, prop._ntwritedefault
         )
-        # double indirection
-        setattr(component, ntattr, ntvalue)
-        prop._ntattr = ntattr
+        tunables[prop] = ntvalue
+
+    component._tunables = tunables
 
 
 def feedback(f=None, *, key: str = None):
