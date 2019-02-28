@@ -115,7 +115,7 @@ class tunable(Generic[V]):
                 def set_kP(self, value: float) -> None:
                     self.pid.setP(value)
         """
-        self._update_cb = lambda inst, notif: callback(inst, notif.value.value)
+        self._update_cb = callback
 
 
 def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
@@ -160,7 +160,7 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
         if prop._update_cb:
             prop._nt._api.addEntryListenerById(
                 ntvalue._local_id,
-                functools.partial(prop._update_cb, component),
+                lambda notif, cb=prop._update_cb: cb(component, notif.value.value),
                 NetworkTables.NotifyFlags.UPDATE,
             )
 
