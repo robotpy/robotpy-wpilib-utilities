@@ -78,8 +78,17 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         self._create_components()
 
         self.__nt = NetworkTables.getTable("/robot")
+
+        self.__nt_put_is_ds_attached = self.__nt.getEntry("is_ds_attached").setBoolean
+        self.__nt_put_mode = self.__nt.getEntry("mode").setString
+
         self.__nt.putBoolean("is_simulation", self.isSimulation())
-        self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
+        self.__nt_put_is_ds_attached(self.ds.isDSAttached())
+
+        # cache these
+        self.__sd_update = wpilib.SmartDashboard.updateValues
+        self.__lv_update = wpilib.LiveWindow.updateValues
+        self.__sf_update = Shuffleboard.update
 
         self.watchdog = wpilib.Watchdog(self.control_loop_wait_time, self._loop_overrun)
 
@@ -193,11 +202,11 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             SmartDashboard, LiveWindow and Shuffleboard.
         """
         watchdog = self.watchdog
-        wpilib.SmartDashboard.updateValues()
+        self.__sd_update()
         watchdog.addEpoch("SmartDashboard")
-        wpilib.LiveWindow.updateValues()
+        self.__lv_update()
         watchdog.addEpoch("LiveWindow")
-        Shuffleboard.update()
+        self.__sf_update()
         watchdog.addEpoch("Shuffleboard")
 
     def onException(self, forceReport=False):
@@ -292,8 +301,8 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             .. warning:: Internal API, don't override
         """
 
-        self.__nt.putString("mode", "auto")
-        self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
+        self.__nt_put_mode("auto")
+        self.__nt_put_is_ds_attached(self.ds.isDSAttached())
 
         self._on_mode_enable_components()
 
@@ -325,7 +334,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         watchdog = self.watchdog
         watchdog.reset()
 
-        self.__nt.putString("mode", "disabled")
+        self.__nt_put_mode("disabled")
         ds_attached = None
 
         self._on_mode_disable_components()
@@ -339,7 +348,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             while self.isDisabled():
                 if ds_attached != self.ds.isDSAttached():
                     ds_attached = not ds_attached
-                    self.__nt.putBoolean("is_ds_attached", ds_attached)
+                    self.__nt_put_is_ds_attached(ds_attached)
 
                 hal.observeUserProgramDisabled()
                 try:
@@ -370,10 +379,10 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         watchdog = self.watchdog
         watchdog.reset()
 
-        self.__nt.putString("mode", "teleop")
+        self.__nt_put_mode("teleop")
         # don't need to update this during teleop -- presumably will switch
         # modes when ds is no longer attached
-        self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
+        self.__nt_put_is_ds_attached(self.ds.isDSAttached())
 
         # initialize things
         self._on_mode_enable_components()
@@ -384,9 +393,11 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             self.onException(forceReport=True)
         watchdog.addEpoch("teleopInit()")
 
+        observe = hal.observeUserProgramTeleop
+
         with NotifierDelay(self.control_loop_wait_time) as delay:
-            while self.isOperatorControl() and self.isEnabled():
-                hal.observeUserProgramTeleop()
+            while self.isOperatorControlEnabled():
+                observe()
                 try:
                     self.teleopPeriodic()
                 except:
@@ -413,8 +424,8 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         watchdog = self.watchdog
         watchdog.reset()
 
-        self.__nt.putString("mode", "test")
-        self.__nt.putBoolean("is_ds_attached", self.ds.isDSAttached())
+        self.__nt_put_mode("test")
+        self.__nt_put_is_ds_attached(self.ds.isDSAttached())
 
         try:
             self.testInit()
