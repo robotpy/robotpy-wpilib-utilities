@@ -253,7 +253,7 @@ class AutonomousModeSelector:
         observe = hal.observeUserProgramAutonomous
 
         with NotifierDelay(control_loop_wait_time) as delay:
-            while self.ds.isAutonomous() and self.ds.isEnabled():
+            while self.ds.isAutonomousEnabled():
                 observe()
                 try:
                     self._on_iteration(timer.get())

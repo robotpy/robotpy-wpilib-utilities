@@ -396,7 +396,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         observe = hal.observeUserProgramTeleop
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
-            while self.isOperatorControl() and self.isEnabled():
+            while self.isOperatorControlEnabled():
                 observe()
                 try:
                     self.teleopPeriodic()
