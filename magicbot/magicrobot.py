@@ -12,7 +12,6 @@ from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.orderedclass import OrderedClass
 from robotpy_ext.misc.annotations import get_class_annotations
-from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 
 from .magic_tunable import setup_tunables, tunable, collect_feedbacks
 from .magic_reset import will_reset_to
@@ -91,7 +90,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         self.__lv_update = wpilib.LiveWindow.updateValues
         self.__sf_update = Shuffleboard.update
 
-        self.watchdog = SimpleWatchdog(self.control_loop_wait_time)
+        self.watchdog = wpilib.Watchdog(self.control_loop_wait_time, self._loop_overrun)
 
     def createObjects(self):
         """
@@ -361,9 +360,10 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
                 self._update_feedback()
                 self.robotPeriodic()
                 watchdog.addEpoch("robotPeriodic()")
-                # watchdog.disable()
+                watchdog.disable()
 
-                watchdog.printIfExpired()
+                if watchdog.isExpired():
+                    watchdog.printEpochs()
 
                 delay.wait()
                 watchdog.reset()
@@ -409,9 +409,10 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
                 self._update_feedback()
                 self.robotPeriodic()
                 watchdog.addEpoch("robotPeriodic()")
-                # watchdog.disable()
+                watchdog.disable()
 
-                watchdog.printIfExpired()
+                if watchdog.isExpired():
+                    watchdog.printEpochs()
 
                 delay.wait()
                 watchdog.reset()
@@ -444,7 +445,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
                 self._update_feedback()
                 self.robotPeriodic()
                 watchdog.addEpoch("robotPeriodic()")
-                # watchdog.disable()
+                watchdog.disable()
 
                 if watchdog.isExpired():
                     watchdog.printEpochs()
@@ -719,3 +720,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         for reset_dict, component in self._reset_components:
             component.__dict__.update(reset_dict)
+
+    def _loop_overrun(self):
+        # TODO: print something here without making it extremely annoying
+        pass
