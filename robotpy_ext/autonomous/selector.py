@@ -230,6 +230,7 @@ class AutonomousModeSelector:
             if isinstance(watchdog, SimpleWatchdog):
                 watchdog_check_expired = watchdog.printIfExpired
             else:
+
                 def watchdog_check_expired():
                     if watchdog.isExpired():
                         watchdog.printEpochs()
