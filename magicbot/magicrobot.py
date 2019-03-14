@@ -350,7 +350,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
                     ds_attached = not ds_attached
                     self.__nt_put_is_ds_attached(ds_attached)
 
-                hal.observeUserProgramDisabled()
+                # hal.observeUserProgramDisabled()
                 try:
                     self.disabledPeriodic()
                 except:
@@ -393,11 +393,11 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             self.onException(forceReport=True)
         watchdog.addEpoch("teleopInit()")
 
-        observe = hal.observeUserProgramTeleop
+        # observe = hal.observeUserProgramTeleop
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while self.isOperatorControlEnabled():
-                observe()
+                # observe()
                 try:
                     self.teleopPeriodic()
                 except:
@@ -435,7 +435,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while self.isTest() and self.isEnabled():
-                hal.observeUserProgramTest()
+                # hal.observeUserProgramTest()
                 try:
                     self.testPeriodic()
                 except:
