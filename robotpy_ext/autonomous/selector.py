@@ -3,11 +3,13 @@ import inspect
 import logging
 import os
 from glob import glob
+from typing import Union
 
 import hal
 import wpilib
 
 from ..misc.precise_delay import NotifierDelay
+from ..misc.simple_watchdog import SimpleWatchdog
 
 logger = logging.getLogger("autonomous")
 
@@ -202,7 +204,7 @@ class AutonomousModeSelector:
         control_loop_wait_time=0.020,
         iter_fn=None,
         on_exception=None,
-        watchdog: wpilib.Watchdog = None,
+        watchdog: Union[wpilib.Watchdog, SimpleWatchdog] = None,
     ):
         """
             This function does everything required to implement autonomous
@@ -224,6 +226,14 @@ class AutonomousModeSelector:
         """
         if watchdog:
             watchdog.reset()
+
+            if isinstance(watchdog, SimpleWatchdog):
+                watchdog_check_expired = watchdog.printIfExpired
+            else:
+
+                def watchdog_check_expired():
+                    if watchdog.isExpired():
+                        watchdog.printEpochs()
 
         logger.info("Begin autonomous")
 
@@ -269,8 +279,7 @@ class AutonomousModeSelector:
                     watchdog.addEpoch("robotPeriodic()")
                     watchdog.disable()
 
-                    if watchdog.isExpired():
-                        watchdog.printEpochs()
+                    watchdog_check_expired()
 
                 delay.wait()
                 if watchdog:

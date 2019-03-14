@@ -33,3 +33,11 @@ robotpy_ext.misc.periodic_filter module
     :members:
     :undoc-members:
     :show-inheritance:
+
+robotpy_ext.misc.simple_watchdog module
+---------------------------------------
+
+.. automodule:: robotpy_ext.misc.simple_watchdog
+    :members:
+    :undoc-members:
+    :show-inheritance:
