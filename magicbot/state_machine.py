@@ -2,11 +2,6 @@ import functools
 import wpilib
 import inspect
 
-import networktables
-
-from robotpy_ext.misc.orderedclass import OrderedClass
-
-
 from .magic_tunable import tunable
 
 if wpilib.RobotBase.isSimulation():
@@ -220,7 +215,15 @@ def default_state(f=None):
     return wrapper
 
 
-class StateMachine(metaclass=OrderedClass):
+def _get_class_members(cls: type) -> dict:
+    """Get the members of the given class in definition order, bases first."""
+    d = {}
+    for cls in reversed(cls.__mro__):
+        d.update(cls.__dict__)
+    return d
+
+
+class StateMachine:
     '''
     The StateMachine class is used to implement magicbot components that
     allow one to easily define a `finite state machine (FSM)
@@ -360,15 +363,14 @@ class StateMachine(metaclass=OrderedClass):
         nt_desc = []
 
         states = {}
-        cls = self.__class__
+        states_with_duration = []
+        cls = type(self)
 
         default_state = None
 
         # for each state function:
-        for name in self.members:
-
-            state = getattr(cls, name, None)
-            if state is None or name.startswith("__") or not hasattr(state, "first"):
+        for name, state in _get_class_members(cls).items():
+            if name.startswith("__") or not hasattr(state, "first"):
                 continue
 
             if state.origin != __name__:
@@ -412,21 +414,27 @@ class StateMachine(metaclass=OrderedClass):
                 default_state = state_data
 
             # make the time tunable
-            # -> this depends on tunables being bound after this function is called
             if hasattr(state, "duration"):
-                # don't create it twice (in case of mutliple instances)
-                prop = getattr(cls, state_data.duration_attr, None)
-                if prop is None:
-                    prop = setattr(
-                        cls,
-                        state_data.duration_attr,
-                        tunable(state.duration, writeDefault=False, subtable="state"),
-                    )
+                states_with_duration.append(state)
 
         if not has_first:
             raise NoFirstStateError(
                 "Starting state not defined! Use first=True on a state decorator"
             )
+
+        # make durations tunable
+        # -> this depends on tunables being bound after this function is called
+        # TODO: use __init_subclass__
+        for state in states_with_duration:
+            # don't create it twice (in case of inheritance overriding)
+            duration_attr = f"{state.name}_duration"
+            prop = getattr(cls, duration_attr, None)
+            if prop is None:
+                prop = setattr(
+                    cls,
+                    duration_attr,
+                    tunable(state.duration, writeDefault=False, subtable="state"),
+                )
 
         cls.state_names = tunable(nt_names, subtable="state")
         cls.state_descriptions = tunable(nt_desc, subtable="state")
@@ -582,7 +590,7 @@ class StateMachine(metaclass=OrderedClass):
 
         # deactivate the current state unless engage was called or
         # must_finish was set
-        if state is None or (not self.__should_engage and not state.must_finish):
+        if not (self.__should_engage or state is not None and state.must_finish):
             state = None
 
         # if there is no state to execute and there is a default
