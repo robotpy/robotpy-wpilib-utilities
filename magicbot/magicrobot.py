@@ -1,6 +1,7 @@
 import contextlib
 import inspect
 import logging
+import typing
 
 import hal
 import wpilib
@@ -10,8 +11,6 @@ from wpilib.shuffleboard import Shuffleboard
 
 from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.misc import NotifierDelay
-from robotpy_ext.misc.orderedclass import OrderedClass
-from robotpy_ext.misc.annotations import get_class_annotations
 from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 
 from .magic_tunable import setup_tunables, tunable, collect_feedbacks
@@ -24,7 +23,7 @@ class MagicInjectError(ValueError):
     pass
 
 
-class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
+class MagicRobot(wpilib.SampleRobot):
     """
         Robots that use the MagicBot framework should use this as their
         base robot class. If you use this as your base, you must
@@ -61,7 +60,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
             .. warning:: Internal API, don't override; use :meth:`createObjects` instead
         """
 
-        self._exclude_from_injection = ["logger", "members"]
+        self._exclude_from_injection = ["logger"]
 
         self.__last_error_report = -10
 
@@ -210,7 +209,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         self.__sf_update()
         watchdog.addEpoch("Shuffleboard")
 
-    def onException(self, forceReport=False):
+    def onException(self, forceReport: bool = False) -> None:
         """
             This function must *only* be called when an unexpected exception
             has occurred that would otherwise crash the robot code. Use this
@@ -262,7 +261,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         self.__last_error_report = now
 
     @contextlib.contextmanager
-    def consumeExceptions(self, forceReport=False):
+    def consumeExceptions(self, forceReport: bool = False):
         """
             This returns a context manager which will consume any uncaught
             exceptions that might otherwise crash the robot.
@@ -486,26 +485,15 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
         self.logger.info("Creating magic components")
 
         # Identify all of the types, and create them
-        cls = self.__class__
+        cls = type(self)
 
         # - Iterate over class variables with type annotations
-        for m, ctyp in get_class_annotations(cls).items():
+        for m, ctyp in typing.get_type_hints(cls).items():
             # Ignore private variables
             if m.startswith("_"):
                 continue
 
-            if hasattr(cls, m):
-                attr = getattr(cls, m)
-                # If the value given to the variable is an instance of a type and isn't a property
-                # raise an error. No double declaring types, e.g foo: type = type
-                if isinstance(attr, type) and not isinstance(attr, property):
-                    raise ValueError(
-                        "%s.%s has two type declarations" % (cls.__name__, m)
-                    )
-                # Otherwise, skip this set class variable
-                continue
-
-            # If the variable has been assigned in __init__ or createObjects, skip it
+            # If the variable has been set, skip it
             if hasattr(self, m):
                 continue
 
@@ -515,20 +503,6 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
                     "%s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?"
                     % (cls.__name__, m, ctyp)
                 )
-
-            component = self._create_component(m, ctyp)
-
-            # Store for later
-            components.append((m, component))
-
-        # - Iterate over set class variables
-        for m in self.members:
-            if m.startswith("_") or isinstance(getattr(cls, m, None), tunable):
-                continue
-
-            ctyp = getattr(self, m)
-            if not isinstance(ctyp, type):
-                continue
 
             component = self._create_component(m, ctyp)
 
@@ -586,7 +560,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         self._components = components
 
-    def _create_component(self, name, ctyp):
+    def _create_component(self, name: str, ctyp: type):
         # Create instance, set it on self
         component = ctyp()
         setattr(self, name, component)
@@ -605,31 +579,20 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
         return component
 
-    def _setup_vars(self, cname, component):
+    def _setup_vars(self, cname: str, component):
 
         self.logger.debug("Injecting magic variables into %s", cname)
 
         component_type = type(component)
 
         # Iterate over variables with type annotations
-        for n, inject_type in get_class_annotations(component_type).items():
+        for n, inject_type in typing.get_type_hints(component_type).items():
 
             # If the variable is private ignore it
             if n.startswith("_"):
                 continue
 
-            if hasattr(component_type, n):
-                attr = getattr(component_type, n)
-                # If the value given to the variable is an instance of a type and isn't a property
-                # raise an error. No double declaring types, e.g foo: type = type
-                if isinstance(attr, type) and not isinstance(attr, property):
-                    raise MagicInjectError(
-                        "%s.%s has two type declarations" % (component_type.__name__, n)
-                    )
-                # Otherwise, skip this set class variable
-                continue
-
-            # If the variable has been assigned in __init__, skip it
+            # If the variable has been set, skip it
             if hasattr(component, n):
                 continue
 
@@ -642,23 +605,7 @@ class MagicRobot(wpilib.SampleRobot, metaclass=OrderedClass):
 
             self._inject(n, inject_type, cname, component)
 
-        # Iterate over static variables
-        for n in dir(component):
-            # If the variable is private or a proprty, don't inject
-            if n.startswith("_") or isinstance(
-                getattr(component_type, n, True), property
-            ):
-                continue
-
-            inject_type = getattr(component, n)
-
-            # If the value assigned isn't a type, don't inject
-            if not isinstance(inject_type, type):
-                continue
-
-            self._inject(n, inject_type, cname, component)
-
-    def _inject(self, n, inject_type, cname, component):
+    def _inject(self, n: str, inject_type: type, cname: str, component):
         # Retrieve injectable object
         injectable = self._injectables.get(n)
         if injectable is None:
