@@ -23,7 +23,7 @@ class MagicInjectError(ValueError):
     pass
 
 
-class MagicRobot(wpilib.SampleRobot):
+class MagicRobot(wpilib.RobotBase):
     """
         Robots that use the MagicBot framework should use this as their
         base robot class. If you use this as your base, you must
@@ -51,6 +51,10 @@ class MagicRobot(wpilib.SampleRobot):
     #: Error report interval: when an FMS is attached, how often should
     #: uncaught exceptions be reported?
     error_report_interval = 0.5
+
+    #: A Python logging object that you can use to send messages to the log.
+    #: It is recommended to use this instead of print statements.
+    logger = logging.getLogger("robot")
 
     #: If True, teleopPeriodic will be called in autonomous mode
     use_teleop_in_autonomous = False
@@ -293,6 +297,31 @@ class MagicRobot(wpilib.SampleRobot):
     # Internal API
     #
 
+    def startCompetition(self) -> None:
+        """
+        This runs the mode-switching loop.
+
+        .. warning:: Internal API, don't override
+        """
+
+        # TODO: usage reporting?
+        self.robotInit()
+
+        # Tell the DS the robot is ready to be enabled
+        hal.observeUserProgramStarting()
+
+        while True:
+            isEnabled, isAutonomous, isTest = self.getControlState()
+
+            if not isEnabled:
+                self._disabled()
+            elif isAutonomous:
+                self.autonomous()
+            elif isTest:
+                self._test()
+            else:
+                self._operatorControl()
+
     def autonomous(self):
         """
             MagicRobot will do The Right Thing and automatically load all
@@ -323,7 +352,7 @@ class MagicRobot(wpilib.SampleRobot):
 
         self._on_mode_disable_components()
 
-    def disabled(self):
+    def _disabled(self):
         """
             This function is called in disabled mode. You should not
             override this function; rather, you should override the
@@ -367,7 +396,7 @@ class MagicRobot(wpilib.SampleRobot):
                 delay.wait()
                 watchdog.reset()
 
-    def operatorControl(self):
+    def _operatorControl(self):
         """
             This function is called in teleoperated mode. You should not
             override this function; rather, you should override the
@@ -417,7 +446,7 @@ class MagicRobot(wpilib.SampleRobot):
 
         self._on_mode_disable_components()
 
-    def test(self):
+    def _test(self):
         """Called when the robot is in test mode"""
         watchdog = self.watchdog
         watchdog.reset()
