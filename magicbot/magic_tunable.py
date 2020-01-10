@@ -4,7 +4,6 @@ import warnings
 from typing import Generic, Optional, TypeVar
 
 from networktables import NetworkTables
-from ntcore.value import Value
 
 V = TypeVar("V")
 
@@ -85,17 +84,13 @@ class tunable(Generic[V]):
         self._ntwritedefault = writeDefault
         # self.__doc__ = doc
 
-        self._mkv = Value.getFactory(default)
-        self._nt = NetworkTables
-
     def __get__(self, instance, owner) -> V:
         if instance is not None:
             return instance._tunables[self].value
         return self
 
     def __set__(self, instance, value) -> None:
-        v = instance._tunables[self]
-        self._nt._api.setEntryValueById(v._local_id, self._mkv(value))
+        instance._tunables[self].setValue(value)
 
 
 def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
