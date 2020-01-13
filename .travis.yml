@@ -20,6 +20,7 @@ env:
 # # command to run tests
 # script:
 #   - tests/run_tests.sh
+script: true
 
 jobs:
   include:
