@@ -13,13 +13,13 @@ matrix:
 env:
   - RUNCOVERAGE=1 ROBOTPY_NO_DEPS=1
 
-# command to install dependencies
-install:
-  - pip install -U pip
-  - pip install -r travis-requirements.txt
-# command to run tests
-script:
-  - tests/run_tests.sh
+# # command to install dependencies
+# install:
+#   - pip install -U pip
+#   - pip install -r travis-requirements.txt
+# # command to run tests
+# script:
+#   - tests/run_tests.sh
 
 jobs:
   include:

@@ -117,7 +117,7 @@ class NotifierDelay:
         self.delay_period = int(delay_period * 1e6)
         self._notifier = hal.initializeNotifier()[0]
         self._expiry_time = wpilib.RobotController.getFPGATime() + self.delay_period
-        self._update_alarm()
+        self._update_alarm(self._notifier)
 
         # wpilib.Resource._add_global_resource(self)
 
@@ -144,9 +144,12 @@ class NotifierDelay:
 
     def wait(self) -> None:
         """Wait until the delay period has passed."""
-        hal.waitForNotifierAlarm(self._notifier)
+        handle = self._notifier
+        if handle is None:
+            return
+        hal.waitForNotifierAlarm(handle)
         self._expiry_time += self.delay_period
-        self._update_alarm()
+        self._update_alarm(handle)
 
-    def _update_alarm(self) -> None:
-        hal.updateNotifierAlarm(self._notifier, self._expiry_time)
+    def _update_alarm(self, handle) -> None:
+        hal.updateNotifierAlarm(handle, self._expiry_time)

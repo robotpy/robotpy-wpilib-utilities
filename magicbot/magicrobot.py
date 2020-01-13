@@ -90,6 +90,8 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         self.__nt.putBoolean("is_simulation", self.isSimulation())
         self.__nt_put_is_ds_attached(self.ds.isDSAttached())
 
+        self.__done = False
+
         # cache these
         self.__sd_update = wpilib.SmartDashboard.updateValues
         self.__lv_update = wpilib.LiveWindow.getInstance().updateValues
@@ -311,7 +313,7 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         # Tell the DS the robot is ready to be enabled
         hal.observeUserProgramStarting()
 
-        while True:
+        while not self.__done:
             isEnabled, isAutonomous, isTest = self.getControlState()
 
             if not isEnabled:
@@ -322,6 +324,9 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
                 self._test()
             else:
                 self._operatorControl()
+
+    def endCompetition(self) -> None:
+        self.__done = True
 
     def autonomous(self):
         """
@@ -375,7 +380,7 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         watchdog.addEpoch("disabledInit()")
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
-            while self.isDisabled():
+            while not self.__done and self.isDisabled():
                 if ds_attached != self.ds.isDSAttached():
                     ds_attached = not ds_attached
                     self.__nt_put_is_ds_attached(ds_attached)
@@ -425,7 +430,7 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         observe = hal.observeUserProgramTeleop
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
-            while self.isOperatorControlEnabled():
+            while not self.__done and self.isOperatorControlEnabled():
                 observe()
                 try:
                     self.teleopPeriodic()
@@ -462,7 +467,7 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         watchdog.addEpoch("testInit()")
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
-            while self.isTest() and self.isEnabled():
+            while not self.__done and self.isTest() and self.isEnabled():
                 hal.observeUserProgramTest()
                 try:
                     self.testPeriodic()
