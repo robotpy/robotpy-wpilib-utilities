@@ -7,7 +7,8 @@ import hal
 import wpilib
 
 from networktables import NetworkTables
-from wpilib.shuffleboard import Shuffleboard
+
+# from wpilib.shuffleboard import Shuffleboard
 
 from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.misc import NotifierDelay
@@ -23,7 +24,7 @@ class MagicInjectError(ValueError):
     pass
 
 
-class MagicRobot(wpilib.RobotBase):
+class MagicRobot(wpilib._wpilib.RobotBaseUser):
     """
         Robots that use the MagicBot framework should use this as their
         base robot class. If you use this as your base, you must
@@ -91,8 +92,8 @@ class MagicRobot(wpilib.RobotBase):
 
         # cache these
         self.__sd_update = wpilib.SmartDashboard.updateValues
-        self.__lv_update = wpilib.LiveWindow.updateValues
-        self.__sf_update = Shuffleboard.update
+        self.__lv_update = wpilib.LiveWindow.getInstance().updateValues
+        # self.__sf_update = Shuffleboard.update
 
         self.watchdog = SimpleWatchdog(self.control_loop_wait_time)
 
@@ -210,8 +211,8 @@ class MagicRobot(wpilib.RobotBase):
         watchdog.addEpoch("SmartDashboard")
         self.__lv_update()
         watchdog.addEpoch("LiveWindow")
-        self.__sf_update()
-        watchdog.addEpoch("Shuffleboard")
+        # self.__sf_update()
+        # watchdog.addEpoch("Shuffleboard")
 
     def onException(self, forceReport: bool = False) -> None:
         """
@@ -517,6 +518,14 @@ class MagicRobot(wpilib.RobotBase):
         cls = type(self)
 
         # - Iterate over class variables with type annotations
+        # .. this hack is necessary for pybind11 based modules
+        class FakeModule:
+            pass
+
+        import sys
+
+        sys.modules["pybind11_builtins"] = FakeModule()
+
         for m, ctyp in typing.get_type_hints(cls).items():
             # Ignore private variables
             if m.startswith("_"):
