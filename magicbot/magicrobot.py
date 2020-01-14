@@ -120,6 +120,20 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         """
         raise NotImplementedError
 
+    def autonomousInit(self):
+        """Initialization code for autonomous mode may go here.
+
+        Users may override this method for initialization code which
+        will be called each time the robot enters autonomous mode,
+        regardless of the selected autonomous mode.
+
+        This can be useful for code that must be run at the beginning of a match.
+
+        .. note:: The ``on_enable`` functions of all components are
+                  called before this function is called.
+        """
+        pass
+
     def teleopInit(self):
         """
             Initialization code for teleop control code may go here.
@@ -340,6 +354,11 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         self.__nt_put_is_ds_attached(self.ds.isDSAttached())
 
         self._on_mode_enable_components()
+
+        try:
+            self.autonomousInit()
+        except:
+            self.onException(forceReport=True)
 
         auto_functions = (
             self._execute_components,
