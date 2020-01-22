@@ -1,3 +1,6 @@
+import logging
+
+
 class MagicComponent:
     """
         To automagically retrieve variables defined in your base robot
@@ -26,6 +29,8 @@ class MagicComponent:
         .. note:: You don't need to inherit from ``MagicComponent``, it is only
                   provided for documentation's sake
     """
+
+    logger: logging.Logger
 
     def setup(self):
         """
