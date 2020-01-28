@@ -3,7 +3,7 @@ import inspect
 import warnings
 from typing import Generic, Optional, TypeVar
 
-from networktables import NetworkTables
+from networktables import NetworkTables, Value
 
 V = TypeVar("V")
 
@@ -82,6 +82,8 @@ class tunable(Generic[V]):
         self._ntdefault = default
         self._ntsubtable = subtable
         self._ntwritedefault = writeDefault
+        d = Value.makeValue(default)
+        self._mkv = Value.getFactoryByType(d.type())
         # self.__doc__ = doc
 
     def __get__(self, instance, owner) -> V:
@@ -90,7 +92,7 @@ class tunable(Generic[V]):
         return self
 
     def __set__(self, instance, value) -> None:
-        instance._tunables[self].setValue(value)
+        instance._tunables[self].setValue(self._mkv(value))
 
 
 def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
