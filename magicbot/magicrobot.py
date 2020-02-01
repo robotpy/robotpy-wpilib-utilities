@@ -479,6 +479,10 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         self.__nt_put_mode("test")
         self.__nt_put_is_ds_attached(self.ds.isDSAttached())
 
+        lw = wpilib.LiveWindow.getInstance()
+        lw.setEnabled(True)
+        # Shuffleboard.enableActuatorWidgets()
+
         try:
             self.testInit()
         except:
@@ -503,6 +507,9 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
 
                 delay.wait()
                 watchdog.reset()
+
+        lw.setEnabled(False)
+        # Shuffleboard.disableActuatorWidgets()
 
     def _on_mode_enable_components(self):
         # initialize things
