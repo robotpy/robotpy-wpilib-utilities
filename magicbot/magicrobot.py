@@ -15,7 +15,7 @@ from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 
 from .magic_tunable import setup_tunables, tunable, collect_feedbacks
-from .magic_reset import will_reset_to
+from .magic_reset import collect_resets
 
 __all__ = ["MagicRobot"]
 
@@ -700,15 +700,7 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
         self.logger.debug("-> %s as %s.%s", injectable, cname, n)
 
     def _setup_reset_vars(self, component):
-        reset_dict = {}
-
-        for n in dir(component):
-            if isinstance(getattr(type(component), n, True), property):
-                continue
-
-            a = getattr(component, n, None)
-            if isinstance(a, will_reset_to):
-                reset_dict[n] = a.default
+        reset_dict = collect_resets(type(component))
 
         if reset_dict:
             component.__dict__.update(reset_dict)

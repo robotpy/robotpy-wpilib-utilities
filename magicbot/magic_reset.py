@@ -1,3 +1,6 @@
+from typing import Any, Dict
+
+
 class will_reset_to:
     """
         This marker indicates that this variable on a component will
@@ -30,3 +33,20 @@ class will_reset_to:
 
     def __init__(self, default):
         self.default = default
+
+
+def collect_resets(cls: type) -> Dict[str, Any]:
+    """
+    Get all the ``will_reset_to`` variables and their values from a class.
+
+    .. note:: This isn't useful for normal use.
+    """
+
+    result = {}
+
+    for n in dir(cls):
+        v = getattr(cls, n)
+        if isinstance(v, will_reset_to):
+            result[n] = v.default
+
+    return result
