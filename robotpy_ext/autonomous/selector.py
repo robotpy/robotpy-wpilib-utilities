@@ -159,9 +159,6 @@ class AutonomousModeSelector:
         # the user select one using the SmartDashboard.
 
         # SmartDashboard interface
-
-        # TODO: chooser doesn't work in 2020 yet
-        return
         self.chooser = wpilib.SendableChooser()
 
         default_modes = []
@@ -316,8 +313,7 @@ class AutonomousModeSelector:
             logger.info("Using autonomous mode set by LabVIEW dashboard")
             self.active_mode = self.modes[auto_mode]
         else:
-            # self.active_mode = self.chooser.getSelected()
-            self.active_mode = None
+            self.active_mode = self.chooser.getSelected()
 
         if self.active_mode is not None:
             logger.info("Enabling '%s'", self.active_mode.MODE_NAME)

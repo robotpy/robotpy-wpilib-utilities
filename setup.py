@@ -51,7 +51,7 @@ setup(
     author_email="robotpy@googlegroups.com",
     url="https://github.com/robotpy/robotpy-wpilib-utilities",
     keywords="frc first robotics",
-    install_requires=["pynetworktables>=2020.0.0", "wpilib>=2020.1.2.1,<2021.0.0"],
+    install_requires=["pynetworktables>=2020.0.0", "wpilib>=2020.2.2.1,<2021.0.0"],
     packages=find_packages(),
     license="BSD",
     classifiers=[
