@@ -665,6 +665,11 @@ class MagicRobot(wpilib._wpilib.RobotBaseUser):
             if hasattr(component, n):
                 continue
 
+            # Check for generic types from the typing module
+            origin = getattr(inject_type, "__origin__", None)
+            if origin is not None:
+                inject_type = origin
+
             # If the type is not actually a type, give a meaningful error
             if not isinstance(inject_type, type):
                 raise TypeError(
