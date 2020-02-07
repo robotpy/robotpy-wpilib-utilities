@@ -1,7 +1,7 @@
 import functools
 import inspect
 import warnings
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, overload
 
 from networktables import NetworkTables, Value
 
@@ -86,7 +86,15 @@ class tunable(Generic[V]):
         self._mkv = Value.getFactoryByType(d.type())
         # self.__doc__ = doc
 
-    def __get__(self, instance, owner) -> V:
+    @overload
+    def __get__(self, instance: None, owner=None) -> "tunable":
+        ...
+
+    @overload
+    def __get__(self, instance, owner=None) -> V:
+        ...
+
+    def __get__(self, instance, owner=None):
         if instance is not None:
             return instance._tunables[self].value
         return self
