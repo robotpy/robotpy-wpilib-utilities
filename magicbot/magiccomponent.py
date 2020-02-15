@@ -9,8 +9,8 @@ class MagicComponent:
             class MyComponent:
             
                 # other variables 'imported' automatically from MagicRobot
-                elevator_motor = Talon
-                other_component = MyOtherComponent
+                elevator_motor: Talon
+                other_component: MyOtherComponent
                 
                 ...
                 
