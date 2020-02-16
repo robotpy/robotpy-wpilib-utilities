@@ -7,5 +7,8 @@ commandbased module
     :exclude-members: autonomousPeriodic, disabledPeriodic, teleopPeriodic, robotInit, testPeriodic, startCompetition
     :show-inheritance:
 
-.. automodule:: commandbased.stopcommand
+.. automodule:: commandbased.cancelcommand
+    :members:
+
+.. automodule:: commandbased.flowcontrol
     :members:
