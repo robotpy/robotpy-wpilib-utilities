@@ -14,9 +14,9 @@ class CancelCommand(Command):
     When this command is run, it cancels the command it was passed.
     """
 
-    def __init__(self, command):
+    def __init__(self, command: Command):
         """
-            :param command: The :class:`wpilib.Command` to cancel.
+            :param command: The command to cancel.
         """
         super().__init__("Cancel %s" % command)
 
