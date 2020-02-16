@@ -45,11 +45,18 @@ project = "RobotPy WPILib Utilities"
 copyright = "2015, RobotPy development team"
 
 intersphinx_mapping = {
-    "networktables": (
-        "http://pynetworktables.readthedocs.org/en/%s/" % rtd_version,
+    "commandsv1": (
+        "https://robotpy.readthedocs.io/projects/commands-v1/en/%s/" % rtd_version,
         None,
     ),
-    "wpilib": ("http://robotpy-wpilib.readthedocs.org/en/%s/" % rtd_version, None),
+    "networktables": (
+        "https://robotpy.readthedocs.io/projects/pynetworktables/en/%s/" % rtd_version,
+        None,
+    ),
+    "wpilib": (
+        "https://robotpy.readthedocs.io/projects/wpilib/en/%s/" % rtd_version,
+        None,
+    ),
 }
 
 # The version info for the project you're documenting, acts as replacement for
@@ -128,6 +135,10 @@ epub_exclude_files = ["search.html"]
 
 # -- Custom Document processing ----------------------------------------------
 
-import gensidebar
+from robotpy_sphinx.sidebar import generate_sidebar
 
-gensidebar.generate_sidebar(globals(), "utilities")
+generate_sidebar(
+    globals(),
+    "utilities",
+    "https://raw.githubusercontent.com/robotpy/docs-sidebar/master/sidebar.toml",
+)
