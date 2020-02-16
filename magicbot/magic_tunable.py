@@ -74,7 +74,7 @@ class tunable(Generic[V]):
         *,
         writeDefault: bool = True,
         subtable: Optional[str] = None,
-        doc=None
+        doc=None,
     ) -> None:
         if doc is not None:
             warnings.warn("tunable no longer uses the doc argument", stacklevel=2)
@@ -99,7 +99,7 @@ class tunable(Generic[V]):
             return instance._tunables[self].value
         return self
 
-    def __set__(self, instance, value) -> None:
+    def __set__(self, instance, value: V) -> None:
         instance._tunables[self].setValue(self._mkv(value))
 
 
@@ -185,7 +185,7 @@ def feedback(f=None, *, key: str = None):
     In this example, the NetworkTable key is stored at
     ``/components/my_component/angle``.
 
-    .. seealso:: :class:`~wpilib.livewindow.LiveWindow` may suit your needs,
+    .. seealso:: :class:`~wpilib.LiveWindow` may suit your needs,
                  especially if you wish to monitor WPILib objects.
 
     .. versionadded:: 2018.1.0
@@ -194,17 +194,13 @@ def feedback(f=None, *, key: str = None):
         return functools.partial(feedback, key=key)
 
     if not callable(f):
-        raise TypeError(
-            "Illegal use of feedback decorator on non-callable {!r}".format(f)
-        )
+        raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
     sig = inspect.signature(f)
     name = f.__name__
 
     if len(sig.parameters) != 1:
         raise ValueError(
-            "{} may not take arguments other than 'self' (must be a simple getter method)".format(
-                name
-            )
+            f"{name} may not take arguments other than 'self' (must be a simple getter method)"
         )
 
     # Set attributes to be checked during injection

@@ -1,0 +1,5 @@
+# This file is intended for use on readthedocs
+--find-links https://www.tortall.net/~robotpy/wheels/2020/linux_x86_64
+sphinx-autodoc-typehints
+robotpy-commands-v1
+-e .
