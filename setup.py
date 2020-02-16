@@ -53,6 +53,7 @@ setup(
     keywords="frc first robotics",
     install_requires=["pynetworktables>=2020.0.0", "wpilib>=2020.2.2.1,<2021.0.0"],
     packages=find_packages(),
+    package_data={"magicbot": ["py.typed", "__init__.pyi"]},
     license="BSD",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
