@@ -1,14 +1,10 @@
 language: python
-sudo: required
 dist: xenial
 
 python:
   - "3.8"
   - "3.7"
   - "3.6"
-
-matrix:
-  fast_finish: true
 
 env:
   - RUNCOVERAGE=1 ROBOTPY_NO_DEPS=1
@@ -22,15 +18,17 @@ env:
 #   - tests/run_tests.sh
 script: true
 
-jobs:
+matrix:
+  fast_finish: true
+
   include:
-  - stage: format-check
-    python:
-    - "3.6"
+  - name: format-check
+    python: "3.6"
     install:
     - pip install black
     script:
     - black --check --diff .
+
   - stage: deploy
     if: tag IS present
     python: "3.7"
