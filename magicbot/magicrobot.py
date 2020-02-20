@@ -24,7 +24,7 @@ class MagicInjectError(ValueError):
     pass
 
 
-class MagicRobot(wpilib._wpilib.RobotBaseUser):
+class MagicRobot(wpilib.RobotBase):
     """
         Robots that use the MagicBot framework should use this as their
         base robot class. If you use this as your base, you must
