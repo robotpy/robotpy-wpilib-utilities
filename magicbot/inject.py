@@ -37,8 +37,8 @@ def get_injection_requests(
         # If the type is not actually a type, give a meaningful error
         if not isinstance(inject_type, type):
             raise TypeError(
-                "Component %s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?"
-                % (cname, n, inject_type)
+                f"Component {cname} has a non-type annotation {n}: {inject_type}\n"
+                "Lone non-injection variable annotations are disallowed, did you want to assign a static variable?"
             )
 
         requests[n] = inject_type
