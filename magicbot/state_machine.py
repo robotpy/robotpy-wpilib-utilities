@@ -1,33 +1,30 @@
 import functools
-import wpilib
 import inspect
+from typing import Callable, Optional
+
+import wpilib
 
 from .magic_tunable import tunable
 
 if wpilib.RobotBase.isSimulation():
-    from wpilib import Timer
-
-    getTime = Timer.getFPGATimestamp
-
+    getTime = wpilib.Timer.getFPGATimestamp
 else:
-    import time
-
-    getTime = time.monotonic
+    from time import monotonic as getTime
 
 
-class IllegalCallError(Exception):
+class IllegalCallError(TypeError):
     pass
 
 
-class NoFirstStateError(Exception):
+class NoFirstStateError(ValueError):
     pass
 
 
-class MultipleFirstStatesError(Exception):
+class MultipleFirstStatesError(ValueError):
     pass
 
 
-class MultipleDefaultStatesError(Exception):
+class MultipleDefaultStatesError(ValueError):
     pass
 
 
@@ -35,58 +32,93 @@ class InvalidWrapperError(Exception):
     pass
 
 
-class InvalidStateName(Exception):
+class InvalidStateName(ValueError):
     pass
 
 
-def _create_wrapper(f, first, must_finish):
-    # inspect the args, provide a correct call implementation
-    allowed_args = "self", "tm", "state_tm", "initial_call"
-    sig = inspect.signature(f)
-    name = f.__name__
+class _State:
+    def __init__(
+        self,
+        f: Callable,
+        first: bool = False,
+        must_finish: bool = False,
+        *,
+        duration: Optional[float] = None,
+        is_default: bool = False,
+    ) -> None:
+        # inspect the args, provide a correct call implementation
+        allowed_args = "self", "tm", "state_tm", "initial_call"
+        sig = inspect.signature(f)
+        name = f.__name__
 
-    args = []
-    invalid_args = []
-    for i, arg in enumerate(sig.parameters.values()):
-        if i == 0 and arg.name != "self":
-            raise ValueError("First argument to %s must be 'self'" % name)
-        if arg.kind is arg.VAR_POSITIONAL:
-            raise ValueError("Cannot use *args in signature for function %s" % name)
-        if arg.kind is arg.VAR_KEYWORD:
-            raise ValueError("Cannot use **kwargs in signature for function %s" % name)
-        if arg.kind is arg.KEYWORD_ONLY:
+        args = []
+        invalid_args = []
+        for i, arg in enumerate(sig.parameters.values()):
+            if i == 0 and arg.name != "self":
+                raise ValueError(f"First argument to {name} must be 'self'")
+            if arg.kind is arg.VAR_POSITIONAL:
+                raise ValueError(f"Cannot use *args in signature for function {name}")
+            if arg.kind is arg.VAR_KEYWORD:
+                raise ValueError(
+                    f"Cannot use **kwargs in signature for function {name}"
+                )
+            if arg.kind is arg.KEYWORD_ONLY:
+                raise ValueError(
+                    f"Cannot use keyword-only parameters for function {name}"
+                )
+            if arg.name in allowed_args:
+                args.append(arg.name)
+            else:
+                invalid_args.append(arg.name)
+
+        if invalid_args:
             raise ValueError(
-                "Currently cannot use keyword-only parameters for function %s" % name
+                "Invalid parameter names in %s: %s" % (name, ",".join(invalid_args))
             )
-        if arg.name in allowed_args:
-            args.append(arg.name)
-        else:
-            invalid_args.append(arg.name)
 
-    if invalid_args:
-        raise ValueError(
-            "Invalid parameter names in %s: %s" % (name, ",".join(invalid_args))
-        )
+        self.origin = __name__
+        self.name = name
+        self.description = f.__doc__
+        self.first = first
+        self.must_finish = must_finish
+        self.is_default = is_default
+        self.duration = duration
 
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
+        varlist = {"f": f}
+        args_code = ",".join(args)
+        wrapper_code = f"lambda self, tm, state_tm, initial_call: f({args_code})"
+        self.run = eval(wrapper_code, varlist, varlist)
+
+    def __call__(self, *args, **kwargs):
         raise IllegalCallError(
             "Do not call states directly, use begin/next_state instead"
         )
 
-    # store state variables here
-    wrapper.origin = __name__
-    wrapper.name = name
-    wrapper.description = f.__doc__
-    wrapper.first = first
-    wrapper.must_finish = must_finish
-    wrapper.is_default = False
+    def __set_name__(self, owner: type, name: str) -> None:
+        # Don't allow aliasing of states, it probably won't do what users expect
+        if name != self.name:
+            raise InvalidStateName(
+                f"magicbot state '{self.name}' defined as attribute '{name}'"
+            )
 
-    varlist = {"f": f}
-    wrapper_creator = "lambda self, tm, state_tm, initial_call: f(%s)" % ",".join(args)
-    wrapper.run = eval(wrapper_creator, varlist, varlist)
+        if not issubclass(owner, StateMachine):
+            raise TypeError(f"magicbot state {name} defined in non-StateMachine")
 
-    return wrapper
+        # Can't define states that are named the same as things in the
+        # base class, will cause issues. Catch it early.
+        if hasattr(StateMachine, name):
+            raise InvalidStateName("cannot have a state named '{name}'")
+
+        # make durations tunable
+        if self.duration is not None:
+            duration_attr = name + "_duration"
+            # don't create it twice (in case of inheritance overriding)
+            if getattr(owner, duration_attr, None) is None:
+                setattr(
+                    owner,
+                    duration_attr,
+                    tunable(self.duration, writeDefault=False, subtable="state"),
+                )
 
 
 class _StateData:
@@ -103,7 +135,12 @@ class _StateData:
 
 
 def timed_state(
-    f=None, *, duration=None, next_state=None, first=False, must_finish=False
+    f: Optional[Callable] = None,
+    *,
+    duration: float,
+    next_state=None,
+    first: bool = False,
+    must_finish: bool = False,
 ):
     """
     If this decorator is applied to a function in an object that inherits
@@ -124,17 +161,13 @@ def timed_state(
 
     :param duration: The length of time to run the state before progressing
                      to the next state
-    :type  duration: float
     :param next_state: The name of the next state. If not specified, then
                        this will be the last state executed if time expires
-    :type  next_state: str
     :param first: If True, this state will be ran first
-    :type  first: bool
     :param must_finish: If True, then this state will continue executing
                         even if ``engage()`` is not called. However,
                         if ``done()`` is called, execution will stop
                         regardless of whether this is set.
-    :type  must_finish: bool
     """
 
     if f is None:
@@ -146,18 +179,14 @@ def timed_state(
             must_finish=must_finish,
         )
 
-    if duration is None:
-        raise ValueError("timed_state functions must specify a duration")
-
-    wrapper = _create_wrapper(f, first, must_finish)
+    wrapper = _State(f, first, must_finish, duration=duration)
 
     wrapper.next_state = next_state
-    wrapper.duration = duration
 
     return wrapper
 
 
-def state(f=None, *, first=False, must_finish=False):
+def state(f=None, *, first: bool = False, must_finish: bool = False):
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StateMachine`, it indicates that the function
@@ -174,21 +203,19 @@ def state(f=None, *, first=False, must_finish=False):
       will be set to True at the start of each state execution.
 
     :param first: If True, this state will be ran first
-    :type  first: bool
     :param must_finish: If True, then this state will continue executing
                         even if ``engage()`` is not called. However,
                         if ``done()`` is called, execution will stop
                         regardless of whether this is set.
-    :type  must_finish: bool
     """
 
     if f is None:
         return functools.partial(state, first=first, must_finish=must_finish)
 
-    return _create_wrapper(f, first, must_finish)
+    return _State(f, first, must_finish)
 
 
-def default_state(f=None):
+def default_state(f: Callable):
     """
     If this decorator is applied to a method in an object that inherits
     from :class:`.StateMachine`, it indicates that the method
@@ -207,12 +234,7 @@ def default_state(f=None):
       False otherwise. If the state is switched to multiple times, this
       will be set to True at the start of each state execution.
     """
-    if f is None:
-        return functools.partial(default_state)
-
-    wrapper = _create_wrapper(f, False, True)
-    wrapper.is_default = True
-    return wrapper
+    return _State(f, first=False, must_finish=True, is_default=True)
 
 
 def _get_class_members(cls: type) -> dict:
@@ -267,7 +289,7 @@ class StateMachine:
     As a magicbot component, StateMachine contains an ``execute`` function that
     will be called on each control loop. All state execution occurs from
     within that function call. If you call other components from a
-    StateMachine component, you should ensure that your component is defined
+    StateMachine, you should ensure that your StateMachine is declared
     *before* the other components in your Robot class.
 
     .. warning:: As StateMachine already contains an execute function,
@@ -280,30 +302,33 @@ class StateMachine:
     automation component that moves a ball into a shooter when the
     shooter is ready::
 
-        class ShooterAutomation:
+        class ShooterAutomation(magicbot.StateMachine):
 
             # Some other component
-            shooter = Shooter
-            ball_pusher = BallPusher
+            shooter: Shooter
+            ball_pusher: BallPusher
 
             def fire(self):
-                """This is called from the main loop"""
+                """This is called from the main loop."""
                 self.engage()
 
             @state(first=True)
             def begin_firing(self):
-                """This function will only be called IFF fire is called and
-                   the FSM isn't currently in the 'firing' state. If fire
-                   was not called, this function will not execute."""
+                """
+                This function will only be called IFF fire is called and
+                the FSM isn't currently in the 'firing' state. If fire
+                was not called, this function will not execute.
+                """
                 self.shooter.enable()
                 if self.shooter.ready():
                     self.next_state('firing')
 
             @timed_state(duration=1.0, must_finish=True)
             def firing(self):
-                """Because must_finish=True, once the FSM has reached this
-                   state, this state will continue executing even if engage
-                   isn't called"""
+                """
+                Because must_finish=True, once the FSM has reached this state,
+                this state will continue executing even if engage isn't called.
+                """
                 self.shooter.enable()
                 self.ball_pusher.push()
 
@@ -311,19 +336,21 @@ class StateMachine:
             # Note that there is no execute function defined as part of
             # this component
             #
+
         ...
 
         class MyRobot(magicbot.MagicRobot):
+            shooter_automation: ShooterAutomation
 
-            ...
+            shooter: Shooter
+            ball_pusher: BallPusher
 
             def teleopPeriodic(self):
 
                 if self.joystick.getTrigger():
                     self.shooter_automation.fire()
 
-    This object has a lot of really useful NetworkTables integration
-    as well:
+    This object has a lot of really useful NetworkTables integration as well:
 
     - tunables are created in /components/NAME/state
       - state durations can be tuned here
@@ -363,7 +390,6 @@ class StateMachine:
         nt_desc = []
 
         states = {}
-        states_with_duration = []
         cls = type(self)
 
         default_state = None
@@ -380,13 +406,6 @@ class StateMachine:
                 )
                 raise InvalidWrapperError(errmsg)
 
-            # Can't define states that are named the same as things in the
-            # base class, will cause issues. Catch it early.
-            if hasattr(StateMachine, state.name):
-                raise InvalidStateName(
-                    "cannot have a state function named '%s'" % state.name
-                )
-
             # is this the first state to execute?
             if state.first:
                 if has_first:
@@ -397,14 +416,10 @@ class StateMachine:
                 self.__first = name
                 has_first = True
 
-            description = ""
-            if state.description is not None:
-                description = state.description
-
             state_data = _StateData(state)
-            states[state.name] = state_data
-            nt_names.append(state.name)
-            nt_desc.append(description)
+            states[name] = state_data
+            nt_names.append(name)
+            nt_desc.append(state.description or "")
 
             if state.is_default:
                 if default_state is not None:
@@ -413,29 +428,12 @@ class StateMachine:
                     )
                 default_state = state_data
 
-            # make the time tunable
-            if hasattr(state, "duration"):
-                states_with_duration.append(state)
-
         if not has_first:
             raise NoFirstStateError(
                 "Starting state not defined! Use first=True on a state decorator"
             )
 
-        # make durations tunable
-        # -> this depends on tunables being bound after this function is called
-        # TODO: use __init_subclass__
-        for state in states_with_duration:
-            # don't create it twice (in case of inheritance overriding)
-            duration_attr = f"{state.name}_duration"
-            prop = getattr(cls, duration_attr, None)
-            if prop is None:
-                prop = setattr(
-                    cls,
-                    duration_attr,
-                    tunable(state.duration, writeDefault=False, subtable="state"),
-                )
-
+        # NOTE: this depends on tunables being bound after this function is called
         cls.state_names = tunable(nt_names, subtable="state")
         cls.state_descriptions = tunable(nt_desc, subtable="state")
 
@@ -494,32 +492,31 @@ class StateMachine:
             else:
                 self.next_state(self.__first)
 
-    def next_state(self, name):
+    def next_state(self, state):
         """Call this function to transition to the next state
 
-        :param name: Name of the state to transition to
+        :param state: Name of the state to transition to
 
         .. note:: This should only be called from one of the state functions
         """
-        if callable(name):
-            state = self.__states[name.__name__]
-        else:
-            state = self.__states[name]
+        if isinstance(state, _State):
+            state = state.name
 
-        state.ran = False
-        self.current_state = state.name
+        state_data = self.__states[state]
+        state_data.ran = False
+        self.current_state = state
 
-        self.__state = state
+        self.__state = state_data
 
-    def next_state_now(self, name):
+    def next_state_now(self, state):
         """Call this function to transition to the next state, and call the next
         state function immediately. Prefer to use :meth:`next_state` instead.
 
-        :param name: Name of the state to transition to
+        :param state: Name of the state to transition to
 
         .. note:: This should only be called from one of the state functions
         """
-        self.next_state(name)
+        self.next_state(state)
         # TODO: may want to do this differently?
         self.execute()
 
