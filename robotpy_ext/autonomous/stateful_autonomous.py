@@ -9,10 +9,6 @@ import logging
 logger = logging.getLogger("autonomous")
 
 
-class InvalidWrapperError(Exception):
-    pass
-
-
 # use this to track ordering of functions, so that we can display them
 # properly in the tuning widget on the dashboard
 __global_cnt_serial = [0]
@@ -314,13 +310,6 @@ class StatefulAutonomous:
             state = getattr(self.__class__, name)
             if name.startswith("__") or not hasattr(state, "first"):
                 continue
-
-            if state.origin != __name__:
-                errmsg = (
-                    "You must only use state decorators imported from %s! This was from %s"
-                    % (__name__, state.origin)
-                )
-                raise InvalidWrapperError(errmsg)
 
             # is this the first state to execute?
             if state.first:
