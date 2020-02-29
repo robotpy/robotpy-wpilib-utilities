@@ -78,7 +78,7 @@ class _State:
 
         self.origin = __name__
         self.name = name
-        self.description = f.__doc__
+        self.description = inspect.getdoc(f)
         self.first = first
         self.must_finish = must_finish
         self.is_default = is_default
