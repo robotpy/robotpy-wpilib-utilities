@@ -303,6 +303,8 @@ class AutonomousModeSelector:
 
         This initialises the selected autonomous mode.
         Call this from your ``autonomousInit`` method.
+
+        .. versionadded:: 2020.1.5
         """
         self.timer = wpilib.Timer()
         self.timer.start()
@@ -313,6 +315,8 @@ class AutonomousModeSelector:
         """Execute one control loop iteration of the active autonomous mode.
 
         Call this from your ``autonomousPeriodic`` method.
+
+        .. versionadded:: 2020.1.5
         """
         self._on_iteration(self.timer.get())
 
@@ -321,6 +325,8 @@ class AutonomousModeSelector:
 
         You can call this from your ``disabledInit`` method
         to call your autonomous mode's ``on_disable`` method.
+
+        .. versionadded:: 2020.1.5
         """
         if self.active_mode is not None:
             logger.info("Disabling '%s'", self.active_mode.MODE_NAME)
