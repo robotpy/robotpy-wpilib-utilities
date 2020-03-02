@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Type
+from unittest.mock import Mock
 
 import magicbot
 
@@ -135,9 +136,17 @@ class TypeHintsBot(magicbot.MagicRobot):
         self.injectables = [self.injectable]
 
 
+def _make_bot(cls: Type[magicbot.MagicRobot]) -> magicbot.MagicRobot:
+    bot = cls()
+    bot.createObjects()
+    bot._automodes = Mock()
+    bot._automodes.modes = {}
+    bot._create_components()
+    return bot
+
+
 def test_simple_annotation_inject():
-    bot = SimpleBot()
-    bot.robotInit()
+    bot = _make_bot(SimpleBot)
 
     assert bot.component1.intvar == 1
     assert isinstance(bot.component1.injectable, Injectable)
@@ -148,8 +157,7 @@ def test_simple_annotation_inject():
 
 
 def test_multilevel_annotation_inject():
-    bot = MultilevelBot()
-    bot.robotInit()
+    bot = _make_bot(MultilevelBot)
 
     assert bot.dup1 is not bot.dup2
     assert bot.dup1.var == (1, 2)
@@ -158,16 +166,14 @@ def test_multilevel_annotation_inject():
 
 
 def test_inherited_annotation_inject():
-    bot = InheritBot()
-    bot.robotInit()
+    bot = _make_bot(InheritBot)
 
     assert bot.component.tupvar == (1, 2)
     assert bot.component.intvar == 1
 
 
 def test_botinherit_annotation_inject():
-    bot = InheritedBot()
-    bot.robotInit()
+    bot = _make_bot(InheritedBot)
 
     assert isinstance(bot.component_a, DumbComponent)
     assert isinstance(bot.component_b, DumbComponent)
@@ -175,8 +181,7 @@ def test_botinherit_annotation_inject():
 
 
 def test_typehintedbot():
-    bot = TypeHintedBot()
-    bot.robotInit()
+    bot = _make_bot(TypeHintedBot)
 
     assert isinstance(bot.component, DumbComponent)
     assert bot.some_int == 1
@@ -184,8 +189,7 @@ def test_typehintedbot():
 
 
 def test_typehints_inject():
-    bot = TypeHintsBot()
-    bot.robotInit()
+    bot = _make_bot(TypeHintsBot)
 
     assert isinstance(bot.component, TypeHintedComponent)
     assert bot.component.some_int == 1

@@ -3,10 +3,12 @@ import inspect
 import logging
 import typing
 
+from typing import Any, Callable, Dict, List, Tuple
+
 import hal
 import wpilib
 
-from networktables import NetworkTables
+from networktables import NetworkTables, NetworkTableEntry
 
 # from wpilib.shuffleboard import Shuffleboard
 
@@ -60,18 +62,23 @@ class MagicRobot(wpilib.RobotBase):
     #: If True, teleopPeriodic will be called in autonomous mode
     use_teleop_in_autonomous = False
 
-    def robotInit(self):
-        """
-            .. warning:: Internal API, don't override; use :meth:`createObjects` instead
-        """
+    def __init__(self) -> None:
+        super().__init__()
 
         self._exclude_from_injection = ["logger"]
 
         self.__last_error_report = -10
 
-        self._components = []
-        self._feedbacks = []
-        self._reset_components = []
+        self._components: List[Tuple[str, Any]] = []
+        self._feedbacks: List[Tuple[Callable[[], Any], NetworkTableEntry]] = []
+        self._reset_components: List[Tuple[Dict[str, Any], Any]] = []
+
+        self.__done = False
+
+    def robotInit(self):
+        """
+            .. warning:: Internal API, don't override; use :meth:`createObjects` instead
+        """
 
         # Create the user's objects and stuff here
         self.createObjects()
@@ -89,8 +96,6 @@ class MagicRobot(wpilib.RobotBase):
 
         self.__nt.putBoolean("is_simulation", self.isSimulation())
         self.__nt_put_is_ds_attached(self.ds.isDSAttached())
-
-        self.__done = False
 
         # cache these
         self.__sd_update = wpilib.SmartDashboard.updateValues
