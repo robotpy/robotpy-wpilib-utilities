@@ -75,6 +75,12 @@ class MagicRobot(wpilib.RobotBase):
 
         self.__done = False
 
+    def _simulationInit(self):
+        pass
+
+    def _simulationPeriodic(self):
+        pass
+
     def robotInit(self):
         """
             .. warning:: Internal API, don't override; use :meth:`createObjects` instead
@@ -103,6 +109,12 @@ class MagicRobot(wpilib.RobotBase):
         # self.__sf_update = Shuffleboard.update
 
         self.watchdog = SimpleWatchdog(self.control_loop_wait_time)
+
+        self.__periodics = [(self.robotPeriodic, "robotPeriodic()")]
+
+        if self.isSimulation():
+            self._simulationInit()
+            self.__periodics.append((self._simulationPeriodic, "simulationPeriodic()"))
 
     def createObjects(self):
         """
@@ -365,11 +377,10 @@ class MagicRobot(wpilib.RobotBase):
         except:
             self.onException(forceReport=True)
 
-        auto_functions = (
-            self._execute_components,
-            self._update_feedback,
-            self.robotPeriodic,
+        auto_functions = (self._execute_components, self._update_feedback,) + tuple(
+            p[0] for p in self.__periodics
         )
+
         if self.use_teleop_in_autonomous:
             auto_functions = (self.teleopPeriodic,) + auto_functions
 
@@ -417,8 +428,9 @@ class MagicRobot(wpilib.RobotBase):
                 watchdog.addEpoch("disabledPeriodic()")
 
                 self._update_feedback()
-                self.robotPeriodic()
-                watchdog.addEpoch("robotPeriodic()")
+                for periodic, name in self.__periodics:
+                    periodic()
+                    watchdog.addEpoch(name)
                 # watchdog.disable()
 
                 watchdog.printIfExpired()
@@ -465,8 +477,9 @@ class MagicRobot(wpilib.RobotBase):
                 self._execute_components()
 
                 self._update_feedback()
-                self.robotPeriodic()
-                watchdog.addEpoch("robotPeriodic()")
+                for periodic, name in self.__periodics:
+                    periodic()
+                    watchdog.addEpoch(name)
                 # watchdog.disable()
 
                 watchdog.printIfExpired()
@@ -504,8 +517,9 @@ class MagicRobot(wpilib.RobotBase):
                 watchdog.addEpoch("testPeriodic()")
 
                 self._update_feedback()
-                self.robotPeriodic()
-                watchdog.addEpoch("robotPeriodic()")
+                for periodic, name in self.__periodics:
+                    periodic()
+                    watchdog.addEpoch(name)
                 # watchdog.disable()
 
                 watchdog.printIfExpired()
