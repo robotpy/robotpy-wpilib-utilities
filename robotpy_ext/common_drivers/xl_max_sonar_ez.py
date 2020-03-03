@@ -9,7 +9,7 @@ from . import driver_base
 from . import units
 
 
-class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
+class MaxSonarEZPulseWidth(driver_base.DriverBase):
     """
     This is a driver for the MaxSonar EZ series of sonar sensors, using the pulse-width output of the sensor.
 
@@ -35,17 +35,13 @@ class MaxSonarEZPulseWidth(wpilib.SensorBase, driver_base.DriverBase):
         # Call the parents
         super().__init__()
 
-    def free(self):
-        """Delete (free) the counter for the sonar sensor"""
-        self.counter.free()
-
     def get(self):
         """Return the current sonar sensor reading, in the units specified from the constructor"""
         inches = self.counter.getPeriod() / 0.000147
         return units.convert(units.inch, self.output_units, inches)
 
 
-class MaxSonarEZAnalog(wpilib.SensorBase, driver_base.DriverBase):
+class MaxSonarEZAnalog(driver_base.DriverBase):
     """
     This is a driver for the MaxSonar EZ series of sonar sensors, using the analog output of the sensor.
 
@@ -70,10 +66,6 @@ class MaxSonarEZAnalog(wpilib.SensorBase, driver_base.DriverBase):
 
         # Call the parents
         super().__init__()
-
-    def free(self):
-        """Delete (free) the analog input for the sonar sensor"""
-        self.analog.free()
 
     def get(self):
         """Return the current sonar sensor reading, in the units specified from the constructor"""
