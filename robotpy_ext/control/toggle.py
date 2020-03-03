@@ -1,4 +1,4 @@
-from _functools import partial
+from functools import partial
 
 import wpilib
 
