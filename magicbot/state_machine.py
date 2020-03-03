@@ -28,10 +28,6 @@ class MultipleDefaultStatesError(ValueError):
     pass
 
 
-class InvalidWrapperError(Exception):
-    pass
-
-
 class InvalidStateName(ValueError):
     pass
 
@@ -76,7 +72,6 @@ class _State:
                 "Invalid parameter names in %s: %s" % (name, ",".join(invalid_args))
             )
 
-        self.origin = __name__
         self.name = name
         self.description = inspect.getdoc(f)
         self.first = first
@@ -396,15 +391,8 @@ class StateMachine:
 
         # for each state function:
         for name, state in _get_class_members(cls).items():
-            if name.startswith("__") or not hasattr(state, "first"):
+            if not isinstance(state, _State):
                 continue
-
-            if state.origin != __name__:
-                errmsg = (
-                    "You must only use state decorators imported from %s! This was from %s"
-                    % (__name__, state.origin)
-                )
-                raise InvalidWrapperError(errmsg)
 
             # is this the first state to execute?
             if state.first:
