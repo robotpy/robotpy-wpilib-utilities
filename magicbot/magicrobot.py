@@ -146,8 +146,10 @@ class MagicRobot(wpilib.RobotBase):
 
         This can be useful for code that must be run at the beginning of a match.
 
-        .. note:: The ``on_enable`` functions of all components are
-                  called before this function is called.
+        .. note::
+
+           This method is called after every component's ``on_enable`` method,
+           but before the selected autonomous mode's ``on_enable`` method.
         """
         pass
 
