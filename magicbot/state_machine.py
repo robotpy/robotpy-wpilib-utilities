@@ -1,5 +1,5 @@
 import functools
-import hal
+import wpilib
 import inspect
 
 import networktables
@@ -9,7 +9,7 @@ from robotpy_ext.misc.orderedclass import OrderedClass
 
 from .magic_tunable import tunable
 
-if hal.HALIsSimulation():
+if wpilib.RobotBase.isSimulation():
     from wpilib import Timer
 
     getTime = Timer.getFPGATimestamp

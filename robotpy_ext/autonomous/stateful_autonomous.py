@@ -356,12 +356,12 @@ class StatefulAutonomous:
         sorted_states = sorted(states.items())
 
         self.__table.putStringArray(
-            self.MODE_NAME + "_durations", (name for _, (name, desc) in sorted_states)
+            self.MODE_NAME + "_durations", [name for _, (name, desc) in sorted_states]
         )
 
         self.__table.putStringArray(
             self.MODE_NAME + "_descriptions",
-            (desc for _, (name, desc) in sorted_states),
+            [desc for _, (name, desc) in sorted_states],
         )
 
         if not has_first:

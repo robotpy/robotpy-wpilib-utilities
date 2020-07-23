@@ -3,11 +3,13 @@ import inspect
 import logging
 import os
 from glob import glob
+from typing import Union
 
 import hal
 import wpilib
 
 from ..misc.precise_delay import NotifierDelay
+from ..misc.simple_watchdog import SimpleWatchdog
 
 logger = logging.getLogger("autonomous")
 
@@ -17,8 +19,8 @@ class AutonomousModeSelector:
         This object loads all modules in a specified python package, and tries
         to automatically discover autonomous modes from them. Each module is 
         added to a ``SendableChooser`` object, which allows the user to select
-        one of them via the SmartDashboard/SFX.
-        
+        one of them via SmartDashboard.
+
         Autonomous mode objects must implement the following functions:
         
         - ``on_enable`` - Called when autonomous mode is initially enabled
@@ -30,30 +32,25 @@ class AutonomousModeSelector:
         - ``MODE_NAME`` - The name of the autonomous mode to display to users
         - ``DISABLED`` - If True, don't allow this mode to be selected
         - ``DEFAULT`` - If True, this is the default autonomous mode selected
-        
-        AutonomousModeSelector can be easily used from either ``IterativeRobot``
-        or from ``SampleRobot``. For ``IterativeRobot``, the simplest usage would
-        look like so::
-        
-            class MyRobot(wpilib.IterativeRobot):
-            
+
+        Here is an example of using ``AutonomousModeSelector`` in ``TimedRobot``:
+
+        .. code-block:: python
+
+            class MyRobot(wpilib.TimedRobot):
+
                 def robotInit(self):
                     self.automodes = AutonomousModeSelector('autonomous')
-            
+
+                def autonomousInit(self):
+                    self.automodes.start()
+
                 def autonomousPeriodic(self):
-                    self.automodes.run()
-                    
-        
-        For ``SampleRobot``, for the simplest usage you would do this::
-        
-            class MyRobot(wpilib.SampleRobot):
-            
-                def robotInit(self):
-                    self.automodes = AutonomousModeSelector('autonomous')
-            
-                def autonomous(self):
-                    self.automodes.run()
-       
+                    self.automodes.periodic()
+
+                def disabledInit(self):
+                    self.automodes.disable()
+
         If you use AutonomousModeSelector, you may also be interested in
         the autonomous state machine helper (:class:`.StatefulAutonomous`).
         
@@ -65,6 +62,13 @@ class AutonomousModeSelector:
                   unit tests like so::
                   
                       from robotpy_ext.autonomous.selector_tests import *
+
+        .. note::
+
+           For your autonomous mode's ``on_disable`` method to be called,
+           you must call :meth:`disable` in ``disabledInit``.
+
+           It is okay to not call :meth:`disable` if you do not need ``on_disable``.
     """
 
     def __init__(self, autonomous_pkgname, *args, **kwargs):
@@ -202,14 +206,14 @@ class AutonomousModeSelector:
         control_loop_wait_time=0.020,
         iter_fn=None,
         on_exception=None,
-        watchdog: wpilib.Watchdog = None,
+        watchdog: Union[wpilib.Watchdog, SimpleWatchdog] = None,
     ):
         """
-            This function does everything required to implement autonomous
-            mode behavior. You should call this from your autonomous mode
-            function -- ``autonomousPeriodic`` in :class:`.IterativeRobot`,
-            or ``autonomous`` in :class:`.SampleRobot`.
-            
+            This method implements the entire autonomous loop.
+
+            Do not call this from ``TimedRobot`` as this will break the
+            timing of your control loop when your robot switches to teleop.
+
             This function will NOT exit until autonomous mode has ended. If
             you need to execute code in all autonomous modes, pass a function
             or list of functions as the ``iter_fn`` parameter, and they will be
@@ -225,11 +229,19 @@ class AutonomousModeSelector:
         if watchdog:
             watchdog.reset()
 
+            if isinstance(watchdog, SimpleWatchdog):
+                watchdog_check_expired = watchdog.printIfExpired
+            else:
+
+                def watchdog_check_expired():
+                    if watchdog.isExpired():
+                        watchdog.printEpochs()
+
         logger.info("Begin autonomous")
 
         if iter_fn is None:
-            iter_fn = lambda: None
-        if not isinstance(iter_fn, (list, tuple)):
+            iter_fn = (lambda: None,)
+        elif not isinstance(iter_fn, (list, tuple)):
             iter_fn = (iter_fn,)
 
         if on_exception is None:
@@ -250,9 +262,11 @@ class AutonomousModeSelector:
         # Autonomous control loop
         #
 
+        observe = hal.observeUserProgramAutonomous
+
         with NotifierDelay(control_loop_wait_time) as delay:
-            while self.ds.isAutonomous() and self.ds.isEnabled():
-                hal.observeUserProgramAutonomous()
+            while self.ds.isAutonomousEnabled():
+                observe()
                 try:
                     self._on_iteration(timer.get())
                 except:
@@ -267,8 +281,7 @@ class AutonomousModeSelector:
                     watchdog.addEpoch("robotPeriodic()")
                     watchdog.disable()
 
-                    if watchdog.isExpired():
-                        watchdog.printEpochs()
+                    watchdog_check_expired()
 
                 delay.wait()
                 if watchdog:
@@ -279,11 +292,47 @@ class AutonomousModeSelector:
         #
 
         try:
-            self._on_autonomous_disable()
+            self.disable()
         except:
             on_exception(forceReport=True)
 
         logger.info("Autonomous mode ended")
+
+    def start(self) -> None:
+        """Start autonomous mode.
+
+        This initialises the selected autonomous mode.
+        Call this from your ``autonomousInit`` method.
+
+        .. versionadded:: 2020.1.5
+        """
+        self.timer = wpilib.Timer()
+        self.timer.start()
+
+        self._on_autonomous_enable()
+
+    def periodic(self) -> None:
+        """Execute one control loop iteration of the active autonomous mode.
+
+        Call this from your ``autonomousPeriodic`` method.
+
+        .. versionadded:: 2020.1.5
+        """
+        self._on_iteration(self.timer.get())
+
+    def disable(self) -> None:
+        """Disables the active autonomous mode.
+
+        You can call this from your ``disabledInit`` method
+        to call your autonomous mode's ``on_disable`` method.
+
+        .. versionadded:: 2020.1.5
+        """
+        if self.active_mode is not None:
+            logger.info("Disabling '%s'", self.active_mode.MODE_NAME)
+            self.active_mode.on_disable()
+
+        self.active_mode = None
 
     #
     #   Internal methods used to implement autonomous mode switching, and
@@ -311,14 +360,6 @@ class AutonomousModeSelector:
             logger.warning(
                 "No autonomous modes were selected, not enabling autonomous mode"
             )
-
-    def _on_autonomous_disable(self):
-        """Disable the active autonomous mode"""
-        if self.active_mode is not None:
-            logger.info("Disabling '%s'" % self.active_mode.MODE_NAME)
-            self.active_mode.on_disable()
-
-        self.active_mode = None
 
     def _on_iteration(self, time_elapsed):
         """Run the code for the current autonomous mode"""

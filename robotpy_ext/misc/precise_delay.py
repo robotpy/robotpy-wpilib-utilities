@@ -37,7 +37,7 @@ class PreciseDelay:
 
         # The WPILib sleep/etc functions are slightly less stable as
         # they have more overhead, so only use them in simulation mode
-        if hal.HALIsSimulation():
+        if wpilib.RobotBase.isSimulation():
 
             self.delay = wpilib.Timer.delay
             self.get_now = wpilib.Timer.getFPGATimestamp
@@ -115,11 +115,11 @@ class NotifierDelay:
 
         # Convert the delay period to microseconds, as FPGA timestamps are microseconds
         self.delay_period = int(delay_period * 1e6)
-        self._notifier = hal.initializeNotifier()
+        self._notifier = hal.initializeNotifier()[0]
         self._expiry_time = wpilib.RobotController.getFPGATime() + self.delay_period
-        self._update_alarm()
+        self._update_alarm(self._notifier)
 
-        wpilib.Resource._add_global_resource(self)
+        # wpilib.Resource._add_global_resource(self)
 
     def __del__(self):
         self.free()
@@ -144,9 +144,12 @@ class NotifierDelay:
 
     def wait(self) -> None:
         """Wait until the delay period has passed."""
-        hal.waitForNotifierAlarm(self._notifier)
+        handle = self._notifier
+        if handle is None:
+            return
+        hal.waitForNotifierAlarm(handle)
         self._expiry_time += self.delay_period
-        self._update_alarm()
+        self._update_alarm(handle)
 
-    def _update_alarm(self) -> None:
-        hal.updateNotifierAlarm(self._notifier, self._expiry_time)
+    def _update_alarm(self, handle) -> None:
+        hal.updateNotifierAlarm(handle, self._expiry_time)

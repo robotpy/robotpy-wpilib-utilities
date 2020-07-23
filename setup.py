@@ -51,8 +51,9 @@ setup(
     author_email="robotpy@googlegroups.com",
     url="https://github.com/robotpy/robotpy-wpilib-utilities",
     keywords="frc first robotics",
-    install_requires=["pynetworktables>=2019.0.0", "wpilib>=2019.1.1,<2020.0.0"],
+    install_requires=["pynetworktables>=2020.0.0", "wpilib>=2020.3.2.0,<2021.0.0"],
     packages=find_packages(),
+    package_data={"magicbot": ["py.typed", "magic_reset.pyi"]},
     license="BSD",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -60,8 +61,9 @@ setup(
         "Intended Audience :: Education",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Scientific/Engineering",
     ],
 )

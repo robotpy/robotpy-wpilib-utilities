@@ -1,10 +1,9 @@
 import functools
 import inspect
 import warnings
-from typing import Callable, Generic, Optional, TypeVar
+from typing import Callable, Generic, Optional, TypeVar, overload
 
-from networktables import NetworkTables
-from ntcore.value import Value
+from networktables import NetworkTables, Value
 
 V = TypeVar("V")
 
@@ -76,7 +75,7 @@ class tunable(Generic[V]):
         *,
         writeDefault: bool = True,
         subtable: Optional[str] = None,
-        doc=None
+        doc=None,
     ) -> None:
         if doc is not None:
             warnings.warn("tunable no longer uses the doc argument", stacklevel=2)
@@ -84,20 +83,26 @@ class tunable(Generic[V]):
         self._ntdefault = default
         self._ntsubtable = subtable
         self._ntwritedefault = writeDefault
+        d = Value.makeValue(default)
+        self._mkv = Value.getFactoryByType(d.type())
         # self.__doc__ = doc
-
-        self._mkv = Value.getFactory(default)
-        self._nt = NetworkTables
         self._update_cb = None
 
-    def __get__(self, instance, owner) -> V:
+    @overload
+    def __get__(self, instance: None, owner=None) -> "tunable":
+        ...
+
+    @overload
+    def __get__(self, instance, owner=None) -> V:
+        ...
+
+    def __get__(self, instance, owner=None):
         if instance is not None:
             return instance._tunables[self].value
         return self
 
     def __set__(self, instance, value: V) -> None:
-        v = instance._tunables[self]
-        self._nt._api.setEntryValueById(v._local_id, self._mkv(value))
+        instance._tunables[self].setValue(self._mkv(value))
 
     def set_callback(self, callback: Callable[[V], None]) -> None:
         """
@@ -214,7 +219,7 @@ def feedback(f=None, *, key: str = None):
     In this example, the NetworkTable key is stored at
     ``/components/my_component/angle``.
 
-    .. seealso:: :class:`~wpilib.livewindow.LiveWindow` may suit your needs,
+    .. seealso:: :class:`~wpilib.LiveWindow` may suit your needs,
                  especially if you wish to monitor WPILib objects.
 
     .. versionadded:: 2018.1.0
@@ -223,17 +228,13 @@ def feedback(f=None, *, key: str = None):
         return functools.partial(feedback, key=key)
 
     if not callable(f):
-        raise TypeError(
-            "Illegal use of feedback decorator on non-callable {!r}".format(f)
-        )
+        raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
     sig = inspect.signature(f)
     name = f.__name__
 
     if len(sig.parameters) != 1:
         raise ValueError(
-            "{} may not take arguments other than 'self' (must be a simple getter method)".format(
-                name
-            )
+            f"{name} may not take arguments other than 'self' (must be a simple getter method)"
         )
 
     # Set attributes to be checked during injection

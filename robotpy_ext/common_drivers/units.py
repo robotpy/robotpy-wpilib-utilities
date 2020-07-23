@@ -30,7 +30,7 @@ def convert(source_unit, target_unit, value):
 
     # Get the chain of conversions between target_unit and the ultimate base unit
     current_unit = target_unit
-    unit_chain = list()
+    unit_chain = []
     while current_unit.base_unit is not None:
         unit_chain.append(current_unit)
         next_unit = current_unit.base_unit
