@@ -10,44 +10,44 @@ V = TypeVar("V")
 
 class tunable(Generic[V]):
     """
-        This allows you to define simple properties that allow you to easily
-        communicate with other programs via NetworkTables.
-    
-        The following example will define a NetworkTable variable at
-        ``/components/my_component/foo``::
-        
-            class MyRobot(magicbot.MagicRobot):
-            
-                my_component: MyComponent
-        
-            ...
-            
-            from magicbot import tunable
-        
-            class MyComponent:
-        
-                # define the tunable property
-                foo = tunable(True)
+    This allows you to define simple properties that allow you to easily
+    communicate with other programs via NetworkTables.
 
-                def execute(self):
-                
-                    # set the variable
-                    self.foo = True
-                    
-                    # get the variable
-                    foo = self.foo
+    The following example will define a NetworkTable variable at
+    ``/components/my_component/foo``::
 
-        The key of the NetworkTables variable will vary based on what kind of
-        object the decorated method belongs to:
+        class MyRobot(magicbot.MagicRobot):
 
-        * A component: ``/components/COMPONENTNAME/VARNAME``
-        * An autonomous mode: ``/autonomous/MODENAME/VARNAME``
-        * Your main robot class: ``/robot/VARNAME``
-                    
-        .. note:: When executing unit tests on objects that create tunables,
-                  you will want to use setup_tunables to set the object up.
-                  In normal usage, MagicRobot does this for you, so you don't
-                  have to do anything special.
+            my_component: MyComponent
+
+        ...
+
+        from magicbot import tunable
+
+        class MyComponent:
+
+            # define the tunable property
+            foo = tunable(True)
+
+            def execute(self):
+
+                # set the variable
+                self.foo = True
+
+                # get the variable
+                foo = self.foo
+
+    The key of the NetworkTables variable will vary based on what kind of
+    object the decorated method belongs to:
+
+    * A component: ``/components/COMPONENTNAME/VARNAME``
+    * An autonomous mode: ``/autonomous/MODENAME/VARNAME``
+    * Your main robot class: ``/robot/VARNAME``
+
+    .. note:: When executing unit tests on objects that create tunables,
+              you will want to use setup_tunables to set the object up.
+              In normal usage, MagicRobot does this for you, so you don't
+              have to do anything special.
     """
 
     # the way this works is we use a special class to indicate that it
@@ -105,14 +105,14 @@ class tunable(Generic[V]):
 
 def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
     """
-        Connects the tunables on an object to NetworkTables.
+    Connects the tunables on an object to NetworkTables.
 
-        :param component:   Component object
-        :param cname:       Name of component
-        :param prefix:      Prefix to use, or no prefix if None
-    
-        .. note:: This is not needed in normal use, only useful
-                  for testing
+    :param component:   Component object
+    :param cname:       Name of component
+    :param prefix:      Prefix to use, or no prefix if None
+
+    .. note:: This is not needed in normal use, only useful
+              for testing
     """
 
     cls = component.__class__

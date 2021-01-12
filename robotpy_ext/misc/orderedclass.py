@@ -8,9 +8,9 @@ import collections
 
 class OrderedClass(type):
     """
-        Metaclass that stores class attributes in a member called
-        'members'. If you subclass something that uses this metaclass,
-        the base class members will be listed before the subclass
+    Metaclass that stores class attributes in a member called
+    'members'. If you subclass something that uses this metaclass,
+    the base class members will be listed before the subclass
     """
 
     # TODO: this isn't required in Python 3.6 due to PEP 520

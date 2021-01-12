@@ -6,28 +6,28 @@ import wpilib
 
 class PreciseDelay:
     """
-        Used to synchronize a timing loop. Will delay precisely so that
-        the next invocation of your loop happens at the same period, as long
-        as your code does not run longer than the length of the delay.
-        
-        Our experience has shown that 25ms is a good loop period.
-    
-        Usage::
-        
-            delay = PreciseDelay(time_to_delay)
-            
-            while something:
-                # do things here
-                delay.wait()
+    Used to synchronize a timing loop. Will delay precisely so that
+    the next invocation of your loop happens at the same period, as long
+    as your code does not run longer than the length of the delay.
 
-        .. deprecated:: 2019
-           PreciseDelay is terribly inefficient. Use :class:`NotifierDelay` instead.
+    Our experience has shown that 25ms is a good loop period.
+
+    Usage::
+
+        delay = PreciseDelay(time_to_delay)
+
+        while something:
+            # do things here
+            delay.wait()
+
+    .. deprecated:: 2019
+       PreciseDelay is terribly inefficient. Use :class:`NotifierDelay` instead.
     """
 
     def __init__(self, delay_period):
         """
-            :param delay_period: The amount of time (in seconds) to do a delay
-            :type delay_period: float
+        :param delay_period: The amount of time (in seconds) to do a delay
+        :type delay_period: float
         """
         warnings.warn(
             "PreciseDelay is deprecated, use NotifierDelay instead.",

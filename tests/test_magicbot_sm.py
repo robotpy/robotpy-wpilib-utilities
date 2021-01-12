@@ -541,10 +541,10 @@ def test_default_state_machine():
 
 def test_short_timed_state(wpitime):
     """
-        Tests two things:
-        - A timed state that expires before it executes
-        - Ensures that the default state won't execute if the machine is always
-          executing
+    Tests two things:
+    - A timed state that expires before it executes
+    - Ensures that the default state won't execute if the machine is always
+      executing
     """
 
     class _SM(StateMachine):

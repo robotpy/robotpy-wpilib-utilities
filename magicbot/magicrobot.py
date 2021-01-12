@@ -28,24 +28,24 @@ class MagicInjectError(ValueError):
 
 class MagicRobot(wpilib.RobotBase):
     """
-        Robots that use the MagicBot framework should use this as their
-        base robot class. If you use this as your base, you must
-        implement the following methods:
+    Robots that use the MagicBot framework should use this as their
+    base robot class. If you use this as your base, you must
+    implement the following methods:
 
-        - :meth:`createObjects`
-        - :meth:`teleopPeriodic`
+    - :meth:`createObjects`
+    - :meth:`teleopPeriodic`
 
-        MagicRobot uses the :class:`.AutonomousModeSelector` to allow you
-        to define multiple autonomous modes and to select one of them via
-        the SmartDashboard/Shuffleboard.
+    MagicRobot uses the :class:`.AutonomousModeSelector` to allow you
+    to define multiple autonomous modes and to select one of them via
+    the SmartDashboard/Shuffleboard.
 
-        MagicRobot will set the following NetworkTables variables
-        automatically:
-        
-        - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'test'
-        - ``/robot/is_simulation``: True/False
-        - ``/robot/is_ds_attached``: True/False
-        
+    MagicRobot will set the following NetworkTables variables
+    automatically:
+
+    - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'test'
+    - ``/robot/is_simulation``: True/False
+    - ``/robot/is_ds_attached``: True/False
+
     """
 
     #: Amount of time each loop takes (default is 20ms)
@@ -83,7 +83,7 @@ class MagicRobot(wpilib.RobotBase):
 
     def robotInit(self):
         """
-            .. warning:: Internal API, don't override; use :meth:`createObjects` instead
+        .. warning:: Internal API, don't override; use :meth:`createObjects` instead
         """
 
         # Create the user's objects and stuff here
@@ -118,22 +118,22 @@ class MagicRobot(wpilib.RobotBase):
 
     def createObjects(self):
         """
-            You should override this and initialize all of your wpilib
-            objects here (and not in your components, for example). This
-            serves two purposes:
+        You should override this and initialize all of your wpilib
+        objects here (and not in your components, for example). This
+        serves two purposes:
 
-            - It puts all of your motor/sensor initialization in the same
-              place, so that if you need to change a port/pin number it
-              makes it really easy to find it. Additionally, if you want
-              to create a simplified robot program to test a specific
-              thing, it makes it really easy to copy/paste it elsewhere
+        - It puts all of your motor/sensor initialization in the same
+          place, so that if you need to change a port/pin number it
+          makes it really easy to find it. Additionally, if you want
+          to create a simplified robot program to test a specific
+          thing, it makes it really easy to copy/paste it elsewhere
 
-            - It allows you to use the magic injection mechanism to share
-              variables between components
+        - It allows you to use the magic injection mechanism to share
+          variables between components
 
-            .. note:: Do not access your magic components in this function,
-                      as their instances have not been created yet. Do not
-                      create them either.
+        .. note:: Do not access your magic components in this function,
+                  as their instances have not been created yet. Do not
+                  create them either.
         """
         raise NotImplementedError
 
@@ -155,29 +155,29 @@ class MagicRobot(wpilib.RobotBase):
 
     def teleopInit(self):
         """
-            Initialization code for teleop control code may go here.
+        Initialization code for teleop control code may go here.
 
-            Users may override this method for initialization code which will be
-            called each time the robot enters teleop mode.
+        Users may override this method for initialization code which will be
+        called each time the robot enters teleop mode.
 
-            .. note:: The ``on_enable`` functions of all components are called
-                      before this function is called.
+        .. note:: The ``on_enable`` functions of all components are called
+                  before this function is called.
         """
         pass
 
     def teleopPeriodic(self):
         """
-            Periodic code for teleop mode should go here.
+        Periodic code for teleop mode should go here.
 
-            Users should override this method for code which will be called
-            periodically at a regular rate while the robot is in teleop mode.
+        Users should override this method for code which will be called
+        periodically at a regular rate while the robot is in teleop mode.
 
-            This code executes before the ``execute`` functions of all
-            components are called.
+        This code executes before the ``execute`` functions of all
+        components are called.
 
-            .. note:: If you want this function to be called in autonomous
-                      mode, set ``use_teleop_in_autonomous`` to True in your
-                      robot class.
+        .. note:: If you want this function to be called in autonomous
+                  mode, set ``use_teleop_in_autonomous`` to True in your
+                  robot class.
         """
         func = self.teleopPeriodic.__func__
         if not hasattr(func, "firstRun"):
@@ -188,25 +188,25 @@ class MagicRobot(wpilib.RobotBase):
 
     def disabledInit(self):
         """
-            Initialization code for disabled mode may go here.
+        Initialization code for disabled mode may go here.
 
-            Users may override this method for initialization code which will be
-            called each time the robot enters disabled mode.
+        Users may override this method for initialization code which will be
+        called each time the robot enters disabled mode.
 
-            .. note:: The ``on_disable`` functions of all components are called
-                      before this function is called.
+        .. note:: The ``on_disable`` functions of all components are called
+                  before this function is called.
         """
         pass
 
     def disabledPeriodic(self):
         """
-            Periodic code for disabled mode should go here.
+        Periodic code for disabled mode should go here.
 
-            Users should override this method for code which will be called
-            periodically at a regular rate while the robot is in disabled mode.
+        Users should override this method for code which will be called
+        periodically at a regular rate while the robot is in disabled mode.
 
-            This code executes before the ``execute`` functions of all
-            components are called.
+        This code executes before the ``execute`` functions of all
+        components are called.
         """
         func = self.disabledPeriodic.__func__
         if not hasattr(func, "firstRun"):
@@ -229,17 +229,17 @@ class MagicRobot(wpilib.RobotBase):
 
     def robotPeriodic(self):
         """
-            Periodic code for all modes should go here.
+        Periodic code for all modes should go here.
 
-            Users must override this method to utilize it
-            but it is not required.
+        Users must override this method to utilize it
+        but it is not required.
 
-            This function gets called last in each mode.
-            You may use it for any code you need to run
-            during all modes of the robot (e.g NetworkTables updates)
+        This function gets called last in each mode.
+        You may use it for any code you need to run
+        during all modes of the robot (e.g NetworkTables updates)
 
-            The default implementation will update
-            SmartDashboard, LiveWindow and Shuffleboard.
+        The default implementation will update
+        SmartDashboard, LiveWindow and Shuffleboard.
         """
         watchdog = self.watchdog
         self.__sd_update()
@@ -251,35 +251,35 @@ class MagicRobot(wpilib.RobotBase):
 
     def onException(self, forceReport: bool = False) -> None:
         """
-            This function must *only* be called when an unexpected exception
-            has occurred that would otherwise crash the robot code. Use this
-            inside your :meth:`operatorActions` function.
+        This function must *only* be called when an unexpected exception
+        has occurred that would otherwise crash the robot code. Use this
+        inside your :meth:`operatorActions` function.
 
-            If the FMS is attached (eg, during a real competition match),
-            this function will return without raising an error. However,
-            it will try to report one-off errors to the Driver Station so
-            that it will be recorded in the Driver Station Log Viewer.
-            Repeated errors may not get logged.
+        If the FMS is attached (eg, during a real competition match),
+        this function will return without raising an error. However,
+        it will try to report one-off errors to the Driver Station so
+        that it will be recorded in the Driver Station Log Viewer.
+        Repeated errors may not get logged.
 
-            Example usage::
+        Example usage::
 
-                def teleopPeriodic(self):
-                    try:
-                        if self.joystick.getTrigger():
-                            self.shooter.shoot()
-                    except:
-                        self.onException()
+            def teleopPeriodic(self):
+                try:
+                    if self.joystick.getTrigger():
+                        self.shooter.shoot()
+                except:
+                    self.onException()
 
-                    try:
-                        if self.joystick.getRawButton(2):
-                            self.ball_intake.run()
-                    except:
-                        self.onException()
+                try:
+                    if self.joystick.getRawButton(2):
+                        self.ball_intake.run()
+                except:
+                    self.onException()
 
-                    # and so on...
+                # and so on...
 
-            :param forceReport: Always report the exception to the DS. Don't
-                                set this to True
+        :param forceReport: Always report the exception to the DS. Don't
+                            set this to True
         """
         # If the FMS is not attached, crash the robot program
         if not self.ds.isFMSAttached():
@@ -303,26 +303,26 @@ class MagicRobot(wpilib.RobotBase):
     @contextlib.contextmanager
     def consumeExceptions(self, forceReport: bool = False):
         """
-            This returns a context manager which will consume any uncaught
-            exceptions that might otherwise crash the robot.
+        This returns a context manager which will consume any uncaught
+        exceptions that might otherwise crash the robot.
 
-            Example usage::
+        Example usage::
 
-                def teleopPeriodic(self):
-                    with self.consumeExceptions():
-                        if self.joystick.getTrigger():
-                            self.shooter.shoot()
+            def teleopPeriodic(self):
+                with self.consumeExceptions():
+                    if self.joystick.getTrigger():
+                        self.shooter.shoot()
 
-                    with self.consumeExceptions():
-                        if self.joystick.getRawButton(2):
-                            self.ball_intake.run()
+                with self.consumeExceptions():
+                    if self.joystick.getRawButton(2):
+                        self.ball_intake.run()
 
-                    # and so on...
+                # and so on...
 
-            :param forceReport: Always report the exception to the DS. Don't
-                                set this to True
+        :param forceReport: Always report the exception to the DS. Don't
+                            set this to True
 
-            .. seealso:: :meth:`onException` for more details
+        .. seealso:: :meth:`onException` for more details
         """
         try:
             yield
@@ -363,10 +363,10 @@ class MagicRobot(wpilib.RobotBase):
 
     def autonomous(self):
         """
-            MagicRobot will do The Right Thing and automatically load all
-            autonomous mode routines defined in the autonomous folder.
+        MagicRobot will do The Right Thing and automatically load all
+        autonomous mode routines defined in the autonomous folder.
 
-            .. warning:: Internal API, don't override
+        .. warning:: Internal API, don't override
         """
 
         self.__nt_put_mode("auto")
@@ -379,9 +379,10 @@ class MagicRobot(wpilib.RobotBase):
         except:
             self.onException(forceReport=True)
 
-        auto_functions = (self._execute_components, self._update_feedback,) + tuple(
-            p[0] for p in self.__periodics
-        )
+        auto_functions = (
+            self._execute_components,
+            self._update_feedback,
+        ) + tuple(p[0] for p in self.__periodics)
 
         if self.use_teleop_in_autonomous:
             auto_functions = (self.teleopPeriodic,) + auto_functions
@@ -397,11 +398,11 @@ class MagicRobot(wpilib.RobotBase):
 
     def _disabled(self):
         """
-            This function is called in disabled mode. You should not
-            override this function; rather, you should override the
-            :meth:`disabledPeriodic` function instead.
+        This function is called in disabled mode. You should not
+        override this function; rather, you should override the
+        :meth:`disabledPeriodic` function instead.
 
-            .. warning:: Internal API, don't override
+        .. warning:: Internal API, don't override
         """
         watchdog = self.watchdog
         watchdog.reset()
@@ -442,11 +443,11 @@ class MagicRobot(wpilib.RobotBase):
 
     def _operatorControl(self):
         """
-            This function is called in teleoperated mode. You should not
-            override this function; rather, you should override the
-            :meth:`teleopPeriodics` function instead.
+        This function is called in teleoperated mode. You should not
+        override this function; rather, you should override the
+        :meth:`teleopPeriodics` function instead.
 
-            .. warning:: Internal API, don't override
+        .. warning:: Internal API, don't override
         """
         watchdog = self.watchdog
         watchdog.reset()

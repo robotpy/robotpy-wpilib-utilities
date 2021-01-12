@@ -14,13 +14,13 @@ class SimpleWatchdog:
     callback is invoked.
 
     The watchdog is initialized disabled, so the user needs to call enable() before use.
-    
+
     .. note:: This is a simpler replacement for the :class:`wpilib.Watchdog`,
               and should function mostly the same (except that this watchdog will
               not detect infinite loops).
-    
+
     .. warning:: This watchdog is not threadsafe
-    
+
     """
 
     # Used for timeout print rate-limiting

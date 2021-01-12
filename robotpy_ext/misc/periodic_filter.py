@@ -4,34 +4,34 @@ import time
 
 class PeriodicFilter:
     """
-        Periodic Filter to help keep down clutter in the console.
-        Simply add this filter to your logger and the logger will
-        only print periodically.
+    Periodic Filter to help keep down clutter in the console.
+    Simply add this filter to your logger and the logger will
+    only print periodically.
 
-        The logger will always print logging levels of WARNING or higher,
-        unless given a different bypass level
-        
-        Example::
-        
-            class Component1:
+    The logger will always print logging levels of WARNING or higher,
+    unless given a different bypass level
 
-                def setup(self):
-                    # Set period to 3 seconds, set bypass_level to WARN
-                    self.logger.addFilter(PeriodicFilter(3, bypass_level=logging.WARN))
+    Example::
 
-                def execute(self):
-                    # This message will be printed once every three seconds
-                    self.logger.info('Component1 Executing')
+        class Component1:
 
-                    # This message will be printed out every loop
-                    self.logger.warn("Uh oh, this shouldn't have happened...")
-        
+            def setup(self):
+                # Set period to 3 seconds, set bypass_level to WARN
+                self.logger.addFilter(PeriodicFilter(3, bypass_level=logging.WARN))
+
+            def execute(self):
+                # This message will be printed once every three seconds
+                self.logger.info('Component1 Executing')
+
+                # This message will be printed out every loop
+                self.logger.warn("Uh oh, this shouldn't have happened...")
+
     """
 
     def __init__(self, period, bypass_level=logging.WARN):
         """
-         :param period: Wait period (in seconds) between logs
-         :param bypass_level: Lowest logging level that the filter should not catch
+        :param period: Wait period (in seconds) between logs
+        :param bypass_level: Lowest logging level that the filter should not catch
         """
 
         self._period = period

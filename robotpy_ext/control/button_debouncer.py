@@ -7,7 +7,7 @@ class ButtonDebouncer:
     def __init__(self, joystick, buttonnum, period=0.5):
         """
         :param joystick:  Joystick object
-        :type  joystick:  :class:`wpilib.Joystick` 
+        :type  joystick:  :class:`wpilib.Joystick`
         :param buttonnum: Number of button to retrieve
         :type  buttonnum: int
         :param period:    Period of time (in seconds) to wait before allowing new button

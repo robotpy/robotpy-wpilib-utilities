@@ -82,27 +82,27 @@ def _create_wrapper(f, first):
 
 def timed_state(f=None, duration=None, next_state=None, first=False):
     """
-        If this decorator is applied to a function in an object that inherits
-        from :class:`.StatefulAutonomous`, it indicates that the function
-        is a state that will run for a set amount of time unless interrupted
-        
-        The decorated function can have the following arguments in any order:
-        
-        - ``tm`` - The number of seconds since autonomous has started
-        - ``state_tm`` - The number of seconds since this state has been active
-          (note: it may not start at zero!)
-        - ``initial_call`` - Set to True when the state is initially called,
-          False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state.
-        
-        :param duration: The length of time to run the state before progressing
-                         to the next state
-        :type  duration: float
-        :param next_state: The name of the next state. If not specified, then
-                           this will be the last state executed if time expires
-        :type  next_state: str
-        :param first: If True, this state will be ran first
-        :type  first: bool
+    If this decorator is applied to a function in an object that inherits
+    from :class:`.StatefulAutonomous`, it indicates that the function
+    is a state that will run for a set amount of time unless interrupted
+
+    The decorated function can have the following arguments in any order:
+
+    - ``tm`` - The number of seconds since autonomous has started
+    - ``state_tm`` - The number of seconds since this state has been active
+      (note: it may not start at zero!)
+    - ``initial_call`` - Set to True when the state is initially called,
+      False otherwise. If the state is switched to multiple times, this
+      will be set to True at the start of each state.
+
+    :param duration: The length of time to run the state before progressing
+                     to the next state
+    :type  duration: float
+    :param next_state: The name of the next state. If not specified, then
+                       this will be the last state executed if time expires
+    :type  next_state: str
+    :param first: If True, this state will be ran first
+    :type  first: bool
     """
 
     if f is None:
@@ -123,22 +123,22 @@ def timed_state(f=None, duration=None, next_state=None, first=False):
 
 def state(f=None, first=False):
     """
-        If this decorator is applied to a function in an object that inherits
-        from :class:`.StatefulAutonomous`, it indicates that the function
-        is a state. The state will continue to be executed until the
-        ``next_state`` function is executed.
-        
-        The decorated function can have the following arguments in any order:
-        
-        - ``tm`` - The number of seconds since autonomous has started
-        - ``state_tm`` - The number of seconds since this state has been active
-          (note: it may not start at zero!)
-        - ``initial_call`` - Set to True when the state is initially called,
-          False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state.
-        
-        :param first: If True, this state will be ran first
-        :type  first: bool
+    If this decorator is applied to a function in an object that inherits
+    from :class:`.StatefulAutonomous`, it indicates that the function
+    is a state. The state will continue to be executed until the
+    ``next_state`` function is executed.
+
+    The decorated function can have the following arguments in any order:
+
+    - ``tm`` - The number of seconds since autonomous has started
+    - ``state_tm`` - The number of seconds since this state has been active
+      (note: it may not start at zero!)
+    - ``initial_call`` - Set to True when the state is initially called,
+      False otherwise. If the state is switched to multiple times, this
+      will be set to True at the start of each state.
+
+    :param first: If True, this state will be ran first
+    :type  first: bool
     """
 
     if f is None:
@@ -149,63 +149,63 @@ def state(f=None, first=False):
 
 class StatefulAutonomous:
     """
-        This object is designed to be used to implement autonomous modes that
-        can be used with the :class:`.AutonomousModeSelector` object to select
-        an appropriate autonomous mode. However, you don't have to.
-        
-        This object is designed to meet the following goals:
-        
-        - Supports simple built-in tuning of autonomous mode parameters via
-          SmartDashboard
-        - Easy to create autonomous modes that support state machine or
-          time-based operation
-        - Autonomous modes that are easy to read and understand
-        
-        You use this by defining a class that inherits from ``StatefulAutonomous``.
-        To define each state, you use the :func:`timed_state` decorator on a
-        function. When each state is run, the decorated function will be
-        called. Decorated functions can receive the following parameters:
-        
-        - ``tm`` - The number of seconds since autonomous has started
-        - ``state_tm`` - The number of seconds since this state has been active
-          (note: it may not start at zero!)
-        - ``initial_call`` - Set to True when the state is initially called,
-          False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state.
-        
-        An example autonomous mode that drives the robot forward for 5 seconds
-        might look something like this::
-        
-            from robotpy_ext.autonomous import StatefulAutonomous
-                    
-            class DriveForward(StatefulAutonomous):
-            
-                MODE_NAME = 'Drive Forward'
-            
-                def initialize(self):
-                    pass
-            
-                @timed_state(duration=0.5, next_state='drive_forward', first=True)
-                def drive_wait(self):
-                    pass
-            
-                @timed_state(duration=5)
-                def drive_forward(self):
-                    self.drive.move(0, 1, 0)
-        
-        Note that in this example, it is assumed that the DriveForward object
-        is initialized with a dictionary with a value 'drive' that contains
-        an object that has a move function::
-        
-            components = {'drive': SomeObject() }
-            mode = DriveForward(components)
-        
-        If you use this object with :class:`.AutonomousModeSelector`, make sure
-        to initialize it with the dictionary, and it will be passed to this 
-        autonomous mode object when initialized.
-        
-        .. seealso:: Check out the samples in our github repository that show
-                     some basic usage of ``AutonomousModeSelector``.
+    This object is designed to be used to implement autonomous modes that
+    can be used with the :class:`.AutonomousModeSelector` object to select
+    an appropriate autonomous mode. However, you don't have to.
+
+    This object is designed to meet the following goals:
+
+    - Supports simple built-in tuning of autonomous mode parameters via
+      SmartDashboard
+    - Easy to create autonomous modes that support state machine or
+      time-based operation
+    - Autonomous modes that are easy to read and understand
+
+    You use this by defining a class that inherits from ``StatefulAutonomous``.
+    To define each state, you use the :func:`timed_state` decorator on a
+    function. When each state is run, the decorated function will be
+    called. Decorated functions can receive the following parameters:
+
+    - ``tm`` - The number of seconds since autonomous has started
+    - ``state_tm`` - The number of seconds since this state has been active
+      (note: it may not start at zero!)
+    - ``initial_call`` - Set to True when the state is initially called,
+      False otherwise. If the state is switched to multiple times, this
+      will be set to True at the start of each state.
+
+    An example autonomous mode that drives the robot forward for 5 seconds
+    might look something like this::
+
+        from robotpy_ext.autonomous import StatefulAutonomous
+
+        class DriveForward(StatefulAutonomous):
+
+            MODE_NAME = 'Drive Forward'
+
+            def initialize(self):
+                pass
+
+            @timed_state(duration=0.5, next_state='drive_forward', first=True)
+            def drive_wait(self):
+                pass
+
+            @timed_state(duration=5)
+            def drive_forward(self):
+                self.drive.move(0, 1, 0)
+
+    Note that in this example, it is assumed that the DriveForward object
+    is initialized with a dictionary with a value 'drive' that contains
+    an object that has a move function::
+
+        components = {'drive': SomeObject() }
+        mode = DriveForward(components)
+
+    If you use this object with :class:`.AutonomousModeSelector`, make sure
+    to initialize it with the dictionary, and it will be passed to this
+    autonomous mode object when initialized.
+
+    .. seealso:: Check out the samples in our github repository that show
+                 some basic usage of ``AutonomousModeSelector``.
     """
 
     __built = False
@@ -213,10 +213,10 @@ class StatefulAutonomous:
 
     def __init__(self, components=None):
         """
-            :param components: A dictionary of values that will be assigned
-                               as attributes to this object, using the key
-                               names in the dictionary
-            :type  components: dict
+        :param components: A dictionary of values that will be assigned
+                           as attributes to this object, using the key
+                           names in the dictionary
+        :type  components: dict
         """
 
         if not hasattr(self, "MODE_NAME"):
@@ -237,24 +237,24 @@ class StatefulAutonomous:
 
     def register_sd_var(self, name, default, add_prefix=True, vmin=-1, vmax=1):
         """
-            Register a variable that is tunable via NetworkTables/SmartDashboard
-            
-            When this autonomous mode is enabled, all of the SmartDashboard
-            settings will be read and stored as attributes of this object. For
-            example, to register a variable 'foo' with a default value of 1::
-            
-                self.register_sd_var('foo', 1)
-                
-            This value will show up on NetworkTables as the key ``MODE_NAME\\foo``
-            if add_prefix is specified, otherwise as ``foo``.
-                
-            :param name:     Name of variable to display to user, cannot have a
-                             space in it.
-            :param default:  Default value of variable
-            :param add_prefix: Prefix this setting with the mode name
-            :type  add_prefix: bool
-            :param vmin:     For tuning: minimum value of this variable
-            :param vmax:     For tuning: maximum value of this variable
+        Register a variable that is tunable via NetworkTables/SmartDashboard
+
+        When this autonomous mode is enabled, all of the SmartDashboard
+        settings will be read and stored as attributes of this object. For
+        example, to register a variable 'foo' with a default value of 1::
+
+            self.register_sd_var('foo', 1)
+
+        This value will show up on NetworkTables as the key ``MODE_NAME\\foo``
+        if add_prefix is specified, otherwise as ``foo``.
+
+        :param name:     Name of variable to display to user, cannot have a
+                         space in it.
+        :param default:  Default value of variable
+        :param add_prefix: Prefix this setting with the mode name
+        :type  add_prefix: bool
+        :param vmin:     For tuning: minimum value of this variable
+        :param vmax:     For tuning: maximum value of this variable
         """
 
         is_number = self.__register_sd_var_internal(name, default, add_prefix, True)
@@ -383,13 +383,13 @@ class StatefulAutonomous:
 
     def on_enable(self):
         """
-            Called when autonomous mode is enabled, and initializes the
-            state machine internals.
-            
-            If you override this function, be sure to call it from your
-            customized ``on_enable`` function::
-            
-                super().on_enable()
+        Called when autonomous mode is enabled, and initializes the
+        state machine internals.
+
+        If you override this function, be sure to call it from your
+        customized ``on_enable`` function::
+
+            super().on_enable()
         """
 
         if not self.__built:
@@ -422,7 +422,7 @@ class StatefulAutonomous:
 
     def next_state(self, name):
         """Call this function to transition to the next state
-        
+
         :param name: Name of the state to transition to
         """
         if name is not None:
@@ -437,8 +437,8 @@ class StatefulAutonomous:
 
     def on_iteration(self, tm):
         """This function is called by the autonomous mode switcher, should
-           not be called by enduser code. It is called once per control
-           loop iteration."""
+        not be called by enduser code. It is called once per control
+        loop iteration."""
 
         # if you get an error here, then you probably overrode on_enable,
         # but didn't call super().on_enable(). Don't do that.

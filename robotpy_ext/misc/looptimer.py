@@ -6,21 +6,21 @@ _getFPGATimestamp = wpilib.Timer.getFPGATimestamp
 
 class LoopTimer:
     """
-        A utility class that measures the number of loops that a robot program
-        executes, and computes the min/max/average period for loops in the last
-        second.
-        
-        Example usage::
-        
-            class Robot(wpilib.IterativeRobot):
-        
-                def teleopInit(self):
-                    self.loop_timer = LoopTimer(self.logger)
-                
-                def teleopPeriodic(self):
-                    self.loop_timer.measure()
-        
-        Mainly intended for debugging purposes to measure how much lag.
+    A utility class that measures the number of loops that a robot program
+    executes, and computes the min/max/average period for loops in the last
+    second.
+
+    Example usage::
+
+        class Robot(wpilib.IterativeRobot):
+
+            def teleopInit(self):
+                self.loop_timer = LoopTimer(self.logger)
+
+            def teleopPeriodic(self):
+                self.loop_timer.measure()
+
+    Mainly intended for debugging purposes to measure how much lag.
     """
 
     def __init__(self, logger):
@@ -40,8 +40,8 @@ class LoopTimer:
 
     def measure(self):
         """
-            Computes loop performance information and periodically dumps it to
-            the info logger.
+        Computes loop performance information and periodically dumps it to
+        the info logger.
         """
 
         # compute min/max/count

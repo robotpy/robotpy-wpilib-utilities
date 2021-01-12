@@ -16,66 +16,66 @@ logger = logging.getLogger("autonomous")
 
 class AutonomousModeSelector:
     """
-        This object loads all modules in a specified python package, and tries
-        to automatically discover autonomous modes from them. Each module is 
-        added to a ``SendableChooser`` object, which allows the user to select
-        one of them via SmartDashboard.
+    This object loads all modules in a specified python package, and tries
+    to automatically discover autonomous modes from them. Each module is
+    added to a ``SendableChooser`` object, which allows the user to select
+    one of them via SmartDashboard.
 
-        Autonomous mode objects must implement the following functions:
-        
-        - ``on_enable`` - Called when autonomous mode is initially enabled
-        - ``on_disable`` - Called when autonomous mode is no longer active
-        - ``on_iteration`` - Called for each iteration of the autonomous control loop
-        
-        Your autonomous object may have the following attributes:
-        
-        - ``MODE_NAME`` - The name of the autonomous mode to display to users
-        - ``DISABLED`` - If True, don't allow this mode to be selected
-        - ``DEFAULT`` - If True, this is the default autonomous mode selected
+    Autonomous mode objects must implement the following functions:
 
-        Here is an example of using ``AutonomousModeSelector`` in ``TimedRobot``:
+    - ``on_enable`` - Called when autonomous mode is initially enabled
+    - ``on_disable`` - Called when autonomous mode is no longer active
+    - ``on_iteration`` - Called for each iteration of the autonomous control loop
 
-        .. code-block:: python
+    Your autonomous object may have the following attributes:
 
-            class MyRobot(wpilib.TimedRobot):
+    - ``MODE_NAME`` - The name of the autonomous mode to display to users
+    - ``DISABLED`` - If True, don't allow this mode to be selected
+    - ``DEFAULT`` - If True, this is the default autonomous mode selected
 
-                def robotInit(self):
-                    self.automodes = AutonomousModeSelector('autonomous')
+    Here is an example of using ``AutonomousModeSelector`` in ``TimedRobot``:
 
-                def autonomousInit(self):
-                    self.automodes.start()
+    .. code-block:: python
 
-                def autonomousPeriodic(self):
-                    self.automodes.periodic()
+        class MyRobot(wpilib.TimedRobot):
 
-                def disabledInit(self):
-                    self.automodes.disable()
+            def robotInit(self):
+                self.automodes = AutonomousModeSelector('autonomous')
 
-        If you use AutonomousModeSelector, you may also be interested in
-        the autonomous state machine helper (:class:`.StatefulAutonomous`).
-        
-        Check out the samples in our github repository that show some basic
-        usage of ``AutonomousModeSelector``.
-        
-        .. note:: If you use AutonomousModeSelector, then you should add
-                  ``robotpy_ext.autonomous.selector_tests`` to your pyfrc
-                  unit tests like so::
-                  
-                      from robotpy_ext.autonomous.selector_tests import *
+            def autonomousInit(self):
+                self.automodes.start()
 
-        .. note::
+            def autonomousPeriodic(self):
+                self.automodes.periodic()
 
-           For your autonomous mode's ``on_disable`` method to be called,
-           you must call :meth:`disable` in ``disabledInit``.
+            def disabledInit(self):
+                self.automodes.disable()
 
-           It is okay to not call :meth:`disable` if you do not need ``on_disable``.
+    If you use AutonomousModeSelector, you may also be interested in
+    the autonomous state machine helper (:class:`.StatefulAutonomous`).
+
+    Check out the samples in our github repository that show some basic
+    usage of ``AutonomousModeSelector``.
+
+    .. note:: If you use AutonomousModeSelector, then you should add
+              ``robotpy_ext.autonomous.selector_tests`` to your pyfrc
+              unit tests like so::
+
+                  from robotpy_ext.autonomous.selector_tests import *
+
+    .. note::
+
+       For your autonomous mode's ``on_disable`` method to be called,
+       you must call :meth:`disable` in ``disabledInit``.
+
+       It is okay to not call :meth:`disable` if you do not need ``on_disable``.
     """
 
     def __init__(self, autonomous_pkgname, *args, **kwargs):
         """
-            :param autonomous_pkgname: Module to load autonomous modes from
-            :param args: Args to pass to created autonomous modes
-            :param kwargs: Keyword args to pass to created autonomous modes
+        :param autonomous_pkgname: Module to load autonomous modes from
+        :param args: Args to pass to created autonomous modes
+        :param kwargs: Keyword args to pass to created autonomous modes
         """
 
         self.ds = wpilib.DriverStation.getInstance()
@@ -209,22 +209,22 @@ class AutonomousModeSelector:
         watchdog: Union[wpilib.Watchdog, SimpleWatchdog] = None,
     ):
         """
-            This method implements the entire autonomous loop.
+        This method implements the entire autonomous loop.
 
-            Do not call this from ``TimedRobot`` as this will break the
-            timing of your control loop when your robot switches to teleop.
+        Do not call this from ``TimedRobot`` as this will break the
+        timing of your control loop when your robot switches to teleop.
 
-            This function will NOT exit until autonomous mode has ended. If
-            you need to execute code in all autonomous modes, pass a function
-            or list of functions as the ``iter_fn`` parameter, and they will be
-            called once per autonomous mode iteration.
-                          
-            :param control_loop_wait_time: Amount of time between iterations
-            :param iter_fn: Called at the end of every iteration while
-                            autonomous mode is executing
-            :param on_exception: Called when an uncaught exception is raised,
-                                 must take a single keyword arg "forceReport"
-            :param watchdog: a WPILib Watchdog to feed every iteration
+        This function will NOT exit until autonomous mode has ended. If
+        you need to execute code in all autonomous modes, pass a function
+        or list of functions as the ``iter_fn`` parameter, and they will be
+        called once per autonomous mode iteration.
+
+        :param control_loop_wait_time: Amount of time between iterations
+        :param iter_fn: Called at the end of every iteration while
+                        autonomous mode is executing
+        :param on_exception: Called when an uncaught exception is raised,
+                             must take a single keyword arg "forceReport"
+        :param watchdog: a WPILib Watchdog to feed every iteration
         """
         if watchdog:
             watchdog.reset()

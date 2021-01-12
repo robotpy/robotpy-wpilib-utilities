@@ -9,12 +9,12 @@ _gsms = pyfrc.config.config_obj["pyfrc"]["game_specific_messages"]
 @pytest.mark.parametrize("gamedata", _gsms or [""])
 def test_all_autonomous(control, fake_time, robot, gamedata):
     """
-        This test runs all possible autonomous modes that can be selected
-        by the autonomous switcher.
-        
-        This should work for most robots. If it doesn't work for yours, 
-        and it's not a code issue with your robot, please file a bug on
-        github.
+    This test runs all possible autonomous modes that can be selected
+    by the autonomous switcher.
+
+    This should work for most robots. If it doesn't work for yours,
+    and it's not a code issue with your robot, please file a bug on
+    github.
     """
 
     class AutonomousTester:
