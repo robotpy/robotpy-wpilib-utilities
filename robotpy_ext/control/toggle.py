@@ -22,12 +22,12 @@ class Toggle:
 
     class _SteadyDebounce:
         """
-            Similar to ButtonDebouncer, but the output stays steady for
-            the given periodic_filter. E.g, if you set the period to 2
-            and press the button, the value will return true for 2 seconds.
+        Similar to ButtonDebouncer, but the output stays steady for
+        the given periodic_filter. E.g, if you set the period to 2
+        and press the button, the value will return true for 2 seconds.
 
-            Steady debounce will return true for the given period, allowing it to be
-            used with Toggle
+        Steady debounce will return true for the given period, allowing it to be
+        used with Toggle
         """
 
         def __init__(self, joystick: wpilib.Joystick, button: int, period: float):
@@ -88,9 +88,9 @@ class Toggle:
 
     def get(self):
         """
-         :return: State of toggle
-         :rtype: bool
-         """
+        :return: State of toggle
+        :rtype: bool
+        """
         current_state = self.joystickget()
 
         if current_state and not self.released:

@@ -111,35 +111,35 @@ def timed_state(
     f=None, *, duration=None, next_state=None, first=False, must_finish=False
 ):
     """
-        If this decorator is applied to a function in an object that inherits
-        from :class:`.StateMachine`, it indicates that the function
-        is a state that will run for a set amount of time unless interrupted.
-        
-        It is guaranteed that a timed_state will execute at least once, even if
-        it expires prior to being executed.
-        
-        The decorated function can have the following arguments in any order:
-        
-        - ``tm`` - The number of seconds since the state machine has started
-        - ``state_tm`` - The number of seconds since this state has been active
-          (note: it may not start at zero!)
-        - ``initial_call`` - Set to True when the state is initially called,
-          False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state execution.
-        
-        :param duration: The length of time to run the state before progressing
-                         to the next state
-        :type  duration: float
-        :param next_state: The name of the next state. If not specified, then
-                           this will be the last state executed if time expires
-        :type  next_state: str
-        :param first: If True, this state will be ran first
-        :type  first: bool
-        :param must_finish: If True, then this state will continue executing
-                            even if ``engage()`` is not called. However,
-                            if ``done()`` is called, execution will stop
-                            regardless of whether this is set.
-        :type  must_finish: bool
+    If this decorator is applied to a function in an object that inherits
+    from :class:`.StateMachine`, it indicates that the function
+    is a state that will run for a set amount of time unless interrupted.
+
+    It is guaranteed that a timed_state will execute at least once, even if
+    it expires prior to being executed.
+
+    The decorated function can have the following arguments in any order:
+
+    - ``tm`` - The number of seconds since the state machine has started
+    - ``state_tm`` - The number of seconds since this state has been active
+      (note: it may not start at zero!)
+    - ``initial_call`` - Set to True when the state is initially called,
+      False otherwise. If the state is switched to multiple times, this
+      will be set to True at the start of each state execution.
+
+    :param duration: The length of time to run the state before progressing
+                     to the next state
+    :type  duration: float
+    :param next_state: The name of the next state. If not specified, then
+                       this will be the last state executed if time expires
+    :type  next_state: str
+    :param first: If True, this state will be ran first
+    :type  first: bool
+    :param must_finish: If True, then this state will continue executing
+                        even if ``engage()`` is not called. However,
+                        if ``done()`` is called, execution will stop
+                        regardless of whether this is set.
+    :type  must_finish: bool
     """
 
     if f is None:
@@ -164,27 +164,27 @@ def timed_state(
 
 def state(f=None, *, first=False, must_finish=False):
     """
-        If this decorator is applied to a function in an object that inherits
-        from :class:`.StateMachine`, it indicates that the function
-        is a state. The state will continue to be executed until the
-        ``next_state`` function is executed.
-        
-        The decorated function can have the following arguments in any order:
-        
-        - ``tm`` - The number of seconds since the state machine has started
-        - ``state_tm`` - The number of seconds since this state has been active
-          (note: it may not start at zero!)
-        - ``initial_call`` - Set to True when the state is initially called,
-          False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state execution.
-        
-        :param first: If True, this state will be ran first
-        :type  first: bool
-        :param must_finish: If True, then this state will continue executing
-                            even if ``engage()`` is not called. However,
-                            if ``done()`` is called, execution will stop
-                            regardless of whether this is set.
-        :type  must_finish: bool
+    If this decorator is applied to a function in an object that inherits
+    from :class:`.StateMachine`, it indicates that the function
+    is a state. The state will continue to be executed until the
+    ``next_state`` function is executed.
+
+    The decorated function can have the following arguments in any order:
+
+    - ``tm`` - The number of seconds since the state machine has started
+    - ``state_tm`` - The number of seconds since this state has been active
+      (note: it may not start at zero!)
+    - ``initial_call`` - Set to True when the state is initially called,
+      False otherwise. If the state is switched to multiple times, this
+      will be set to True at the start of each state execution.
+
+    :param first: If True, this state will be ran first
+    :type  first: bool
+    :param must_finish: If True, then this state will continue executing
+                        even if ``engage()`` is not called. However,
+                        if ``done()`` is called, execution will stop
+                        regardless of whether this is set.
+    :type  must_finish: bool
     """
 
     if f is None:
@@ -195,22 +195,22 @@ def state(f=None, *, first=False, must_finish=False):
 
 def default_state(f=None):
     """
-        If this decorator is applied to a method in an object that inherits
-        from :class:`.StateMachine`, it indicates that the method
-        is a default state; that is, if no other states are executing, this
-        state will execute. If the state machine is always executing, the
-        default state will never execute.
-        
-        There can only be a single default state in a StateMachine object.
-        
-        The decorated function can have the following arguments in any order:
-        
-        - ``tm`` - The number of seconds since the state machine has started
-        - ``state_tm`` - The number of seconds since this state has been active
-          (note: it may not start at zero!)
-        - ``initial_call`` - Set to True when the state is initially called,
-          False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state execution.
+    If this decorator is applied to a method in an object that inherits
+    from :class:`.StateMachine`, it indicates that the method
+    is a default state; that is, if no other states are executing, this
+    state will execute. If the state machine is always executing, the
+    default state will never execute.
+
+    There can only be a single default state in a StateMachine object.
+
+    The decorated function can have the following arguments in any order:
+
+    - ``tm`` - The number of seconds since the state machine has started
+    - ``state_tm`` - The number of seconds since this state has been active
+      (note: it may not start at zero!)
+    - ``initial_call`` - Set to True when the state is initially called,
+      False otherwise. If the state is switched to multiple times, this
+      will be set to True at the start of each state execution.
     """
     if f is None:
         return functools.partial(default_state)
@@ -222,114 +222,114 @@ def default_state(f=None):
 
 class StateMachine(metaclass=OrderedClass):
     '''
-        The StateMachine class is used to implement magicbot components that
-        allow one to easily define a `finite state machine (FSM)
-        <https://en.wikipedia.org/wiki/Finite-state_machine>`_ that can be
-        executed via the magicbot framework.
-        
-        You create a component class that inherits from ``StateMachine``.
-        Each state is represented as a single function, and you indicate that
-        a function is a particular state by decorating it with one of the
-        following decorators:
-        
-        * :func:`@default_state <.default_state>`
-        * :func:`@state <.state>`
-        * :func:`@timed_state <.timed_state>`
-        
-        As the state machine executes, the decorated function representing the
-        current state will be called. Decorated state functions can receive the
-        following parameters (all of which are optional):
-        
-        - ``tm`` - The number of seconds since autonomous has started
-        - ``state_tm`` - The number of seconds since this state has been active
-          (note: it may not start at zero!)
-        - ``initial_call`` - Set to True when the state is initially called,
-          False otherwise. If the state is switched to multiple times, this
-          will be set to True at the start of each state.
-          
-        To be consistent with the magicbot philosophy, in order for the
-        state machine to execute its states you must call the :func:`engage`
-        function upon each execution of the main robot control loop. If you do
-        not call this function, then execution of the FSM will cease.
-        
-        .. note:: If you wish for the FSM to continue executing state functions
-                  regardless whether ``engage()`` is called, you must set the
-                  ``must_finish`` parameter in your state decorator to be True.
-        
-        When execution ceases (because ``engage()`` was not called), the
-        :func:`done` function will be called and the FSM will be reset to the
-        starting state. The state functions will not be called again unless
-        ``engage`` is called.
-        
-        As a magicbot component, StateMachine contains an ``execute`` function that
-        will be called on each control loop. All state execution occurs from
-        within that function call. If you call other components from a
-        StateMachine component, you should ensure that your component is defined
-        *before* the other components in your Robot class.
-        
-        .. warning:: As StateMachine already contains an execute function,
-                     there is no need to define your own ``execute`` function for
-                     a state machine component -- if you override ``execute``,
-                     then the state machine may not work correctly. Instead,
-                     use the :func:`@default_state <.default_state>` decorator.
-        
-        Here's a very simple example of how you might implement a shooter
-        automation component that moves a ball into a shooter when the
-        shooter is ready::
-        
-            class ShooterAutomation:
-            
-                # Some other component
-                shooter = Shooter
-                ball_pusher = BallPusher
-                
-                def fire(self):
-                    """This is called from the main loop"""
-                    self.engage()
-                    
-                @state(first=True)
-                def begin_firing(self):
-                    """This function will only be called IFF fire is called and
-                       the FSM isn't currently in the 'firing' state. If fire
-                       was not called, this function will not execute."""
-                    self.shooter.enable()
-                    if self.shooter.ready():
-                        self.next_state('firing')
-                    
-                @timed_state(duration=1.0, must_finish=True)
-                def firing(self):
-                    """Because must_finish=True, once the FSM has reached this
-                       state, this state will continue executing even if engage
-                       isn't called"""
-                    self.shooter.enable()
-                    self.ball_pusher.push()
-                
-                #
-                # Note that there is no execute function defined as part of
-                # this component
-                #
+    The StateMachine class is used to implement magicbot components that
+    allow one to easily define a `finite state machine (FSM)
+    <https://en.wikipedia.org/wiki/Finite-state_machine>`_ that can be
+    executed via the magicbot framework.
+
+    You create a component class that inherits from ``StateMachine``.
+    Each state is represented as a single function, and you indicate that
+    a function is a particular state by decorating it with one of the
+    following decorators:
+
+    * :func:`@default_state <.default_state>`
+    * :func:`@state <.state>`
+    * :func:`@timed_state <.timed_state>`
+
+    As the state machine executes, the decorated function representing the
+    current state will be called. Decorated state functions can receive the
+    following parameters (all of which are optional):
+
+    - ``tm`` - The number of seconds since autonomous has started
+    - ``state_tm`` - The number of seconds since this state has been active
+      (note: it may not start at zero!)
+    - ``initial_call`` - Set to True when the state is initially called,
+      False otherwise. If the state is switched to multiple times, this
+      will be set to True at the start of each state.
+
+    To be consistent with the magicbot philosophy, in order for the
+    state machine to execute its states you must call the :func:`engage`
+    function upon each execution of the main robot control loop. If you do
+    not call this function, then execution of the FSM will cease.
+
+    .. note:: If you wish for the FSM to continue executing state functions
+              regardless whether ``engage()`` is called, you must set the
+              ``must_finish`` parameter in your state decorator to be True.
+
+    When execution ceases (because ``engage()`` was not called), the
+    :func:`done` function will be called and the FSM will be reset to the
+    starting state. The state functions will not be called again unless
+    ``engage`` is called.
+
+    As a magicbot component, StateMachine contains an ``execute`` function that
+    will be called on each control loop. All state execution occurs from
+    within that function call. If you call other components from a
+    StateMachine component, you should ensure that your component is defined
+    *before* the other components in your Robot class.
+
+    .. warning:: As StateMachine already contains an execute function,
+                 there is no need to define your own ``execute`` function for
+                 a state machine component -- if you override ``execute``,
+                 then the state machine may not work correctly. Instead,
+                 use the :func:`@default_state <.default_state>` decorator.
+
+    Here's a very simple example of how you might implement a shooter
+    automation component that moves a ball into a shooter when the
+    shooter is ready::
+
+        class ShooterAutomation:
+
+            # Some other component
+            shooter = Shooter
+            ball_pusher = BallPusher
+
+            def fire(self):
+                """This is called from the main loop"""
+                self.engage()
+
+            @state(first=True)
+            def begin_firing(self):
+                """This function will only be called IFF fire is called and
+                   the FSM isn't currently in the 'firing' state. If fire
+                   was not called, this function will not execute."""
+                self.shooter.enable()
+                if self.shooter.ready():
+                    self.next_state('firing')
+
+            @timed_state(duration=1.0, must_finish=True)
+            def firing(self):
+                """Because must_finish=True, once the FSM has reached this
+                   state, this state will continue executing even if engage
+                   isn't called"""
+                self.shooter.enable()
+                self.ball_pusher.push()
+
+            #
+            # Note that there is no execute function defined as part of
+            # this component
+            #
+        ...
+
+        class MyRobot(magicbot.MagicRobot):
+
             ...
-                
-            class MyRobot(magicbot.MagicRobot):
-            
-                ...
-                
-                def teleopPeriodic(self):
-                
-                    if self.joystick.getTrigger():
-                        self.shooter_automation.fire()
-                        
-        This object has a lot of really useful NetworkTables integration
-        as well:
-        
-        - tunables are created in /components/NAME/state
-          - state durations can be tuned here
-          - The 'current state' is output as it happens
-          - Descriptions and names of the states are here (for dashboard use)
-          
-        
-        .. warning:: This object is not intended to be threadsafe and should not
-                     be accessed from multiple threads
+
+            def teleopPeriodic(self):
+
+                if self.joystick.getTrigger():
+                    self.shooter_automation.fire()
+
+    This object has a lot of really useful NetworkTables integration
+    as well:
+
+    - tunables are created in /components/NAME/state
+      - state durations can be tuned here
+      - The 'current state' is output as it happens
+      - Descriptions and names of the states are here (for dashboard use)
+
+
+    .. warning:: This object is not intended to be threadsafe and should not
+                 be accessed from multiple threads
     '''
 
     VERBOSE_LOGGING = False
@@ -457,26 +457,26 @@ class StateMachine(metaclass=OrderedClass):
 
     def on_enable(self):
         """
-            magicbot component API: called when autonomous/teleop is enabled
+        magicbot component API: called when autonomous/teleop is enabled
         """
         pass
 
     def on_disable(self):
         """
-            magicbot component API: called when autonomous/teleop is disabled
+        magicbot component API: called when autonomous/teleop is disabled
         """
         self.done()
 
     def engage(self, initial_state=None, force=False):
         """
-            This signals that you want the state machine to execute its
-            states.
-            
-            :param initial_state: If specified and execution is not currently
-                                  occurring, start in this state instead of
-                                  in the 'first' state
-            :param force:         If True, will transition even if the state
-                                  machine is currently active.
+        This signals that you want the state machine to execute its
+        states.
+
+        :param initial_state: If specified and execution is not currently
+                              occurring, start in this state instead of
+                              in the 'first' state
+        :param force:         If True, will transition even if the state
+                              machine is currently active.
         """
         self.__should_engage = True
 
@@ -488,9 +488,9 @@ class StateMachine(metaclass=OrderedClass):
 
     def next_state(self, name):
         """Call this function to transition to the next state
-        
+
         :param name: Name of the state to transition to
-        
+
         .. note:: This should only be called from one of the state functions
         """
         if callable(name):
@@ -506,9 +506,9 @@ class StateMachine(metaclass=OrderedClass):
     def next_state_now(self, name):
         """Call this function to transition to the next state, and call the next
         state function immediately. Prefer to use :meth:`next_state` instead.
-        
+
         :param name: Name of the state to transition to
-        
+
         .. note:: This should only be called from one of the state functions
         """
         self.next_state(name)
@@ -517,10 +517,10 @@ class StateMachine(metaclass=OrderedClass):
 
     def done(self):
         """Call this function to end execution of the state machine.
-        
+
         This function will always be called when a state machine ends. Even if
         the engage function is called repeatedly, done() will be called.
-        
+
         .. note:: If you wish to do something each time execution ceases,
                   override this function (but be sure to call
                   ``super().done()``!)
@@ -534,10 +534,10 @@ class StateMachine(metaclass=OrderedClass):
 
     def execute(self):
         """
-            magicbot component API: This is called on each iteration of the
-            control loop. Most of the time, you will not want to override
-            this function. If you find you want to, you may want to use the
-            @default_state mechanism instead.
+        magicbot component API: This is called on each iteration of the
+        control loop. Most of the time, you will not want to override
+        this function. If you find you want to, you may want to use the
+        @default_state mechanism instead.
         """
 
         now = getTime()
@@ -618,14 +618,14 @@ class StateMachine(metaclass=OrderedClass):
 
 class AutonomousStateMachine(StateMachine):
     """
-        This is a specialized version of the StateMachine that is designed
-        to be used as an autonomous mode. There are a few key differences:
-        
-        - The :func:`.engage` function is always called, so the state machine
-          will always run to completion unless done() is called
-        - VERBOSE_LOGGING is set to True, so a log message will be printed out upon
-          each state transition
-        
+    This is a specialized version of the StateMachine that is designed
+    to be used as an autonomous mode. There are a few key differences:
+
+    - The :func:`.engage` function is always called, so the state machine
+      will always run to completion unless done() is called
+    - VERBOSE_LOGGING is set to True, so a log message will be printed out upon
+      each state transition
+
     """
 
     VERBOSE_LOGGING = True

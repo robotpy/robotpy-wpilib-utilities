@@ -16,7 +16,7 @@ class CancelCommand(Command):
 
     def __init__(self, command: Command):
         """
-            :param command: The command to cancel.
+        :param command: The command to cancel.
         """
         super().__init__("Cancel %s" % command)
 
