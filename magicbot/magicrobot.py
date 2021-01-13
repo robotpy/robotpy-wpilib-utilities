@@ -1,6 +1,8 @@
 import contextlib
 import inspect
 import logging
+import sys
+import types
 import typing
 
 from typing import Any, Callable, Dict, List, Tuple
@@ -16,6 +18,7 @@ from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 
+from .inject import get_injection_requests, find_injections
 from .magic_tunable import setup_tunables, tunable, collect_feedbacks
 from .magic_reset import collect_resets
 
@@ -116,7 +119,7 @@ class MagicRobot(wpilib.RobotBase):
             self._simulationInit()
             self.__periodics.append((self._simulationPeriodic, "simulationPeriodic()"))
 
-    def createObjects(self):
+    def createObjects(self) -> None:
         """
         You should override this and initialize all of your wpilib
         objects here (and not in your components, for example). This
@@ -137,7 +140,7 @@ class MagicRobot(wpilib.RobotBase):
         """
         raise NotImplementedError
 
-    def autonomousInit(self):
+    def autonomousInit(self) -> None:
         """Initialization code for autonomous mode may go here.
 
         Users may override this method for initialization code which
@@ -153,7 +156,7 @@ class MagicRobot(wpilib.RobotBase):
         """
         pass
 
-    def teleopInit(self):
+    def teleopInit(self) -> None:
         """
         Initialization code for teleop control code may go here.
 
@@ -186,7 +189,7 @@ class MagicRobot(wpilib.RobotBase):
             )
             func.firstRun = False
 
-    def disabledInit(self):
+    def disabledInit(self) -> None:
         """
         Initialization code for disabled mode may go here.
 
@@ -215,7 +218,7 @@ class MagicRobot(wpilib.RobotBase):
             )
             func.firstRun = False
 
-    def testInit(self):
+    def testInit(self) -> None:
         """Initialization code for test mode should go here.
 
         Users should override this method for initialization code which will be
@@ -223,11 +226,11 @@ class MagicRobot(wpilib.RobotBase):
         """
         pass
 
-    def testPeriodic(self):
+    def testPeriodic(self) -> None:
         """Periodic code for test mode should go here."""
         pass
 
-    def robotPeriodic(self):
+    def robotPeriodic(self) -> None:
         """
         Periodic code for all modes should go here.
 
@@ -361,7 +364,7 @@ class MagicRobot(wpilib.RobotBase):
     def endCompetition(self) -> None:
         self.__done = True
 
-    def autonomous(self):
+    def autonomous(self) -> None:
         """
         MagicRobot will do The Right Thing and automatically load all
         autonomous mode routines defined in the autonomous folder.
@@ -379,7 +382,7 @@ class MagicRobot(wpilib.RobotBase):
         except:
             self.onException(forceReport=True)
 
-        auto_functions = (
+        auto_functions: Tuple[Callable[[], None], ...] = (
             self._execute_components,
             self._update_feedback,
         ) + tuple(p[0] for p in self.__periodics)
@@ -396,7 +399,7 @@ class MagicRobot(wpilib.RobotBase):
 
         self._on_mode_disable_components()
 
-    def _disabled(self):
+    def _disabled(self) -> None:
         """
         This function is called in disabled mode. You should not
         override this function; rather, you should override the
@@ -441,7 +444,7 @@ class MagicRobot(wpilib.RobotBase):
                 delay.wait()
                 watchdog.reset()
 
-    def _operatorControl(self):
+    def _operatorControl(self) -> None:
         """
         This function is called in teleoperated mode. You should not
         override this function; rather, you should override the
@@ -492,7 +495,7 @@ class MagicRobot(wpilib.RobotBase):
 
         self._on_mode_disable_components()
 
-    def _test(self):
+    def _test(self) -> None:
         """Called when the robot is in test mode"""
         watchdog = self.watchdog
         watchdog.reset()
@@ -572,12 +575,7 @@ class MagicRobot(wpilib.RobotBase):
 
         # - Iterate over class variables with type annotations
         # .. this hack is necessary for pybind11 based modules
-        class FakeModule:
-            pass
-
-        import sys
-
-        sys.modules["pybind11_builtins"] = FakeModule()
+        sys.modules["pybind11_builtins"] = types.SimpleNamespace()
 
         for m, ctyp in typing.get_type_hints(cls).items():
             # Ignore private variables
@@ -600,25 +598,7 @@ class MagicRobot(wpilib.RobotBase):
             # Store for later
             components.append((m, component))
 
-        # Collect attributes of this robot that are injectable
-        self._injectables = {}
-
-        for n in dir(self):
-            if (
-                n.startswith("_")
-                or n in self._exclude_from_injection
-                or isinstance(getattr(cls, n, None), tunable)
-            ):
-                continue
-
-            o = getattr(self, n)
-
-            # Don't inject methods
-            # TODO: This could actually be a cool capability..
-            if inspect.ismethod(o):
-                continue
-
-            self._injectables[n] = o
+        self._injectables = self._collect_injectables()
 
         # For each new component, perform magic injection
         for cname, component in components:
@@ -651,6 +631,29 @@ class MagicRobot(wpilib.RobotBase):
 
         self._components = components
 
+    def _collect_injectables(self) -> Dict[str, Any]:
+        injectables = {}
+        cls = type(self)
+
+        for n in dir(self):
+            if (
+                n.startswith("_")
+                or n in self._exclude_from_injection
+                or isinstance(getattr(cls, n, None), (property, tunable))
+            ):
+                continue
+
+            o = getattr(self, n)
+
+            # Don't inject methods
+            # TODO: This could actually be a cool capability..
+            if inspect.ismethod(o):
+                continue
+
+            injectables[n] = o
+
+        return injectables
+
     def _create_component(self, name: str, ctyp: type):
         # Create instance, set it on self
         component = ctyp()
@@ -670,70 +673,22 @@ class MagicRobot(wpilib.RobotBase):
 
         return component
 
-    def _setup_vars(self, cname: str, component):
-
+    def _setup_vars(self, cname: str, component) -> None:
         self.logger.debug("Injecting magic variables into %s", cname)
 
-        component_type = type(component)
+        type_hints = typing.get_type_hints(type(component))
+        requests = get_injection_requests(type_hints, cname, component)
+        injections = find_injections(requests, self._injectables, cname)
+        component.__dict__.update(injections)
 
-        # Iterate over variables with type annotations
-        for n, inject_type in typing.get_type_hints(component_type).items():
-
-            # If the variable is private ignore it
-            if n.startswith("_"):
-                continue
-
-            # If the variable has been set, skip it
-            if hasattr(component, n):
-                continue
-
-            # Check for generic types from the typing module
-            origin = getattr(inject_type, "__origin__", None)
-            if origin is not None:
-                inject_type = origin
-
-            # If the type is not actually a type, give a meaningful error
-            if not isinstance(inject_type, type):
-                raise TypeError(
-                    "Component %s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?"
-                    % (cname, n, inject_type)
-                )
-
-            self._inject(n, inject_type, cname, component)
-
-    def _inject(self, n: str, inject_type: type, cname: str, component):
-        # Retrieve injectable object
-        injectable = self._injectables.get(n)
-        if injectable is None:
-            if cname is not None:
-                # Try for mangled names
-                injectable = self._injectables.get("%s_%s" % (cname, n))
-
-        # Raise error if injectable syntax used but no injectable was found.
-        if injectable is None:
-            raise MagicInjectError(
-                "Component %s has variable %s (type %s), which is not present in %s"
-                % (cname, n, inject_type, self)
-            )
-
-        # Raise error if injectable declared with type different than the initial type
-        if not isinstance(injectable, inject_type):
-            raise MagicInjectError(
-                "Component %s variable %s in %s are not the same types! (Got %s, expected %s)"
-                % (cname, n, self, type(injectable), inject_type)
-            )
-        # Perform injection
-        setattr(component, n, injectable)
-        self.logger.debug("-> %s as %s.%s", injectable, cname, n)
-
-    def _setup_reset_vars(self, component):
+    def _setup_reset_vars(self, component) -> None:
         reset_dict = collect_resets(type(component))
 
         if reset_dict:
             component.__dict__.update(reset_dict)
             self._reset_components.append((reset_dict, component))
 
-    def _update_feedback(self):
+    def _update_feedback(self) -> None:
         for method, entry in self._feedbacks:
             try:
                 value = method()
@@ -743,7 +698,7 @@ class MagicRobot(wpilib.RobotBase):
             entry.setValue(value)
         self.watchdog.addEpoch("@magicbot.feedback")
 
-    def _execute_components(self):
+    def _execute_components(self) -> None:
         for name, component in self._components:
             try:
                 component.execute()
