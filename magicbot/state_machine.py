@@ -102,7 +102,7 @@ class _State:
         # Can't define states that are named the same as things in the
         # base class, will cause issues. Catch it early.
         if hasattr(StateMachine, name):
-            raise InvalidStateName("cannot have a state named '{name}'")
+            raise InvalidStateName(f"cannot have a state named '{name}'")
 
         # make durations tunable
         if self.duration is not None:
