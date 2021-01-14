@@ -8,7 +8,6 @@ from magicbot.state_machine import (
     NoFirstStateError,
     MultipleFirstStatesError,
     MultipleDefaultStatesError,
-    InvalidWrapperError,
     InvalidStateName,
 )
 
@@ -18,7 +17,7 @@ import pytest
 
 
 def test_no_timed_state_duration():
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
 
         class _TM(StateMachine):
             @timed_state()
@@ -361,21 +360,17 @@ def test_mixup():
     from robotpy_ext.autonomous import state as _ext_state
     from robotpy_ext.autonomous import timed_state as _ext_timed_state
 
-    class _SM1(StateMachine):
-        @_ext_state(first=True)
-        def the_state(self):
-            pass
+    with pytest.raises(TypeError):
+        class _SM1(StateMachine):
+            @_ext_state(first=True)
+            def the_state(self):
+                pass
 
-    with pytest.raises(InvalidWrapperError):
-        _SM1()
-
-    class _SM2(StateMachine):
-        @_ext_timed_state(first=True, duration=1)
-        def the_state(self):
-            pass
-
-    with pytest.raises(InvalidWrapperError):
-        _SM2()
+    with pytest.raises(TypeError):
+        class _SM2(StateMachine):
+            @_ext_timed_state(first=True, duration=1)
+            def the_state(self):
+                pass
 
 
 def test_forbidden_state_names():
