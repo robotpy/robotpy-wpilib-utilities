@@ -1,5 +1,5 @@
 from robotpy_ext.control.toggle import Toggle
-from robotpy_ext.misc.precise_delay import PreciseDelay
+from robotpy_ext.misc.precise_delay import NotifierDelay
 
 
 class FakeJoystick:
@@ -36,9 +36,10 @@ def test_toggle():
 
 
 def test_toggle_debounce():
-    delay = PreciseDelay(2.1)
+    # TODO: use simulated time
+    delay = NotifierDelay(0.5)
     joystick = FakeJoystick()
-    toggleButton = Toggle(joystick, 1, 2)
+    toggleButton = Toggle(joystick, 1, 0.1)
     assert toggleButton.off
     joystick.press(1)
     assert toggleButton.on
