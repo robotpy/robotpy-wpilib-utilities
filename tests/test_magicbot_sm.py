@@ -360,29 +360,34 @@ def test_mixup():
     from robotpy_ext.autonomous import state as _ext_state
     from robotpy_ext.autonomous import timed_state as _ext_timed_state
 
-    with pytest.raises(TypeError):
+    with pytest.raises(RuntimeError) as exc_info:
 
         class _SM1(StateMachine):
             @_ext_state(first=True)
             def the_state(self):
                 pass
 
-    with pytest.raises(TypeError):
+    assert isinstance(exc_info.value.__cause__, TypeError)
+
+    with pytest.raises(RuntimeError) as exc_info:
 
         class _SM2(StateMachine):
             @_ext_timed_state(first=True, duration=1)
             def the_state(self):
                 pass
 
+    assert isinstance(exc_info.value.__cause__, TypeError)
+
 
 def test_forbidden_state_names():
-    class _SM(StateMachine):
-        @state
-        def done(self):
-            pass
+    with pytest.raises(RuntimeError) as exc_info:
 
-    with pytest.raises(InvalidStateName):
-        _SM()
+        class _SM(StateMachine):
+            @state
+            def done(self):
+                pass
+
+    assert isinstance(exc_info.value.__cause__, InvalidStateName)
 
 
 def test_mixins():
