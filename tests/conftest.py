@@ -7,19 +7,11 @@ from unittest.mock import MagicMock
 
 
 def pytest_runtest_setup():
-    import networktables
-
-    networktables.NetworkTables.startTestMode()
+    pass
 
 
 def pytest_runtest_teardown():
-    import networktables
-
-    networktables.NetworkTables.shutdown()
-
-    from wpilib import SmartDashboard
-
-    SmartDashboard._reset()
+    pass
 
 
 @pytest.fixture(scope="function")
