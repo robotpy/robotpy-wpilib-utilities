@@ -96,7 +96,7 @@ def test_sm(wpitime):
     assert sm.current_state == "second_state"
     assert sm.is_executing
 
-    wpitime.now += 1.5
+    wpitime.step(1.5)
     sm.engage()
     sm.execute()
     assert sm.current_state == "third_state"
@@ -118,7 +118,7 @@ def test_sm(wpitime):
     assert sm.current_state == "second_state"
     assert sm.is_executing
 
-    wpitime.now += 1.5
+    wpitime.step(1.5)
     sm.engage()
     sm.execute()
     assert sm.current_state == "third_state"
@@ -224,13 +224,13 @@ def test_must_finish(wpitime):
     assert sm.current_state == "timed_must_finish"
 
     for _ in range(7):
-        wpitime.now += 0.1
+        wpitime.step(0.1)
 
         sm.execute()
         assert sm.is_executing
         assert sm.current_state == "timed_must_finish"
 
-    wpitime.now += 1
+    wpitime.step(1)
     sm.execute()
     assert not sm.is_executing
 
@@ -291,12 +291,12 @@ def test_autonomous_sm_end_timed_state(wpitime):
     sm.on_enable()
 
     for _ in range(5):
-        wpitime.now += 0.7
+        wpitime.step(0.7)
         sm.on_iteration(None)
         assert sm.is_executing
 
     for _ in range(5):
-        wpitime.now += 0.7
+        wpitime.step(0.7)
         sm.on_iteration(None)
         assert not sm.is_executing
 
@@ -344,7 +344,7 @@ def test_next_fn2(wpitime):
     assert sm.current_state == "first_state"
     assert sm.is_executing
 
-    wpitime.now += 0.5
+    wpitime.step(0.5)
 
     sm.engage()
     sm.execute()
@@ -580,12 +580,12 @@ def test_short_timed_state(wpitime):
         sm.execute()
         assert sm.current_state == "b"
 
-        wpitime.now += 0.02
+        wpitime.step(0.02)
 
         sm.engage()
         sm.execute()
         assert sm.current_state == "b"
 
-        wpitime.now += 0.02
+        wpitime.step(0.02)
 
     assert sm.executed == ["a", "b", "d", "a", "b", "d", "a", "b", "d", "a", "b"]
