@@ -361,12 +361,14 @@ def test_mixup():
     from robotpy_ext.autonomous import timed_state as _ext_timed_state
 
     with pytest.raises(TypeError):
+
         class _SM1(StateMachine):
             @_ext_state(first=True)
             def the_state(self):
                 pass
 
     with pytest.raises(TypeError):
+
         class _SM2(StateMachine):
             @_ext_timed_state(first=True, duration=1)
             def the_state(self):
