@@ -14,7 +14,7 @@ logger = logging.getLogger("autonomous")
 __global_cnt_serial = [0]
 
 
-def __get_state_serial():
+def _get_state_serial():
     __global_cnt_serial[0] = __global_cnt_serial[0] + 1
     return __global_cnt_serial[0]
 
@@ -60,7 +60,7 @@ class _State:
         self.ran = False
         self.first = first
         self.expires = 0xFFFFFFFF
-        self.serial = __get_state_serial()
+        self.serial = _get_state_serial()
 
         varlist = {"f": f}
         args_code = ",".join(args)
