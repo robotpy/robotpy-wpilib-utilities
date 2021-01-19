@@ -1,16 +1,12 @@
-import wpilib
-import networktables
-
 import functools
 import inspect
-
 import logging
+from typing import Callable, Optional
+
+import networktables
+import wpilib
 
 logger = logging.getLogger("autonomous")
-
-
-class InvalidWrapperError(Exception):
-    pass
 
 
 # use this to track ordering of functions, so that we can display them
@@ -23,53 +19,62 @@ def __get_state_serial():
     return __global_cnt_serial[0]
 
 
-def _create_wrapper(f, first):
-    # inspect the args, provide a correct call implementation
-    allowed_args = "self", "tm", "state_tm", "initial_call"
-    sig = inspect.signature(f)
-    name = f.__name__
+class _State:
+    def __init__(self, f: Callable, first: bool):
+        # inspect the args, provide a correct call implementation
+        allowed_args = "self", "tm", "state_tm", "initial_call"
+        sig = inspect.signature(f)
+        name = f.__name__
 
-    args = []
-    invalid_args = []
-    for i, arg in enumerate(sig.parameters.values()):
-        if i == 0 and arg.name != "self":
-            raise ValueError("First argument to %s must be 'self'" % name)
-        if arg.kind is arg.VAR_POSITIONAL:
-            raise ValueError("Cannot use *args in signature for function %s" % name)
-        if arg.kind is arg.VAR_KEYWORD:
-            raise ValueError("Cannot use **kwargs in signature for function %s" % name)
-        if arg.kind is arg.KEYWORD_ONLY:
+        args = []
+        invalid_args = []
+        for i, arg in enumerate(sig.parameters.values()):
+            if i == 0 and arg.name != "self":
+                raise ValueError(f"First argument to {name} must be 'self'")
+            if arg.kind is arg.VAR_POSITIONAL:
+                raise ValueError(f"Cannot use *args in signature for function {name}")
+            if arg.kind is arg.VAR_KEYWORD:
+                raise ValueError(
+                    f"Cannot use **kwargs in signature for function {name}"
+                )
+            if arg.kind is arg.KEYWORD_ONLY:
+                raise ValueError(
+                    "Cannot use keyword-only parameters for function %s" % name
+                )
+            if arg.name in allowed_args:
+                args.append(arg.name)
+            else:
+                invalid_args.append(arg.name)
+
+        if invalid_args:
             raise ValueError(
-                "Currently cannot use keyword-only parameters for function %s" % name
+                "Invalid parameter names in %s: %s" % (name, ",".join(invalid_args))
             )
-        if arg.name in allowed_args:
-            args.append(arg.name)
-        else:
-            invalid_args.append(arg.name)
 
-    if invalid_args:
-        raise ValueError(
-            "Invalid parameter names in %s: %s" % (name, ",".join(invalid_args))
-        )
+        functools.update_wrapper(self, f)
 
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        return f(*args, **kwargs)
+        # store state variables here
+        self._func = f
+        self.name = name
+        self.description = f.__doc__
+        self.ran = False
+        self.first = first
+        self.expires = 0xFFFFFFFF
+        self.serial = __get_state_serial()
 
-    # store state variables here
-    wrapper.origin = __name__
-    wrapper.name = name
-    wrapper.description = f.__doc__
-    wrapper.ran = False
-    wrapper.first = first
-    wrapper.expires = 0xFFFFFFFF
-    wrapper.serial = __get_state_serial()
+        varlist = {"f": f}
+        args_code = ",".join(args)
+        wrapper_code = f"lambda self, tm, state_tm, initial_call: f({args_code})"
+        self.run = eval(wrapper_code, varlist, varlist)
 
-    varlist = {"f": f}
-    wrapper_creator = "lambda self, tm, state_tm, initial_call: f(%s)" % ",".join(args)
-    wrapper.run = eval(wrapper_creator, varlist, varlist)
+    def __call__(self, *args, **kwargs):
+        self._func(*args, **kwargs)
 
-    return wrapper
+    def __set_name__(self, owner: type, name: str) -> None:
+        if not issubclass(owner, StatefulAutonomous):
+            raise TypeError(
+                f"StatefulAutonomous state {name} defined in non-StatefulAutonomous"
+            )
 
 
 #
@@ -80,7 +85,12 @@ def _create_wrapper(f, first):
 #
 
 
-def timed_state(f=None, duration=None, next_state=None, first=False):
+def timed_state(
+    f: Optional[Callable] = None,
+    duration: float = None,
+    next_state: str = None,
+    first: bool = False,
+):
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StatefulAutonomous`, it indicates that the function
@@ -97,12 +107,9 @@ def timed_state(f=None, duration=None, next_state=None, first=False):
 
     :param duration: The length of time to run the state before progressing
                      to the next state
-    :type  duration: float
     :param next_state: The name of the next state. If not specified, then
                        this will be the last state executed if time expires
-    :type  next_state: str
     :param first: If True, this state will be ran first
-    :type  first: bool
     """
 
     if f is None:
@@ -113,7 +120,7 @@ def timed_state(f=None, duration=None, next_state=None, first=False):
     if duration is None:
         raise ValueError("timed_state functions must specify a duration")
 
-    wrapper = _create_wrapper(f, first)
+    wrapper = _State(f, first)
 
     wrapper.next_state = next_state
     wrapper.duration = duration
@@ -121,7 +128,7 @@ def timed_state(f=None, duration=None, next_state=None, first=False):
     return wrapper
 
 
-def state(f=None, first=False):
+def state(f: Optional[Callable] = None, first: bool = False):
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StatefulAutonomous`, it indicates that the function
@@ -138,13 +145,12 @@ def state(f=None, first=False):
       will be set to True at the start of each state.
 
     :param first: If True, this state will be ran first
-    :type  first: bool
     """
 
     if f is None:
         return functools.partial(state, first=first)
 
-    return _create_wrapper(f, first)
+    return _State(f, first)
 
 
 class StatefulAutonomous:
@@ -307,20 +313,13 @@ class StatefulAutonomous:
         has_first = False
 
         states = {}
+        cls = type(self)
 
         # for each state function:
-        for name in dir(self.__class__):
-
-            state = getattr(self.__class__, name)
-            if name.startswith("__") or not hasattr(state, "first"):
+        for name in dir(cls):
+            state = getattr(cls, name)
+            if not isinstance(state, _State):
                 continue
-
-            if state.origin != __name__:
-                errmsg = (
-                    "You must only use state decorators imported from %s! This was from %s"
-                    % (__name__, state.origin)
-                )
-                raise InvalidWrapperError(errmsg)
 
             # is this the first state to execute?
             if state.first:
