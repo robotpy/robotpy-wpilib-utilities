@@ -4,7 +4,6 @@ Utilities API
 
 .. toctree::
 
-    commandbased
     magicbot
     robotpy_ext.autonomous
     robotpy_ext.common_drivers
