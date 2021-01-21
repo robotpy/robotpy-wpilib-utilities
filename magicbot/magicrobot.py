@@ -84,6 +84,11 @@ class MagicRobot(wpilib.RobotBase):
     def _simulationPeriodic(self):
         pass
 
+    def __simulationPeriodic(self):
+        hal.simPeriodicBefore()
+        self._simulationPeriodic()
+        hal.simPeriodicAfter()
+
     def robotInit(self):
         """
         .. warning:: Internal API, don't override; use :meth:`createObjects` instead
@@ -117,7 +122,7 @@ class MagicRobot(wpilib.RobotBase):
 
         if self.isSimulation():
             self._simulationInit()
-            self.__periodics.append((self._simulationPeriodic, "simulationPeriodic()"))
+            self.__periodics.append((self.__simulationPeriodic, "simulationPeriodic()"))
 
     def createObjects(self) -> None:
         """
