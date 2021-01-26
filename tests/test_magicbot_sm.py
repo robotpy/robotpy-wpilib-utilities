@@ -380,14 +380,12 @@ def test_mixup():
 
 
 def test_forbidden_state_names():
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(InvalidStateName):
 
         class _SM(StateMachine):
             @state
             def done(self):
                 pass
-
-    assert isinstance(exc_info.value.__cause__, InvalidStateName)
 
 
 def test_mixins():

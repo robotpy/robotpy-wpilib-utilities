@@ -42,11 +42,16 @@ class _State:
         duration: Optional[float] = None,
         is_default: bool = False,
     ) -> None:
+        name = f.__name__
+
+        # Can't define states that are named the same as things in the
+        # base class, will cause issues. Catch it early.
+        if hasattr(StateMachine, name):
+            raise InvalidStateName(f"cannot have a state named '{name}'")
+
         # inspect the args, provide a correct call implementation
         allowed_args = "self", "tm", "state_tm", "initial_call"
         sig = inspect.signature(f)
-        name = f.__name__
-
         args = []
         invalid_args = []
         for i, arg in enumerate(sig.parameters.values()):
@@ -98,11 +103,6 @@ class _State:
 
         if not issubclass(owner, StateMachine):
             raise TypeError(f"magicbot state {name} defined in non-StateMachine")
-
-        # Can't define states that are named the same as things in the
-        # base class, will cause issues. Catch it early.
-        if hasattr(StateMachine, name):
-            raise InvalidStateName(f"cannot have a state named '{name}'")
 
         # make durations tunable
         if self.duration is not None:
