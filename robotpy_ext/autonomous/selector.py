@@ -78,7 +78,6 @@ class AutonomousModeSelector:
         :param kwargs: Keyword args to pass to created autonomous modes
         """
 
-        self.ds = wpilib.DriverStation.getInstance()
         self.modes = {}
         self.active_mode = None
 
@@ -112,7 +111,7 @@ class AutonomousModeSelector:
                 module = importlib.import_module("." + module_name, autonomous_pkgname)
                 # module = imp.load_source('.' + module_name, module_filename)
             except:
-                if not self.ds.isFMSAttached():
+                if not wpilib.DriverStation.isFMSAttached():
                     raise
 
             #
@@ -136,13 +135,13 @@ class AutonomousModeSelector:
                         instance = obj(*args, **kwargs)
                     except:
 
-                        if not self.ds.isFMSAttached():
+                        if not wpilib.DriverStation.isFMSAttached():
                             raise
                         else:
                             continue
 
                     if mode_name in self.modes:
-                        if not self.ds.isFMSAttached():
+                        if not wpilib.DriverStation.isFMSAttached():
                             raise RuntimeError(
                                 "Duplicate name %s in %s" % (mode_name, module_filename)
                             )
@@ -187,7 +186,7 @@ class AutonomousModeSelector:
         if len(default_modes) == 0:
             self.chooser.setDefaultOption("None", None)
         elif len(default_modes) != 1:
-            if not self.ds.isFMSAttached():
+            if not wpilib.DriverStation.isFMSAttached():
                 raise RuntimeError(
                     "More than one autonomous mode was specified as default! (modes: %s)"
                     % (", ".join(default_modes))
@@ -263,9 +262,10 @@ class AutonomousModeSelector:
         #
 
         observe = hal.observeUserProgramAutonomous
+        isAutonomousEnabled = wpilib.DriverStation.isAutonomousEnabled
 
         with NotifierDelay(control_loop_wait_time) as delay:
-            while self.ds.isAutonomousEnabled():
+            while isAutonomousEnabled():
                 observe()
                 try:
                     self._on_iteration(timer.get())
@@ -367,5 +367,5 @@ class AutonomousModeSelector:
             self.active_mode.on_iteration(time_elapsed)
 
     def _on_exception(self, forceReport=False):
-        if not self.ds.isFMSAttached():
+        if not wpilib.DriverStation.isFMSAttached():
             raise

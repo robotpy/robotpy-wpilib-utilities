@@ -103,18 +103,19 @@ class MagicRobot(wpilib.RobotBase):
         # Next, create the robot components and wire them together
         self._create_components()
 
+        # cache these
+        self.__is_ds_attached = wpilib.DriverStation.isDSAttached
+        self.__sd_update = wpilib.SmartDashboard.updateValues
+        self.__lv_update = wpilib.LiveWindow.updateValues
+        # self.__sf_update = Shuffleboard.update
+
         self.__nt = NetworkTables.getTable("/robot")
 
         self.__nt_put_is_ds_attached = self.__nt.getEntry("is_ds_attached").setBoolean
         self.__nt_put_mode = self.__nt.getEntry("mode").setString
 
         self.__nt.putBoolean("is_simulation", self.isSimulation())
-        self.__nt_put_is_ds_attached(self.ds.isDSAttached())
-
-        # cache these
-        self.__sd_update = wpilib.SmartDashboard.updateValues
-        self.__lv_update = wpilib.LiveWindow.getInstance().updateValues
-        # self.__sf_update = Shuffleboard.update
+        self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
         self.watchdog = SimpleWatchdog(self.control_loop_wait_time)
 
@@ -290,7 +291,7 @@ class MagicRobot(wpilib.RobotBase):
                             set this to True
         """
         # If the FMS is not attached, crash the robot program
-        if not self.ds.isFMSAttached():
+        if not wpilib.DriverStation.isFMSAttached():
             raise
 
         # Otherwise, if the FMS is attached then try to report the error via
@@ -302,7 +303,7 @@ class MagicRobot(wpilib.RobotBase):
                 forceReport
                 or (now - self.__last_error_report) > self.error_report_interval
             ):
-                wpilib.DriverStation.reportError("Unexpected exception", True)
+                wpilib.reportError("Unexpected exception", True)
         except:
             pass  # ok, can't do anything here
 
@@ -378,7 +379,7 @@ class MagicRobot(wpilib.RobotBase):
         """
 
         self.__nt_put_mode("auto")
-        self.__nt_put_is_ds_attached(self.ds.isDSAttached())
+        self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
         self._on_mode_enable_components()
 
@@ -427,7 +428,7 @@ class MagicRobot(wpilib.RobotBase):
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done and self.isDisabled():
-                if ds_attached != self.ds.isDSAttached():
+                if ds_attached != self.__is_ds_attached():
                     ds_attached = not ds_attached
                     self.__nt_put_is_ds_attached(ds_attached)
 
@@ -463,7 +464,7 @@ class MagicRobot(wpilib.RobotBase):
         self.__nt_put_mode("teleop")
         # don't need to update this during teleop -- presumably will switch
         # modes when ds is no longer attached
-        self.__nt_put_is_ds_attached(self.ds.isDSAttached())
+        self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
         # initialize things
         self._on_mode_enable_components()
@@ -506,10 +507,9 @@ class MagicRobot(wpilib.RobotBase):
         watchdog.reset()
 
         self.__nt_put_mode("test")
-        self.__nt_put_is_ds_attached(self.ds.isDSAttached())
+        self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
-        lw = wpilib.LiveWindow.getInstance()
-        lw.setEnabled(True)
+        wpilib.LiveWindow.setEnabled(True)
         # Shuffleboard.enableActuatorWidgets()
 
         try:
