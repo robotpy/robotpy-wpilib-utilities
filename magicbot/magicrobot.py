@@ -538,7 +538,7 @@ class MagicRobot(wpilib.RobotBase):
                 delay.wait()
                 watchdog.reset()
 
-        lw.setEnabled(False)
+        wpilib.LiveWindow.setEnabled(False)
         # Shuffleboard.disableActuatorWidgets()
 
     def _on_mode_enable_components(self):
