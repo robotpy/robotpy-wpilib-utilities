@@ -95,9 +95,19 @@ class AutonomousModeSelector:
             # Don't kill the robot because they didn't create an autonomous package
             logger.warning("Cannot load the '%s' package", autonomous_pkgname)
         else:
-            if hasattr(autonomous_pkg, "__file__"):
-                modules_path = os.path.dirname(os.path.abspath(autonomous_pkg.__file__))
-                modules = glob(os.path.join(modules_path, "*.py"))
+            pkgdirs = []
+            pkgfile = getattr(autonomous_pkg, "__file__", None)
+            if pkgfile:
+                pkgdirs = [os.path.dirname(os.path.abspath(pkgfile))]
+            else:
+                # implicit packages have no __file__, just __path__
+                pkgpath = getattr(autonomous_pkg, "__path__", None)
+                if pkgpath:
+                    pkgdirs = list(set(pkgpath))
+
+            if pkgdirs:
+                for pkgdir in pkgdirs:
+                    modules.extend(glob(os.path.join(pkgdir, "*.py")))
 
         for module_filename in modules:
 
