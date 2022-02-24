@@ -1,6 +1,8 @@
 robotpy_ext.misc package
 ========================
 
+.. module:: robotpy_ext.misc
+
 robotpy_ext.misc.asyncio_policy module
 --------------------------------------
 

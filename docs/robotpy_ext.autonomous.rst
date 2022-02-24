@@ -1,6 +1,8 @@
 robotpy_ext.autonomous package
 ==============================
 
+.. module:: robotpy_ext.autonomous
+
 robotpy_ext.autonomous.selector module
 --------------------------------------
 
