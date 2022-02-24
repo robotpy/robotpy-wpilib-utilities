@@ -4,6 +4,8 @@
 magicbot module
 ----------------
 
+.. module:: magicbot
+
 .. automodule:: magicbot.magicrobot
     :members:
     :exclude-members: autonomous, disabled, members, operatorControl, robotInit, test

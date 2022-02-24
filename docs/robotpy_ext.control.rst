@@ -1,6 +1,8 @@
 robotpy_ext.control package
 ===========================
 
+.. module:: robotpy_ext.control
+
 robotpy_ext.control.button_debouncer module
 -------------------------------------------
 

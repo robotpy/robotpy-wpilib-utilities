@@ -1,6 +1,8 @@
 robotpy_ext.common_drivers package
 ==================================
 
+.. module:: robotpy_ext.common_drivers
+
 robotpy_ext.common_drivers.distance_sensors module
 --------------------------------------------------
 
