@@ -9,3 +9,15 @@ from .state_machine import (
     state,
     timed_state,
 )
+
+__all__ = (
+    "MagicRobot",
+    "feedback",
+    "tunable",
+    "will_reset_to",
+    "AutonomousStateMachine",
+    "StateMachine",
+    "default_state",
+    "state",
+    "timed_state",
+)
