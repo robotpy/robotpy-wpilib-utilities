@@ -70,7 +70,7 @@ class SharpIR2Y0A21:
         return max(min(d, 80.0), 10.0)
 
 
-class SharpIRGP2Y0A41SK0F:
+class SharpIR2Y0A41:
     """
     Sharp GP2Y0A41SK0F is an analog IR sensor capable of measuring
     distances from 4cm to 40cm. Output distance is measured in
@@ -102,3 +102,7 @@ class SharpIRGP2Y0A41SK0F:
 
         # Constrain output
         return max(min(d, 35.0), 4.5)
+
+
+# backwards compat
+SharpIRGP2Y0A41SK0F = SharpIR2Y0A41
