@@ -36,3 +36,16 @@ def wpitime():
     yield FakeTime()
 
     hal.simulation.resumeTiming()
+
+
+@pytest.fixture(scope="function")
+def hal(wpitime):
+    import hal.simulation
+
+    yield
+
+    # Reset the HAL handles
+    hal.simulation.resetGlobalHandles()
+
+    # Reset the HAL data
+    hal.simulation.resetAllData()
