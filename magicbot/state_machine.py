@@ -148,13 +148,12 @@ class _StateData:
 
 
 def timed_state(
-    f: Optional[Callable] = None,
     *,
     duration: float,
-    next_state=None,
+    next_state: Optional[StateRef] = None,
     first: bool = False,
     must_finish: bool = False,
-):
+) -> Callable[[StateMethod], _State]:
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StateMachine`, it indicates that the function
@@ -183,20 +182,15 @@ def timed_state(
                         regardless of whether this is set.
     """
 
-    if f is None:
-        return functools.partial(
-            timed_state,
-            duration=duration,
-            next_state=next_state,
-            first=first,
-            must_finish=must_finish,
-        )
+    def decorator(f: StateMethod) -> _State:
 
-    wrapper = _State(f, first, must_finish, duration=duration)
+        wrapper = _State(f, first, must_finish, duration=duration)
 
-    wrapper.next_state = next_state
+        wrapper.next_state = next_state
 
-    return wrapper
+        return wrapper
+
+    return decorator
 
 
 def state(f=None, *, first: bool = False, must_finish: bool = False):
