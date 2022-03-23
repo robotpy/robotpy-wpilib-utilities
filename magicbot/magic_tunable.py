@@ -210,7 +210,7 @@ def feedback(f=None, *, key: str = None):
     return f
 
 
-def collect_feedbacks(component, cname: str, prefix="components"):
+def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components"):
     """
     Finds all methods decorated with :func:`feedback` on an object
     and returns a list of 2-tuples (method, NetworkTables entry).
