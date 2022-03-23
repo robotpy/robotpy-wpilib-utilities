@@ -1,6 +1,13 @@
 import functools
 import inspect
-from typing import Callable, Optional
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    NoReturn,
+    Optional,
+    Union,
+)
 
 import wpilib
 
@@ -35,7 +42,7 @@ class InvalidStateName(ValueError):
 class _State:
     def __init__(
         self,
-        f: Callable,
+        f: "StateMethod",
         first: bool = False,
         must_finish: bool = False,
         *,
@@ -89,7 +96,9 @@ class _State:
         wrapper_code = f"lambda self, tm, state_tm, initial_call: f({args_code})"
         self.run = eval(wrapper_code, varlist, varlist)
 
-    def __call__(self, *args, **kwargs):
+        self.next_state: Optional[StateRef]
+
+    def __call__(self, *args, **kwargs) -> NoReturn:
         raise IllegalCallError(
             "Do not call states directly, use begin/next_state instead"
         )
@@ -116,17 +125,23 @@ class _State:
                 )
 
 
+StateRef = Union[str, _State]
+StateMethod = Callable[..., None]
+
+
 class _StateData:
-    def __init__(self, wrapper):
+    def __init__(self, wrapper: _State) -> None:
         self.name = wrapper.name
         self.duration_attr = "%s_duration" % self.name
-        self.expires = 0xFFFFFFFF
+        self.expires: float = 0xFFFFFFFF
         self.ran = False
         self.run = wrapper.run
         self.must_finish = wrapper.must_finish
 
         if hasattr(wrapper, "next_state"):
             self.next_state = wrapper.next_state
+
+        self.start_time: float
 
 
 def timed_state(
@@ -232,7 +247,7 @@ def default_state(f: Callable):
     return _State(f, first=False, must_finish=True, is_default=True)
 
 
-def _get_class_members(cls: type) -> dict:
+def _get_class_members(cls: type) -> Dict[str, Any]:
     """Get the members of the given class in definition order, bases first."""
     d = {}
     for cls in reversed(cls.__mro__):
@@ -435,7 +450,7 @@ class StateMachine:
         self.__states = states
 
         # The currently executing state, or None if not executing
-        self.__state = None
+        self.__state: Optional[_StateData] = None
 
         # The default state
         self.__default_state = default_state
