@@ -1,6 +1,17 @@
 import functools
 import inspect
-from typing import Callable, Optional
+import logging
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    NoReturn,
+    Optional,
+    Sequence,
+    Union,
+    overload,
+)
 
 import wpilib
 
@@ -35,7 +46,7 @@ class InvalidStateName(ValueError):
 class _State:
     def __init__(
         self,
-        f: Callable,
+        f: "StateMethod",
         first: bool = False,
         must_finish: bool = False,
         *,
@@ -89,7 +100,9 @@ class _State:
         wrapper_code = f"lambda self, tm, state_tm, initial_call: f({args_code})"
         self.run = eval(wrapper_code, varlist, varlist)
 
-    def __call__(self, *args, **kwargs):
+        self.next_state: Optional[StateRef]
+
+    def __call__(self, *args, **kwargs) -> NoReturn:
         raise IllegalCallError(
             "Do not call states directly, use begin/next_state instead"
         )
@@ -116,11 +129,15 @@ class _State:
                 )
 
 
+StateRef = Union[str, _State]
+StateMethod = Callable[..., None]
+
+
 class _StateData:
-    def __init__(self, wrapper):
+    def __init__(self, wrapper: _State) -> None:
         self.name = wrapper.name
         self.duration_attr = "%s_duration" % self.name
-        self.expires = 0xFFFFFFFF
+        self.expires: float = 0xFFFFFFFF
         self.ran = False
         self.run = wrapper.run
         self.must_finish = wrapper.must_finish
@@ -128,15 +145,16 @@ class _StateData:
         if hasattr(wrapper, "next_state"):
             self.next_state = wrapper.next_state
 
+        self.start_time: float
+
 
 def timed_state(
-    f: Optional[Callable] = None,
     *,
     duration: float,
-    next_state=None,
+    next_state: Optional[StateRef] = None,
     first: bool = False,
     must_finish: bool = False,
-):
+) -> Callable[[StateMethod], _State]:
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StateMachine`, it indicates that the function
@@ -165,23 +183,37 @@ def timed_state(
                         regardless of whether this is set.
     """
 
-    if f is None:
-        return functools.partial(
-            timed_state,
-            duration=duration,
-            next_state=next_state,
-            first=first,
-            must_finish=must_finish,
-        )
+    def decorator(f: StateMethod) -> _State:
 
-    wrapper = _State(f, first, must_finish, duration=duration)
+        wrapper = _State(f, first, must_finish, duration=duration)
 
-    wrapper.next_state = next_state
+        wrapper.next_state = next_state
 
-    return wrapper
+        return wrapper
+
+    return decorator
 
 
-def state(f=None, *, first: bool = False, must_finish: bool = False):
+@overload
+def state(
+    *,
+    first: bool = ...,
+    must_finish: bool = ...,
+) -> Callable[[StateMethod], _State]:
+    ...
+
+
+@overload
+def state(f: StateMethod) -> _State:
+    ...
+
+
+def state(
+    f: Optional[StateMethod] = None,
+    *,
+    first: bool = False,
+    must_finish: bool = False,
+) -> Union[Callable[[StateMethod], _State], _State]:
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StateMachine`, it indicates that the function
@@ -205,12 +237,12 @@ def state(f=None, *, first: bool = False, must_finish: bool = False):
     """
 
     if f is None:
-        return functools.partial(state, first=first, must_finish=must_finish)
+        return lambda f: _State(f, first, must_finish)
 
     return _State(f, first, must_finish)
 
 
-def default_state(f: Callable):
+def default_state(f: StateMethod) -> _State:
     """
     If this decorator is applied to a method in an object that inherits
     from :class:`.StateMachine`, it indicates that the method
@@ -232,7 +264,7 @@ def default_state(f: Callable):
     return _State(f, first=False, must_finish=True, is_default=True)
 
 
-def _get_class_members(cls: type) -> dict:
+def _get_class_members(cls: type) -> Dict[str, Any]:
     """Get the members of the given class in definition order, bases first."""
     d = {}
     for cls in reversed(cls.__mro__):
@@ -359,12 +391,19 @@ class StateMachine:
 
     VERBOSE_LOGGING = False
 
+    #: A Python logging object automatically injected by magicbot.
+    #: It can be used to send messages to the log, instead of using print statements.
+    logger: logging.Logger
+
     #: NT variable that indicates which state will be executed next (though,
     #: does not guarantee that it will be executed). Will return an empty
     #: string if the state machine is not currently engaged.
     current_state = tunable("", subtable="state")
 
-    def __new__(cls):
+    state_names: ClassVar[tunable[Sequence[str]]]
+    state_descriptions: ClassVar[tunable[Sequence[str]]]
+
+    def __new__(cls) -> "StateMachine":
         # choose to use __new__ instead of __init__
         o = super().__new__(cls)
         o._build_states()
@@ -373,7 +412,7 @@ class StateMachine:
         # TODO: when this gets invoked, tunables need to be setup on
         # the object first
 
-    def _build_states(self):
+    def _build_states(self) -> None:
         has_first = False
 
         # problem: the user interface won't know which entries are the
@@ -435,7 +474,7 @@ class StateMachine:
         self.__states = states
 
         # The currently executing state, or None if not executing
-        self.__state = None
+        self.__state: Optional[_StateData] = None
 
         # The default state
         self.__default_state = default_state
@@ -444,24 +483,28 @@ class StateMachine:
         self.__start = 0
 
     @property
-    def is_executing(self):
+    def is_executing(self) -> bool:
         """:returns: True if the state machine is executing states"""
         # return self.__state is not None
         return self.__engaged
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         """
         magicbot component API: called when autonomous/teleop is enabled
         """
         pass
 
-    def on_disable(self):
+    def on_disable(self) -> None:
         """
         magicbot component API: called when autonomous/teleop is disabled
         """
         self.done()
 
-    def engage(self, initial_state=None, force=False):
+    def engage(
+        self,
+        initial_state: Optional[StateRef] = None,
+        force: bool = False,
+    ) -> None:
         """
         This signals that you want the state machine to execute its
         states.
@@ -480,7 +523,7 @@ class StateMachine:
             else:
                 self.next_state(self.__first)
 
-    def next_state(self, state):
+    def next_state(self, state: StateRef) -> None:
         """Call this function to transition to the next state
 
         :param state: Name of the state to transition to
@@ -496,7 +539,7 @@ class StateMachine:
 
         self.__state = state_data
 
-    def next_state_now(self, state):
+    def next_state_now(self, state: StateRef) -> None:
         """Call this function to transition to the next state, and call the next
         state function immediately. Prefer to use :meth:`next_state` instead.
 
@@ -508,7 +551,7 @@ class StateMachine:
         # TODO: may want to do this differently?
         self.execute()
 
-    def done(self):
+    def done(self) -> None:
         """Call this function to end execution of the state machine.
 
         This function will always be called when a state machine ends. Even if
@@ -525,7 +568,7 @@ class StateMachine:
         self.__engaged = False
         self.current_state = ""
 
-    def execute(self):
+    def execute(self) -> None:
         """
         magicbot component API: This is called on each iteration of the
         control loop. Most of the time, you will not want to override
@@ -623,11 +666,11 @@ class AutonomousStateMachine(StateMachine):
 
     VERBOSE_LOGGING = True
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         super().on_enable()
         self.__engaged = True
 
-    def on_iteration(self, tm):
+    def on_iteration(self, tm: float) -> None:
         # TODO, remove the on_iteration function in 2017?
 
         # Only engage the state machine until its execution finishes, otherwise
@@ -642,7 +685,7 @@ class AutonomousStateMachine(StateMachine):
             self.execute()
             self.__engaged = self.is_executing
 
-    def done(self):
+    def done(self) -> None:
         super().done()
         self._StateMachine__should_engage = False
         self.__engaged = False
