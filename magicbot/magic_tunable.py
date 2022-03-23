@@ -1,10 +1,11 @@
 import functools
 import inspect
 import warnings
-from typing import Generic, Optional, TypeVar, overload
+from typing import Callable, Generic, Optional, TypeVar, overload
 
 from networktables import NetworkTables, Value
 
+T = TypeVar("T")
 V = TypeVar("V")
 
 
@@ -87,7 +88,7 @@ class tunable(Generic[V]):
         # self.__doc__ = doc
 
     @overload
-    def __get__(self, instance: None, owner=None) -> "tunable":
+    def __get__(self, instance: None, owner=None) -> "tunable[V]":
         ...
 
     @overload
@@ -145,7 +146,17 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
     component._tunables = tunables
 
 
-def feedback(f=None, *, key: str = None):
+@overload
+def feedback(f: Callable[[T], V]) -> Callable[[T], V]:
+    ...
+
+
+@overload
+def feedback(*, key: str) -> Callable[[Callable[[T], V]], Callable[[T], V]]:
+    ...
+
+
+def feedback(f=None, *, key: Optional[str] = None) -> Callable:
     """
     This decorator allows you to create NetworkTables values that are
     automatically updated with the return value of a method.
@@ -210,7 +221,7 @@ def feedback(f=None, *, key: str = None):
     return f
 
 
-def collect_feedbacks(component, cname: str, prefix="components"):
+def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components"):
     """
     Finds all methods decorated with :func:`feedback` on an object
     and returns a list of 2-tuples (method, NetworkTables entry).
