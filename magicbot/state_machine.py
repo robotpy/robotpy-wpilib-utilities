@@ -389,7 +389,7 @@ class StateMachine:
     state_names: ClassVar[tunable[Sequence[str]]]
     state_descriptions: ClassVar[tunable[Sequence[str]]]
 
-    def __new__(cls):
+    def __new__(cls) -> "StateMachine":
         # choose to use __new__ instead of __init__
         o = super().__new__(cls)
         o._build_states()
@@ -398,7 +398,7 @@ class StateMachine:
         # TODO: when this gets invoked, tunables need to be setup on
         # the object first
 
-    def _build_states(self):
+    def _build_states(self) -> None:
         has_first = False
 
         # problem: the user interface won't know which entries are the
