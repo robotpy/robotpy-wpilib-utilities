@@ -10,6 +10,7 @@ from typing import (
     Optional,
     Sequence,
     Union,
+    overload,
 )
 
 import wpilib
@@ -193,7 +194,26 @@ def timed_state(
     return decorator
 
 
-def state(f=None, *, first: bool = False, must_finish: bool = False):
+@overload
+def state(
+    *,
+    first: bool = ...,
+    must_finish: bool = ...,
+) -> Callable[[StateMethod], _State]:
+    ...
+
+
+@overload
+def state(f: StateMethod) -> _State:
+    ...
+
+
+def state(
+    f: Optional[StateMethod] = None,
+    *,
+    first: bool = False,
+    must_finish: bool = False,
+) -> Union[Callable[[StateMethod], _State], _State]:
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StateMachine`, it indicates that the function
@@ -217,7 +237,7 @@ def state(f=None, *, first: bool = False, must_finish: bool = False):
     """
 
     if f is None:
-        return functools.partial(state, first=first, must_finish=must_finish)
+        return lambda f: _State(f, first, must_finish)
 
     return _State(f, first, must_finish)
 
