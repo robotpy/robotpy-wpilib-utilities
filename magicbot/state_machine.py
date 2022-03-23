@@ -228,7 +228,7 @@ def state(f=None, *, first: bool = False, must_finish: bool = False):
     return _State(f, first, must_finish)
 
 
-def default_state(f: Callable):
+def default_state(f: StateMethod) -> _State:
     """
     If this decorator is applied to a method in an object that inherits
     from :class:`.StateMachine`, it indicates that the method
