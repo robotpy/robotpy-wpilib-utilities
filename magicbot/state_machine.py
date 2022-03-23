@@ -469,24 +469,28 @@ class StateMachine:
         self.__start = 0
 
     @property
-    def is_executing(self):
+    def is_executing(self) -> bool:
         """:returns: True if the state machine is executing states"""
         # return self.__state is not None
         return self.__engaged
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         """
         magicbot component API: called when autonomous/teleop is enabled
         """
         pass
 
-    def on_disable(self):
+    def on_disable(self) -> None:
         """
         magicbot component API: called when autonomous/teleop is disabled
         """
         self.done()
 
-    def engage(self, initial_state=None, force=False):
+    def engage(
+        self,
+        initial_state: Optional[StateRef] = None,
+        force: bool = False,
+    ) -> None:
         """
         This signals that you want the state machine to execute its
         states.
@@ -505,7 +509,7 @@ class StateMachine:
             else:
                 self.next_state(self.__first)
 
-    def next_state(self, state):
+    def next_state(self, state: StateRef) -> None:
         """Call this function to transition to the next state
 
         :param state: Name of the state to transition to
@@ -521,7 +525,7 @@ class StateMachine:
 
         self.__state = state_data
 
-    def next_state_now(self, state):
+    def next_state_now(self, state: StateRef) -> None:
         """Call this function to transition to the next state, and call the next
         state function immediately. Prefer to use :meth:`next_state` instead.
 
@@ -533,7 +537,7 @@ class StateMachine:
         # TODO: may want to do this differently?
         self.execute()
 
-    def done(self):
+    def done(self) -> None:
         """Call this function to end execution of the state machine.
 
         This function will always be called when a state machine ends. Even if
@@ -550,7 +554,7 @@ class StateMachine:
         self.__engaged = False
         self.current_state = ""
 
-    def execute(self):
+    def execute(self) -> None:
         """
         magicbot component API: This is called on each iteration of the
         control loop. Most of the time, you will not want to override
@@ -648,11 +652,11 @@ class AutonomousStateMachine(StateMachine):
 
     VERBOSE_LOGGING = True
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         super().on_enable()
         self.__engaged = True
 
-    def on_iteration(self, tm):
+    def on_iteration(self, tm: float) -> None:
         # TODO, remove the on_iteration function in 2017?
 
         # Only engage the state machine until its execution finishes, otherwise
@@ -667,7 +671,7 @@ class AutonomousStateMachine(StateMachine):
             self.execute()
             self.__engaged = self.is_executing
 
-    def done(self):
+    def done(self) -> None:
         super().done()
         self._StateMachine__should_engage = False
         self.__engaged = False
