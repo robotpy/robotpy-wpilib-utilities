@@ -87,7 +87,7 @@ class tunable(Generic[V]):
         # self.__doc__ = doc
 
     @overload
-    def __get__(self, instance: None, owner=None) -> "tunable":
+    def __get__(self, instance: None, owner=None) -> "tunable[V]":
         ...
 
     @overload
