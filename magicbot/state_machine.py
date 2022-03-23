@@ -1,11 +1,14 @@
 import functools
 import inspect
+import logging
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Dict,
     NoReturn,
     Optional,
+    Sequence,
     Union,
 )
 
@@ -374,10 +377,17 @@ class StateMachine:
 
     VERBOSE_LOGGING = False
 
+    #: A Python logging object automatically injected by magicbot.
+    #: It can be used to send messages to the log, instead of using print statements.
+    logger: logging.Logger
+
     #: NT variable that indicates which state will be executed next (though,
     #: does not guarantee that it will be executed). Will return an empty
     #: string if the state machine is not currently engaged.
     current_state = tunable("", subtable="state")
+
+    state_names: ClassVar[tunable[Sequence[str]]]
+    state_descriptions: ClassVar[tunable[Sequence[str]]]
 
     def __new__(cls):
         # choose to use __new__ instead of __init__
