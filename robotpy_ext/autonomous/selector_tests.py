@@ -45,5 +45,3 @@ def test_all_autonomous(control: PyfrcTestController):
 
             # Disabled for another short period
             control.step_timing(seconds=0.5, autonomous=True, enabled=False)
-
-        assert False
