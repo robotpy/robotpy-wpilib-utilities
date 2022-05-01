@@ -78,18 +78,24 @@ class MagicRobot(wpilib.RobotBase):
 
         self.__done = False
 
-    def _simulationInit(self):
+        # cache these
+        self.__is_ds_attached = wpilib.DriverStation.isDSAttached
+        self.__sd_update = wpilib.SmartDashboard.updateValues
+        self.__lv_update = wpilib.LiveWindow.updateValues
+        # self.__sf_update = Shuffleboard.update
+
+    def _simulationInit(self) -> None:
         pass
 
-    def _simulationPeriodic(self):
+    def _simulationPeriodic(self) -> None:
         pass
 
-    def __simulationPeriodic(self):
+    def __simulationPeriodic(self) -> None:
         hal.simPeriodicBefore()
         self._simulationPeriodic()
         hal.simPeriodicAfter()
 
-    def robotInit(self):
+    def robotInit(self) -> None:
         """
         .. warning:: Internal API, don't override; use :meth:`createObjects` instead
         """
@@ -119,7 +125,9 @@ class MagicRobot(wpilib.RobotBase):
 
         self.watchdog = SimpleWatchdog(self.control_loop_wait_time)
 
-        self.__periodics = [(self.robotPeriodic, "robotPeriodic()")]
+        self.__periodics: List[Tuple[Callable[[], None], str]] = [
+            (self.robotPeriodic, "robotPeriodic()"),
+        ]
 
         if self.isSimulation():
             self._simulationInit()
@@ -541,7 +549,7 @@ class MagicRobot(wpilib.RobotBase):
         wpilib.LiveWindow.setEnabled(False)
         # Shuffleboard.disableActuatorWidgets()
 
-    def _on_mode_enable_components(self):
+    def _on_mode_enable_components(self) -> None:
         # initialize things
         for _, component in self._components:
             on_enable = getattr(component, "on_enable", None)
@@ -551,7 +559,7 @@ class MagicRobot(wpilib.RobotBase):
                 except:
                     self.onException(forceReport=True)
 
-    def _on_mode_disable_components(self):
+    def _on_mode_disable_components(self) -> None:
         # deinitialize things
         for _, component in self._components:
             on_disable = getattr(component, "on_disable", None)
@@ -561,7 +569,7 @@ class MagicRobot(wpilib.RobotBase):
                 except:
                     self.onException(forceReport=True)
 
-    def _create_components(self):
+    def _create_components(self) -> None:
 
         #
         # TODO: Will need to inject into any autonomous mode component
@@ -580,7 +588,7 @@ class MagicRobot(wpilib.RobotBase):
 
         # - Iterate over class variables with type annotations
         # .. this hack is necessary for pybind11 based modules
-        sys.modules["pybind11_builtins"] = types.SimpleNamespace()
+        sys.modules["pybind11_builtins"] = types.SimpleNamespace()  # type: ignore
 
         for m, ctyp in typing.get_type_hints(cls).items():
             # Ignore private variables
