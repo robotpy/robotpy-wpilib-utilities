@@ -48,4 +48,4 @@ def hal(wpitime):
     hal.simulation.resetGlobalHandles()
 
     # Reset the HAL data
-    hal.simulation.resetAllData()
+    hal.simulation.resetAllSimData()
