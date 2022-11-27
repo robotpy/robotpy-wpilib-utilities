@@ -3,7 +3,7 @@ import inspect
 import logging
 from typing import Callable, Optional
 
-import networktables
+import ntcore
 import wpilib
 
 logger = logging.getLogger("autonomous")
@@ -232,7 +232,8 @@ class StatefulAutonomous:
             for k, v in components.items():
                 setattr(self, k, v)
 
-        self.__table = networktables.NetworkTables.getTable("SmartDashboard")
+        NetworkTables = ntcore.NetworkTableInstance.getDefault()
+        self.__table = NetworkTables.getTable("SmartDashboard")
         self.__sd_args = []
 
         self.__build_states()

@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, List, Tuple
 import hal
 import wpilib
 
-from networktables import NetworkTables, NetworkTableEntry
+from ntcore import NetworkTableInstance, NetworkTableEntry
 
 # from wpilib.shuffleboard import Shuffleboard
 
@@ -109,7 +109,7 @@ class MagicRobot(wpilib.RobotBase):
         self.__lv_update = wpilib.LiveWindow.updateValues
         # self.__sf_update = Shuffleboard.update
 
-        self.__nt = NetworkTables.getTable("/robot")
+        self.__nt = NetworkTableInstance.getDefault().getTable("/robot")
 
         self.__nt_put_is_ds_attached = self.__nt.getEntry("is_ds_attached").setBoolean
         self.__nt_put_mode = self.__nt.getEntry("mode").setString

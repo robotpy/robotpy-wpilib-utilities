@@ -3,7 +3,7 @@ import inspect
 import warnings
 from typing import Callable, Generic, Optional, TypeVar, overload
 
-from networktables import NetworkTables, Value
+from ntcore import NetworkTableInstance, Value
 
 T = TypeVar("T")
 V = TypeVar("V")
@@ -123,6 +123,8 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
     else:
         prefix = "/%s/%s" % (prefix, cname)
 
+    NetworkTables = NetworkTableInstance.getDefault()
+
     tunables = {}
 
     for n in dir(cls):
@@ -138,9 +140,11 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
         else:
             key = "%s/%s" % (prefix, n)
 
-        ntvalue = NetworkTables.getGlobalAutoUpdateValue(
-            key, prop._ntdefault, prop._ntwritedefault
-        )
+        ntvalue = NetworkTables.getEntry(key)
+        if prop._ntwritedefault:
+            ntvalue.setValue(prop._ntdefault)
+        else:
+            ntvalue.setDefaultValue(prop._ntdefault)
         tunables[prop] = ntvalue
 
     component._tunables = tunables
@@ -233,7 +237,7 @@ def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components
     else:
         prefix = "/%s/%s" % (prefix, cname)
 
-    nt = NetworkTables.getTable(prefix)
+    nt = NetworkTableInstance.getDefault().getTable(prefix)
     feedbacks = []
 
     for name, method in inspect.getmembers(component, inspect.ismethod):
