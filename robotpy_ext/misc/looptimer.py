@@ -1,3 +1,4 @@
+import logging
 import math
 import wpilib
 
@@ -12,7 +13,7 @@ class LoopTimer:
 
     Example usage::
 
-        class Robot(wpilib.IterativeRobot):
+        class Robot(wpilib.TimedRobot):
 
             def teleopInit(self):
                 self.loop_timer = LoopTimer(self.logger)
@@ -23,14 +24,14 @@ class LoopTimer:
     Mainly intended for debugging purposes to measure how much lag.
     """
 
-    def __init__(self, logger):
+    def __init__(self, logger: logging.Logger):
         self.logger = logger
         self.timer = wpilib.Timer()
         self.timer.start()
 
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         self.timer.reset()
 
         self.start = self.last = _getFPGATimestamp()
@@ -38,7 +39,7 @@ class LoopTimer:
         self.max_time = -1
         self.loops = 0
 
-    def measure(self):
+    def measure(self) -> None:
         """
         Computes loop performance information and periodically dumps it to
         the info logger.
@@ -53,7 +54,7 @@ class LoopTimer:
         self.loops += 1
         self.last = now
 
-        if self.timer.hasPeriodPassed(1):
+        if self.timer.advanceIfElapsed(1):
             self.logger.info(
                 "Loops: %d; min: %.3f; max: %.3f; period: %.3f; avg: %.3f",
                 self.loops,
