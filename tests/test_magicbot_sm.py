@@ -69,7 +69,7 @@ def test_sm(wpitime):
             self.executed.append(3)
 
     sm = _TM()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_sm")
     sm.some_fn()
 
     # should not be able to directly call
@@ -154,7 +154,7 @@ def test_sm_inheritance():
             self.next_state("second_state")
 
     sm = _TM2()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_sm_inheritance")
     sm.engage()
     assert sm.current_state == "first_state"
 
@@ -194,7 +194,7 @@ def test_must_finish(wpitime):
             self.executed.append("tmf")
 
     sm = _TM()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_must_finish")
 
     sm.engage()
     sm.execute()
@@ -250,7 +250,7 @@ def test_autonomous_sm():
                 self.done()
 
     sm = _TM()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_autonomous_sm")
 
     sm.on_enable()
 
@@ -286,7 +286,7 @@ def test_autonomous_sm_end_timed_state(wpitime):
             self.j += 1
 
     sm = _TM()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_autonomous_sm_end_timed_state")
 
     sm.on_enable()
 
@@ -315,7 +315,7 @@ def test_next_fn():
             self.done()
 
     sm = _TM()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_next_fn")
     sm.engage()
     assert sm.current_state == "first_state"
 
@@ -338,7 +338,7 @@ def test_next_fn2(wpitime):
             pass
 
     sm = _TM()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_next_fn2")
     sm.engage()
     sm.execute()
     assert sm.current_state == "first_state"
@@ -459,7 +459,7 @@ def test_default_state_machine():
             self.didDone = False
 
     sm = _SM()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_default_state_machine")
 
     sm.execute()
     assert sm.didOne == False
@@ -569,7 +569,7 @@ def test_short_timed_state(wpitime):
             self.executed.append("d")
 
     sm = _SM()
-    setup_tunables(sm, "cname")
+    setup_tunables(sm, "test_short_timed_state")
     assert sm.current_state == ""
     assert not sm.is_executing
 
