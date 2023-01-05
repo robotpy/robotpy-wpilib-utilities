@@ -272,10 +272,15 @@ class AutonomousModeSelector:
         #
 
         observe = hal.observeUserProgramAutonomous
+        refreshData = wpilib.DriverStation.refreshData
         isAutonomousEnabled = wpilib.DriverStation.isAutonomousEnabled
 
         with NotifierDelay(control_loop_wait_time) as delay:
-            while isAutonomousEnabled():
+            while True:
+                refreshData()
+                if not isAutonomousEnabled():
+                    break
+
                 observe()
                 try:
                     self._on_iteration(timer.get())
