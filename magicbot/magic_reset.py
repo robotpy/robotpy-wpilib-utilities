@@ -1,11 +1,12 @@
-from typing import Any, Dict
+from typing import Any, Dict, Generic, TypeVar
+
+V = TypeVar("V")
 
 
-class will_reset_to:
+class will_reset_to(Generic[V]):
     """
-    This marker indicates that this variable on a component will
-    be reset to a default value after each time that execute is
-    called.
+    This marker indicates that this variable on a component will be
+    reset to a default value at the very end of each control loop.
 
     Example usage::
 
@@ -20,7 +21,7 @@ class will_reset_to:
                 if self.foo:
                     # ...
 
-                # after this function is executed, foo is reset
+                # after all components are executed, foo is reset
                 # back to the default value (False)
 
 
@@ -31,7 +32,7 @@ class will_reset_to:
 
     __slots__ = ("default",)
 
-    def __init__(self, default):
+    def __init__(self, default: V) -> None:
         self.default = default
 
 

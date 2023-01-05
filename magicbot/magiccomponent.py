@@ -32,7 +32,7 @@ class MagicComponent:
 
     logger: logging.Logger
 
-    def setup(self):
+    def setup(self) -> None:
         """
         This function is called after ``createObjects`` has been called in
         the main robot class, and after all components have been created
@@ -47,7 +47,7 @@ class MagicComponent:
                   by the time this function is called.
         """
 
-    def on_enable(self):
+    def on_enable(self) -> None:
         """
         Called when the robot enters autonomous or teleoperated mode. This
         function should initialize your component to a "safe" state so
@@ -58,12 +58,12 @@ class MagicComponent:
                   intentional, as they should be the same.
         """
 
-    def on_disable(self):
+    def on_disable(self) -> None:
         """
         Called when the robot leaves autonomous or teleoperated
         """
 
-    def execute(self):
+    def execute(self) -> None:
         """
         This function is called at the end of the control loop
         """

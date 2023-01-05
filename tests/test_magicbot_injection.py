@@ -1,4 +1,4 @@
-from typing import List, Type
+from typing import List, Type, TypeVar
 from unittest.mock import Mock
 
 import magicbot
@@ -136,7 +136,10 @@ class TypeHintsBot(magicbot.MagicRobot):
         self.injectables = [self.injectable]
 
 
-def _make_bot(cls: Type[magicbot.MagicRobot]) -> magicbot.MagicRobot:
+R = TypeVar("R", bound=magicbot.MagicRobot)
+
+
+def _make_bot(cls: Type[R]) -> R:
     bot = cls()
     bot.createObjects()
     bot._automodes = Mock()
