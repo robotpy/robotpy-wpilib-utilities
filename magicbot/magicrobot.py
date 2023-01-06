@@ -377,6 +377,7 @@ class MagicRobot(wpilib.RobotBase):
 
     def endCompetition(self) -> None:
         self.__done = True
+        self._automodes.endCompetition()
 
     def autonomous(self) -> None:
         """
