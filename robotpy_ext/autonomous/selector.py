@@ -80,6 +80,7 @@ class AutonomousModeSelector:
 
         self.modes = {}
         self.active_mode = None
+        self.robot_exit = False
 
         logger.info("Begin initializing autonomous mode switcher")
 
@@ -210,6 +211,10 @@ class AutonomousModeSelector:
 
         logger.info("Autonomous switcher initialized")
 
+    def endCompetition(self):
+        """Call this function when your robot's endCompetition function is called"""
+        self.robot_exit = True
+
     def run(
         self,
         control_loop_wait_time: float = 0.020,
@@ -272,10 +277,15 @@ class AutonomousModeSelector:
         #
 
         observe = hal.observeUserProgramAutonomous
+        refreshData = wpilib.DriverStation.refreshData
         isAutonomousEnabled = wpilib.DriverStation.isAutonomousEnabled
 
         with NotifierDelay(control_loop_wait_time) as delay:
-            while isAutonomousEnabled():
+            while not self.robot_exit:
+                refreshData()
+                if not isAutonomousEnabled():
+                    break
+
                 observe()
                 try:
                     self._on_iteration(timer.get())
