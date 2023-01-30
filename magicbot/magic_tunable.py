@@ -4,9 +4,10 @@ import warnings
 from typing import Callable, Generic, Optional, TypeVar, overload
 
 from ntcore import NetworkTableInstance, Value
+from ntcore.types import ValueT
 
 T = TypeVar("T")
-V = TypeVar("V")
+V = TypeVar("V", bound=ValueT)
 
 
 class tunable(Generic[V]):
