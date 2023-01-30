@@ -397,10 +397,7 @@ class MagicRobot(wpilib.RobotBase):
         except:
             self.onException(forceReport=True)
 
-        auto_functions: Tuple[Callable[[], None], ...] = (
-            self._execute_components,
-            self._update_feedback,
-        ) + tuple(p[0] for p in self.__periodics)
+        auto_functions: Tuple[Callable[[], None], ...] = (self._enabled_periodic,)
 
         if self.use_teleop_in_autonomous:
             auto_functions = (self.teleopPeriodic,) + auto_functions
@@ -456,12 +453,8 @@ class MagicRobot(wpilib.RobotBase):
                     self.onException()
                 watchdog.addEpoch("disabledPeriodic()")
 
-                self._update_feedback()
-                for periodic, name in self.__periodics:
-                    periodic()
-                    watchdog.addEpoch(name)
+                self._do_periodics()
                 # watchdog.disable()
-
                 watchdog.printIfExpired()
 
                 delay.wait()
@@ -509,14 +502,8 @@ class MagicRobot(wpilib.RobotBase):
                     self.onException()
                 watchdog.addEpoch("teleopPeriodic()")
 
-                self._execute_components()
-
-                self._update_feedback()
-                for periodic, name in self.__periodics:
-                    periodic()
-                    watchdog.addEpoch(name)
+                self._enabled_periodic()
                 # watchdog.disable()
-
                 watchdog.printIfExpired()
 
                 delay.wait()
@@ -558,12 +545,8 @@ class MagicRobot(wpilib.RobotBase):
                     self.onException()
                 watchdog.addEpoch("testPeriodic()")
 
-                self._update_feedback()
-                for periodic, name in self.__periodics:
-                    periodic()
-                    watchdog.addEpoch(name)
+                self._do_periodics()
                 # watchdog.disable()
-
                 watchdog.printIfExpired()
 
                 delay.wait()
@@ -724,23 +707,36 @@ class MagicRobot(wpilib.RobotBase):
             component.__dict__.update(reset_dict)
             self._reset_components.append((reset_dict, component))
 
-    def _update_feedback(self) -> None:
+    def _do_periodics(self) -> None:
+        """Run periodic methods which run in every mode."""
+        watchdog = self.watchdog
+
         for method, entry in self._feedbacks:
             try:
                 value = method()
             except:
                 self.onException()
-                continue
-            entry.setValue(value)
-        self.watchdog.addEpoch("@magicbot.feedback")
+            else:
+                entry.setValue(value)
 
-    def _execute_components(self) -> None:
+        watchdog.addEpoch("@magicbot.feedback")
+
+        for periodic, name in self.__periodics:
+            periodic()
+            watchdog.addEpoch(name)
+
+    def _enabled_periodic(self) -> None:
+        """Run components and all periodic methods."""
+        watchdog = self.watchdog
+
         for name, component in self._components:
             try:
                 component.execute()
             except:
                 self.onException()
-            self.watchdog.addEpoch(name)
+            watchdog.addEpoch(name)
+
+        self._do_periodics()
 
         for reset_dict, component in self._reset_components:
             component.__dict__.update(reset_dict)
