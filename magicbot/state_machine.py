@@ -184,7 +184,6 @@ def timed_state(
     """
 
     def decorator(f: StateMethod) -> _State:
-
         wrapper = _State(f, first, must_finish, duration=duration)
 
         wrapper.next_state = next_state

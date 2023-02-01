@@ -576,7 +576,6 @@ class MagicRobot(wpilib.RobotBase):
                     self.onException(forceReport=True)
 
     def _create_components(self) -> None:
-
         #
         # TODO: Will need to inject into any autonomous mode component
         #       too, as they're a bit different

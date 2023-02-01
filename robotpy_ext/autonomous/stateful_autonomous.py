@@ -277,7 +277,6 @@ class StatefulAutonomous:
         self.__table.putStringArray(self.MODE_NAME + "_tunables", self.__tunables)
 
     def __register_sd_var_internal(self, name, default, add_prefix, readback):
-
         if " " in name:
             raise ValueError(
                 "ERROR: Cannot use spaces in a tunable variable name (%s)" % name
@@ -310,7 +309,6 @@ class StatefulAutonomous:
         return is_number
 
     def __build_states(self):
-
         has_first = False
 
         states = {}

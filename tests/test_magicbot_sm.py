@@ -239,7 +239,6 @@ def test_must_finish(wpitime):
 
 def test_autonomous_sm():
     class _TM(AutonomousStateMachine):
-
         i = 0
         VERBOSE_LOGGING = False
 
@@ -270,7 +269,6 @@ def test_autonomous_sm():
 
 def test_autonomous_sm_end_timed_state(wpitime):
     class _TM(AutonomousStateMachine):
-
         i = 0
         j = 0
         VERBOSE_LOGGING = False

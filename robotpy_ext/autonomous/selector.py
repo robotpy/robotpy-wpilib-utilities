@@ -111,7 +111,6 @@ class AutonomousModeSelector:
                     modules.extend(glob(os.path.join(pkgdir, "*.py")))
 
         for module_filename in modules:
-
             module = None
             module_name = os.path.basename(module_filename[:-3])
 
@@ -134,7 +133,6 @@ class AutonomousModeSelector:
             for name, obj in inspect.getmembers(module, inspect.isclass):
                 mode_name = getattr(obj, "MODE_NAME", None)
                 if mode_name is not None:
-
                     # don't allow the driver to select this mode
                     if getattr(obj, "DISABLED", False):
                         logger.warning(
@@ -145,7 +143,6 @@ class AutonomousModeSelector:
                     try:
                         instance = obj(*args, **kwargs)
                     except:
-
                         if not wpilib.DriverStation.isFMSAttached():
                             raise
                         else:
@@ -178,7 +175,6 @@ class AutonomousModeSelector:
 
         logger.info("Loaded autonomous modes:")
         for k, v in sorted(self.modes.items()):
-
             if getattr(v, "DEFAULT", False):
                 logger.info(" -> %s [Default]", k)
                 self.chooser.setDefaultOption(k, v)
