@@ -595,6 +595,8 @@ class MagicRobot(wpilib.RobotBase):
         # .. this hack is necessary for pybind11 based modules
         sys.modules["pybind11_builtins"] = types.SimpleNamespace()  # type: ignore
 
+        injectables = self._collect_injectables()
+
         for m, ctyp in typing.get_type_hints(cls).items():
             # Ignore private variables
             if m.startswith("_"):
@@ -611,24 +613,23 @@ class MagicRobot(wpilib.RobotBase):
                     % (cls.__name__, m, ctyp)
                 )
 
-            component = self._create_component(m, ctyp)
+            component = self._create_component(m, ctyp, injectables)
 
             # Store for later
             components.append((m, component))
-
-        self._injectables = self._collect_injectables()
+            injectables[m] = component
 
         # For each new component, perform magic injection
         for cname, component in components:
             setup_tunables(component, cname, "components")
-            self._setup_vars(cname, component)
+            self._setup_vars(cname, component, injectables)
             self._setup_reset_vars(component)
 
         # Do it for autonomous modes too
         for mode in self._automodes.modes.values():
             mode.logger = logging.getLogger(mode.MODE_NAME)
             setup_tunables(mode, mode.MODE_NAME, "autonomous")
-            self._setup_vars(mode.MODE_NAME, mode)
+            self._setup_vars(mode.MODE_NAME, mode, injectables)
 
         # And for self too
         setup_tunables(self, "robot", None)
@@ -672,9 +673,18 @@ class MagicRobot(wpilib.RobotBase):
 
         return injectables
 
-    def _create_component(self, name: str, ctyp: type):
+    def _create_component(self, name: str, ctyp: type, injectables: Dict[str, Any]):
+        type_hints = typing.get_type_hints(ctyp.__init__)
+        NoneType = type(None)
+        init_return_type = type_hints.pop("return", NoneType)
+        assert (
+            init_return_type is NoneType
+        ), f"{ctyp!r} __init__ had an unexpected non-None return type hint"
+        requests = get_injection_requests(type_hints, name)
+        injections = find_injections(requests, injectables, name)
+
         # Create instance, set it on self
-        component = ctyp()
+        component = ctyp(**injections)
         setattr(self, name, component)
 
         # Ensure that mandatory methods are there
@@ -691,12 +701,12 @@ class MagicRobot(wpilib.RobotBase):
 
         return component
 
-    def _setup_vars(self, cname: str, component) -> None:
+    def _setup_vars(self, cname: str, component, injectables: Dict[str, Any]) -> None:
         self.logger.debug("Injecting magic variables into %s", cname)
 
         type_hints = typing.get_type_hints(type(component))
         requests = get_injection_requests(type_hints, cname, component)
-        injections = find_injections(requests, self._injectables, cname)
+        injections = find_injections(requests, injectables, cname)
         component.__dict__.update(injections)
 
     def _setup_reset_vars(self, component) -> None:

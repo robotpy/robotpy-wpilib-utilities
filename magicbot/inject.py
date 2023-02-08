@@ -23,10 +23,13 @@ def get_injection_requests(
     for n, inject_type in type_hints.items():
         # If the variable is private ignore it
         if n.startswith("_"):
+            if component is None:
+                message = f"Cannot inject into component {cname} __init__ param {n}"
+                raise MagicInjectError(message)
             continue
 
         # If the variable has been set, skip it
-        if hasattr(component, n):
+        if component is not None and hasattr(component, n):
             continue
 
         # Check for generic types from the typing module
