@@ -1,4 +1,4 @@
-from typing import List, Type, TypeVar
+from typing import List, Tuple, Type, TypeVar
 from unittest.mock import Mock
 
 import magicbot
@@ -33,12 +33,30 @@ class Component2:
         pass
 
 
+class Component3:
+    intvar: int
+
+    def __init__(
+        self,
+        tupvar: Tuple[int, int],
+        injectable: Injectable,
+        component2: Component2,
+    ) -> None:
+        self.tuple_ = tupvar
+        self.injectable_ = injectable
+        self.component_2 = component2
+
+    def execute(self):
+        pass
+
+
 class SimpleBot(magicbot.MagicRobot):
     intvar = 1
     tupvar = 1, 2
 
     component1: Component1
     component2: Component2
+    component3: Component3
 
     def createObjects(self):
         self.injectable = Injectable(42)
@@ -157,6 +175,15 @@ def test_simple_annotation_inject():
 
     assert bot.component2.tupvar == (1, 2)
     assert bot.component2.component1 is bot.component1
+
+    assert bot.component3.intvar == 1
+    assert bot.component3.tuple_ == (1, 2)
+    assert isinstance(bot.component3.injectable_, Injectable)
+    assert bot.component3.injectable_.num == 42
+    assert bot.component3.component_2 is bot.component2
+
+    # Check the method hasn't been mutated
+    assert str(Component3.__init__.__annotations__["return"]) == "None"
 
 
 def test_multilevel_annotation_inject():
