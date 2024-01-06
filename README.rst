@@ -1,15 +1,12 @@
 robotpy-wpilib-utilities
 ========================
 
-.. image:: https://travis-ci.org/robotpy/robotpy-wpilib-utilities.svg
-    :target: https://travis-ci.org/robotpy/robotpy-wpilib-utilities
-
 Useful utility functions/objects for RobotPy WPILib (2015+).
 
 Documentation
 -------------
 
-* API Documentation can be found at http://robotpy-wpilib-utilities.readthedocs.io
+* API Documentation can be found at https://robotpy.readthedocs.io/projects/utilities/en/stable/
 * Example programs can be found at https://github.com/robotpy/examples
 
 Contribution guidelines
