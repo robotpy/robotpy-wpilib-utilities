@@ -198,13 +198,11 @@ def state(
     *,
     first: bool = ...,
     must_finish: bool = ...,
-) -> Callable[[StateMethod], _State]:
-    ...
+) -> Callable[[StateMethod], _State]: ...
 
 
 @overload
-def state(f: StateMethod) -> _State:
-    ...
+def state(f: StateMethod) -> _State: ...
 
 
 def state(

@@ -89,12 +89,10 @@ class tunable(Generic[V]):
         # self.__doc__ = doc
 
     @overload
-    def __get__(self, instance: None, owner=None) -> "tunable[V]":
-        ...
+    def __get__(self, instance: None, owner=None) -> "tunable[V]": ...
 
     @overload
-    def __get__(self, instance, owner=None) -> V:
-        ...
+    def __get__(self, instance, owner=None) -> V: ...
 
     def __get__(self, instance, owner=None):
         if instance is not None:
@@ -152,13 +150,11 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
 
 
 @overload
-def feedback(f: Callable[[T], V]) -> Callable[[T], V]:
-    ...
+def feedback(f: Callable[[T], V]) -> Callable[[T], V]: ...
 
 
 @overload
-def feedback(*, key: str) -> Callable[[Callable[[T], V]], Callable[[T], V]]:
-    ...
+def feedback(*, key: str) -> Callable[[Callable[[T], V]], Callable[[T], V]]: ...
 
 
 def feedback(f=None, *, key: Optional[str] = None) -> Callable:

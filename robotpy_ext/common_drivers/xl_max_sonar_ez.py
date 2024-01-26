@@ -3,6 +3,7 @@ These are a set of drivers for the XL-MaxSonar EZ series of sonar modules.
 The devices have a few different ways of reading from them, and the these drivers attempt to cover
 some of the methods
 """
+
 import wpilib
 
 from . import driver_base
