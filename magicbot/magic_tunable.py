@@ -1,8 +1,10 @@
 import functools
 import inspect
+import typing
 import warnings
 from typing import Callable, Generic, Optional, TypeVar, overload
 
+import ntcore
 from ntcore import NetworkTableInstance, Value
 from ntcore.types import ValueT
 
@@ -222,6 +224,40 @@ def feedback(f=None, *, key: Optional[str] = None) -> Callable:
     return f
 
 
+_topic_types = {
+    bool: ntcore.BooleanTopic,
+    int: ntcore.IntegerTopic,
+    float: ntcore.DoubleTopic,
+    str: ntcore.StringTopic,
+    bytes: ntcore.RawTopic,
+}
+_array_topic_types = {
+    bool: ntcore.BooleanArrayTopic,
+    int: ntcore.IntegerArrayTopic,
+    float: ntcore.DoubleArrayTopic,
+    str: ntcore.StringArrayTopic,
+}
+
+
+def _get_topic_type(
+    return_annotation,
+) -> Optional[Callable[[ntcore.Topic], typing.Any]]:
+    if return_annotation in _topic_types:
+        return _topic_types[return_annotation]
+
+    # Check for PEP 484 generic types
+    origin = getattr(return_annotation, "__origin__", None)
+    args = typing.get_args(return_annotation)
+    if origin in (list, tuple) and args:
+        # Ensure tuples are tuple[T, ...]
+        if origin is tuple and not (len(args) == 2 and args[1] is Ellipsis):
+            return None
+
+        inner_type = args[0]
+        if inner_type in _array_topic_types:
+            return _array_topic_types[inner_type]
+
+
 def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components"):
     """
     Finds all methods decorated with :func:`feedback` on an object
@@ -246,8 +282,19 @@ def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components
                 else:
                     key = name
 
-            entry = nt.getEntry(key)
-            setter = entry.setValue
+            return_annotation = typing.get_type_hints(method).get("return", None)
+            if return_annotation is not None:
+                topic_type = _get_topic_type(return_annotation)
+            else:
+                topic_type = None
+
+            if topic_type is None:
+                entry = nt.getEntry(key)
+                setter = entry.setValue
+            else:
+                publisher = topic_type(nt.getTopic(key)).publish()
+                setter = publisher.set
+
             feedbacks.append((method, setter))
 
     return feedbacks
