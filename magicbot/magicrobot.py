@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, List, Tuple
 import hal
 import wpilib
 
-from ntcore import NetworkTableInstance, NetworkTableEntry
+from ntcore import NetworkTableInstance
 
 # from wpilib.shuffleboard import Shuffleboard
 
@@ -73,7 +73,7 @@ class MagicRobot(wpilib.RobotBase):
         self.__last_error_report = -10
 
         self._components: List[Tuple[str, Any]] = []
-        self._feedbacks: List[Tuple[Callable[[], Any], NetworkTableEntry]] = []
+        self._feedbacks: List[Tuple[Callable[[], Any], Callable[[Any], Any]]] = []
         self._reset_components: List[Tuple[Dict[str, Any], Any]] = []
 
         self.__done = False
@@ -720,13 +720,13 @@ class MagicRobot(wpilib.RobotBase):
         """Run periodic methods which run in every mode."""
         watchdog = self.watchdog
 
-        for method, entry in self._feedbacks:
+        for method, setter in self._feedbacks:
             try:
                 value = method()
             except:
                 self.onException()
             else:
-                entry.setValue(value)
+                setter(value)
 
         watchdog.addEpoch("@magicbot.feedback")
 

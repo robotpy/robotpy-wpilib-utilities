@@ -225,7 +225,7 @@ def feedback(f=None, *, key: Optional[str] = None) -> Callable:
 def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components"):
     """
     Finds all methods decorated with :func:`feedback` on an object
-    and returns a list of 2-tuples (method, NetworkTables entry).
+    and returns a list of 2-tuples (method, NetworkTables entry setter).
 
     .. note:: This isn't useful for normal use.
     """
@@ -247,6 +247,7 @@ def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components
                     key = name
 
             entry = nt.getEntry(key)
-            feedbacks.append((method, entry))
+            setter = entry.setValue
+            feedbacks.append((method, setter))
 
     return feedbacks
