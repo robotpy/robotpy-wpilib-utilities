@@ -68,6 +68,7 @@ class tunable(Generic[V]):
         # "__doc__",
         "_mkv",
         "_nt",
+        "_update_cb",
     )
 
     def __init__(
@@ -87,6 +88,7 @@ class tunable(Generic[V]):
         d = Value.makeValue(default)
         self._mkv = Value.getFactoryByType(d.type())
         # self.__doc__ = doc
+        self._update_cb = None
 
     @overload
     def __get__(self, instance: None, owner=None) -> "tunable[V]": ...
@@ -101,6 +103,31 @@ class tunable(Generic[V]):
 
     def __set__(self, instance, value: V) -> None:
         instance._tunables[self].setValue(self._mkv(value))
+
+    def set_callback(self, callback: Callable[[V], None]) -> None:
+        """
+        Set a method to be called when the tunable is updated over NetworkTables.
+
+        This can be useful, for example, for changing PID gains on a
+        motor controller on the fly::
+
+            class Component:
+                pid: ...
+
+                kP = tunable(0.01)
+
+                @kP.set_callback
+                def set_kP(self, value: float) -> None:
+                    self.pid.setP(value)
+
+        .. note::
+            The callback will be called on the NetworkTables I/O thread
+            (not the main robot thread).
+
+        .. warning::
+            This only supports instance methods on the same object as the tunable.
+        """
+        self._update_cb = callback
 
 
 def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
@@ -145,6 +172,13 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
         else:
             ntvalue.setDefaultValue(prop._ntdefault)
         tunables[prop] = ntvalue
+
+        if prop._update_cb:
+            prop._nt._api.addEntryListenerById(
+                ntvalue._local_id,
+                lambda notif, cb=prop._update_cb: cb(component, notif.value.value),
+                NetworkTables.NotifyFlags.UPDATE,
+            )
 
     component._tunables = tunables
 
