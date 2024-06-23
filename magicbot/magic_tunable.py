@@ -248,7 +248,7 @@ def _get_topic_type(
     # Check for PEP 484 generic types
     origin = getattr(return_annotation, "__origin__", None)
     args = typing.get_args(return_annotation)
-    if origin in (list, tuple) and args:
+    if origin in (list, tuple, collections.abc.Sequence) and args:
         # Ensure tuples are tuple[T, ...]
         if origin is tuple and not (len(args) == 2 and args[1] is Ellipsis):
             return None
