@@ -1,3 +1,4 @@
+import collections.abc
 import functools
 import inspect
 import typing
@@ -244,6 +245,8 @@ def _get_topic_type(
 ) -> Optional[Callable[[ntcore.Topic], typing.Any]]:
     if return_annotation in _topic_types:
         return _topic_types[return_annotation]
+    if hasattr(return_annotation, "WPIStruct"):
+        return lambda topic: ntcore.StructTopic(topic, return_annotation)
 
     # Check for PEP 484 generic types
     origin = getattr(return_annotation, "__origin__", None)
@@ -256,6 +259,8 @@ def _get_topic_type(
         inner_type = args[0]
         if inner_type in _array_topic_types:
             return _array_topic_types[inner_type]
+        if hasattr(inner_type, "WPIStruct"):
+            return lambda topic: ntcore.StructArrayTopic(topic, inner_type)
 
 
 def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components"):
