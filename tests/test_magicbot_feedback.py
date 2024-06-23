@@ -44,6 +44,10 @@ class TypeHintedComponent:
     def get_ints(self) -> Sequence[int]:
         return (0,)
 
+    @magicbot.feedback
+    def get_empty_strings(self) -> Sequence[str]:
+        return ()
+
     def execute(self):
         pass
 
@@ -56,7 +60,7 @@ class Robot(magicbot.MagicRobot):
         pass
 
 
-def test_collect_feedbacks_with_type_hints():
+def test_feedbacks_with_type_hints():
     robot = Robot()
     robot.robotInit()
     nt = ntcore.NetworkTableInstance.getDefault().getTable("components")
@@ -70,6 +74,7 @@ def test_collect_feedbacks_with_type_hints():
         ("type_hinted/int", "int", 0),
         ("type_hinted/float", "double", 0.5),
         ("type_hinted/ints", "int[]", [0]),
+        ("type_hinted/empty_strings", "string[]", []),
     ):
         topic = nt.getTopic(name)
         assert topic.getTypeString() == type_str
