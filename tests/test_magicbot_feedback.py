@@ -74,3 +74,18 @@ def test_collect_feedbacks_with_type_hints():
         topic = nt.getTopic(name)
         assert topic.getTypeString() == type_str
         assert topic.genericSubscribe().get().value() == value
+
+    for name, value in [
+        ("type_hinted/rotation", geometry.Rotation2d()),
+    ]:
+        struct_type = type(value)
+        assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}"
+        topic = nt.getStructTopic(name, struct_type)
+        assert topic.subscribe(None).get() == value
+
+    for name, struct_type, value in (
+        ("type_hinted/rotation_array", geometry.Rotation2d, [geometry.Rotation2d()]),
+    ):
+        assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}[]"
+        topic = nt.getStructArrayTopic(name, struct_type)
+        assert topic.subscribe([]).get() == value
