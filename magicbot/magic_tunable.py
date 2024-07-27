@@ -60,6 +60,10 @@ class tunable(Generic[V]):
               you will want to use setup_tunables to set the object up.
               In normal usage, MagicRobot does this for you, so you don't
               have to do anything special.
+
+    .. versionchanged:: 2024.1.0
+       Added support for WPILib Struct serializable types.
+       Integer defaults now create integer topics instead of double topics.
     """
 
     # the way this works is we use a special class to indicate that it
@@ -229,6 +233,10 @@ def feedback(f=None, *, key: Optional[str] = None) -> Callable:
                  especially if you wish to monitor WPILib objects.
 
     .. versionadded:: 2018.1.0
+
+    .. versionchanged:: 2024.1.0
+       WPILib Struct serializable types are supported when the return type is type hinted.
+       An ``int`` return type hint now creates an integer topic.
     """
     if f is None:
         return functools.partial(feedback, key=key)
