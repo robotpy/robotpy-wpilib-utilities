@@ -3,14 +3,21 @@ import functools
 import inspect
 import typing
 import warnings
-from typing import Callable, Generic, Optional, TypeVar, overload
+from typing import Callable, Generic, Optional, Sequence, TypeVar, Union, overload
 
 import ntcore
-from ntcore import NetworkTableInstance, Value
+from ntcore import NetworkTableInstance
 from ntcore.types import ValueT
 
+
+class StructSerializable(typing.Protocol):
+    """Any type that is a wpiutil.wpistruct."""
+
+    WPIStruct: typing.ClassVar
+
+
 T = TypeVar("T")
-V = TypeVar("V", bound=ValueT)
+V = TypeVar("V", bound=Union[ValueT, StructSerializable, Sequence[StructSerializable]])
 
 
 class tunable(Generic[V]):
@@ -69,7 +76,7 @@ class tunable(Generic[V]):
         "_ntsubtable",
         "_ntwritedefault",
         # "__doc__",
-        "_mkv",
+        "_topic_type",
         "_nt",
     )
 
@@ -87,9 +94,14 @@ class tunable(Generic[V]):
         self._ntdefault = default
         self._ntsubtable = subtable
         self._ntwritedefault = writeDefault
-        d = Value.makeValue(default)
-        self._mkv = Value.getFactoryByType(d.type())
         # self.__doc__ = doc
+
+        self._topic_type = _get_topic_type_for_value(self._ntdefault)
+        if self._topic_type is None:
+            checked_type: type = type(self._ntdefault)
+            raise TypeError(
+                f"tunable is not publishable to NetworkTables, type: {checked_type.__name__}"
+            )
 
     @overload
     def __get__(self, instance: None, owner=None) -> "tunable[V]": ...
@@ -99,11 +111,23 @@ class tunable(Generic[V]):
 
     def __get__(self, instance, owner=None):
         if instance is not None:
-            return instance._tunables[self].value
+            return instance._tunables[self].get()
         return self
 
     def __set__(self, instance, value: V) -> None:
-        instance._tunables[self].setValue(self._mkv(value))
+        instance._tunables[self].set(value)
+
+
+def _get_topic_type_for_value(value) -> Optional[Callable[[ntcore.Topic], typing.Any]]:
+    topic_type = _get_topic_type(type(value))
+    # bytes and str are Sequences. They must be checked before Sequence.
+    if topic_type is None and isinstance(value, collections.abc.Sequence):
+        if not value:
+            raise ValueError(
+                f"tunable default cannot be an empty sequence, got {value}"
+            )
+        topic_type = _get_topic_type(Sequence[type(value[0])])  # type: ignore [misc]
+    return topic_type
 
 
 def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
@@ -127,7 +151,7 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
 
     NetworkTables = NetworkTableInstance.getDefault()
 
-    tunables = {}
+    tunables: dict[tunable, ntcore.Topic] = {}
 
     for n in dir(cls):
         if n.startswith("_"):
@@ -142,11 +166,12 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
         else:
             key = "%s/%s" % (prefix, n)
 
-        ntvalue = NetworkTables.getEntry(key)
+        topic = prop._topic_type(NetworkTables.getTopic(key))
+        ntvalue = topic.getEntry(prop._ntdefault)
         if prop._ntwritedefault:
-            ntvalue.setValue(prop._ntdefault)
+            ntvalue.set(prop._ntdefault)
         else:
-            ntvalue.setDefaultValue(prop._ntdefault)
+            ntvalue.setDefault(prop._ntdefault)
         tunables[prop] = ntvalue
 
     component._tunables = tunables
