@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Tuple
 
 import ntcore
 from wpimath import geometry
@@ -31,6 +31,10 @@ class TypeHintedComponent:
     @magicbot.feedback
     def get_rotation_array(self) -> Sequence[geometry.Rotation2d]:
         return [geometry.Rotation2d()]
+
+    @magicbot.feedback
+    def get_rotation_2_tuple(self) -> Tuple[geometry.Rotation2d, geometry.Rotation2d]:
+        return (geometry.Rotation2d(), geometry.Rotation2d())
 
     @magicbot.feedback
     def get_int(self) -> int:
@@ -90,6 +94,11 @@ def test_feedbacks_with_type_hints():
 
     for name, struct_type, value in (
         ("type_hinted/rotation_array", geometry.Rotation2d, [geometry.Rotation2d()]),
+        (
+            "type_hinted/rotation_2_tuple",
+            geometry.Rotation2d,
+            [geometry.Rotation2d(), geometry.Rotation2d()],
+        ),
     ):
         assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}[]"
         topic = nt.getStructArrayTopic(name, struct_type)

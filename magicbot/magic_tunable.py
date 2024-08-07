@@ -285,8 +285,10 @@ def _get_topic_type(
     origin = getattr(return_annotation, "__origin__", None)
     args = typing.get_args(return_annotation)
     if origin in (list, tuple, collections.abc.Sequence) and args:
-        # Ensure tuples are tuple[T, ...]
-        if origin is tuple and not (len(args) == 2 and args[1] is Ellipsis):
+        # Ensure tuples are tuple[T, ...] or homogenous
+        if origin is tuple and not (
+            (len(args) == 2 and args[1] is Ellipsis) or len(set(args)) == 1
+        ):
             return None
 
         inner_type = args[0]
