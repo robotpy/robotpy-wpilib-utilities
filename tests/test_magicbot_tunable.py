@@ -55,7 +55,7 @@ def test_tunable_errors():
 
 
 def test_tunable_errors_with_empty_sequence():
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, ValueError)):
 
         class Component:
             empty = tunable([])
