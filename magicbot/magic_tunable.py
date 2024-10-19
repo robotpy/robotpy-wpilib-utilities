@@ -104,12 +104,13 @@ class tunable(Generic[V]):
         # Defer checks for empty sequences to check type hints.
         # Report errors here when we can so the error points to the tunable line.
         if default or not isinstance(default, collections.abc.Sequence):
-            self._topic_type = _get_topic_type_for_value(default)
-            if self._topic_type is None:
+            topic_type = _get_topic_type_for_value(default)
+            if topic_type is None:
                 checked_type: type = type(default)
                 raise TypeError(
                     f"tunable is not publishable to NetworkTables, type: {checked_type.__name__}"
                 )
+            self._topic_type = topic_type
 
     def __set_name__(self, owner: type, name: str) -> None:
         type_hint: Optional[type] = None
