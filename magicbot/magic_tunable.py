@@ -80,6 +80,7 @@ class tunable(Generic[V]):
         "_ntsubtable",
         "_ntwritedefault",
         # "__doc__",
+        "__orig_class__",
         "_topic_type",
         "_nt",
     )
@@ -100,12 +101,46 @@ class tunable(Generic[V]):
         self._ntwritedefault = writeDefault
         # self.__doc__ = doc
 
-        self._topic_type = _get_topic_type_for_value(self._ntdefault)
-        if self._topic_type is None:
-            checked_type: type = type(self._ntdefault)
+        # Defer checks for empty sequences to check type hints.
+        # Report errors here when we can so the error points to the tunable line.
+        if default or not isinstance(default, collections.abc.Sequence):
+            self._topic_type = _get_topic_type_for_value(default)
+            if self._topic_type is None:
+                checked_type: type = type(default)
+                raise TypeError(
+                    f"tunable is not publishable to NetworkTables, type: {checked_type.__name__}"
+                )
+
+    def __set_name__(self, owner: type, name: str) -> None:
+        type_hint: Optional[type] = None
+        # __orig_class__ is set after __init__, check it here.
+        orig_class = getattr(self, "__orig_class__", None)
+        if orig_class is not None:
+            # Accept field = tunable[Sequence[int]]([])
+            type_hint = typing.get_args(orig_class)[0]
+        else:
+            type_hint = typing.get_type_hints(owner).get(name)
+            origin = typing.get_origin(type_hint)
+            if origin is typing.ClassVar:
+                # Accept field: ClassVar[tunable[Sequence[int]]] = tunable([])
+                type_hint = typing.get_args(type_hint)[0]
+                origin = typing.get_origin(type_hint)
+            if origin is tunable:
+                # Accept field: tunable[Sequence[int]] = tunable([])
+                type_hint = typing.get_args(type_hint)[0]
+
+        if type_hint is not None:
+            topic_type = _get_topic_type(type_hint)
+        else:
+            topic_type = _get_topic_type_for_value(self._ntdefault)
+
+        if topic_type is None:
+            checked_type: type = type_hint or type(self._ntdefault)
             raise TypeError(
                 f"tunable is not publishable to NetworkTables, type: {checked_type.__name__}"
             )
+
+        self._topic_type = topic_type
 
     @overload
     def __get__(self, instance: None, owner=None) -> "tunable[V]": ...
@@ -218,7 +253,7 @@ def feedback(f=None, *, key: Optional[str] = None) -> Callable:
             navx: ...
 
             @feedback
-            def get_angle(self):
+            def get_angle(self) -> float:
                 return self.navx.getYaw()
 
         class MyRobot(magicbot.MagicRobot):
@@ -296,6 +331,8 @@ def _get_topic_type(
             return _array_topic_types[inner_type]
         if hasattr(inner_type, "WPIStruct"):
             return lambda topic: ntcore.StructArrayTopic(topic, inner_type)
+
+    return None
 
 
 def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components"):

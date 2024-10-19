@@ -1,3 +1,5 @@
+from typing import ClassVar, List, Sequence
+
 import ntcore
 import pytest
 from wpimath import geometry
@@ -53,7 +55,43 @@ def test_tunable_errors():
 
 
 def test_tunable_errors_with_empty_sequence():
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
 
         class Component:
             empty = tunable([])
+
+
+def test_type_hinted_empty_sequences() -> None:
+    class Component:
+        generic_seq = tunable[Sequence[int]](())
+        class_var_seq: ClassVar[tunable[Sequence[int]]] = tunable(())
+        inst_seq: Sequence[int] = tunable(())
+
+        generic_typing_list = tunable[List[int]]([])
+        class_var_typing_list: ClassVar[tunable[List[int]]] = tunable([])
+        inst_typing_list: List[int] = tunable([])
+
+        generic_list = tunable[list[int]]([])
+        class_var_list: ClassVar[tunable[list[int]]] = tunable([])
+        inst_list: list[int] = tunable([])
+
+    component = Component()
+    setup_tunables(component, "test_type_hinted_sequences")
+    NetworkTables = ntcore.NetworkTableInstance.getDefault()
+    nt = NetworkTables.getTable("/components/test_type_hinted_sequences")
+
+    for name in [
+        "generic_seq",
+        "class_var_seq",
+        "inst_seq",
+        "generic_typing_list",
+        "class_var_typing_list",
+        "inst_typing_list",
+        "generic_list",
+        "class_var_list",
+        "inst_list",
+    ]:
+        assert nt.getTopic(name).getTypeString() == "int[]"
+        entry = nt.getEntry(name)
+        assert entry.getIntegerArray(None) == []
+        assert getattr(component, name) == []
