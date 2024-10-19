@@ -25,6 +25,7 @@ def test_tunable() -> None:
         topic = nt.getTopic(name)
         assert topic.getTypeString() == type_str
         assert topic.genericSubscribe().get().value() == value
+        assert getattr(component, name) == value
 
     for name, value in [
         ("rotation", geometry.Rotation2d()),
@@ -33,6 +34,7 @@ def test_tunable() -> None:
         assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}"
         topic = nt.getStructTopic(name, struct_type)
         assert topic.subscribe(None).get() == value
+        assert getattr(component, name) == value
 
     for name, struct_type, value in [
         ("rotations", geometry.Rotation2d, [geometry.Rotation2d()]),
@@ -40,6 +42,7 @@ def test_tunable() -> None:
         assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}[]"
         topic = nt.getStructArrayTopic(name, struct_type)
         assert topic.subscribe([]).get() == value
+        assert getattr(component, name) == value
 
 
 def test_tunable_errors():
