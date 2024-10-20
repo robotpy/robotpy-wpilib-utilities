@@ -1,4 +1,4 @@
-class Unit(object):
+class Unit:
     """The class for all of the units here"""
 
     def __init__(self, base_unit, base_to_unit, unit_to_base):

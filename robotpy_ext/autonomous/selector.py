@@ -3,7 +3,8 @@ import inspect
 import logging
 import os
 from glob import glob
-from typing import Callable, Sequence, Union
+from typing import Callable, Union
+from collections.abc import Sequence
 
 import hal
 import wpilib
@@ -151,7 +152,7 @@ class AutonomousModeSelector:
                     if mode_name in self.modes:
                         if not wpilib.DriverStation.isFMSAttached():
                             raise RuntimeError(
-                                "Duplicate name %s in %s" % (mode_name, module_filename)
+                                f"Duplicate name {mode_name} in {module_filename}"
                             )
 
                         logger.error(
@@ -195,8 +196,9 @@ class AutonomousModeSelector:
         elif len(default_modes) != 1:
             if not wpilib.DriverStation.isFMSAttached():
                 raise RuntimeError(
-                    "More than one autonomous mode was specified as default! (modes: %s)"
-                    % (", ".join(default_modes))
+                    "More than one autonomous mode was specified as default! (modes: {})".format(
+                        ", ".join(default_modes)
+                    )
                 )
 
         # must PutData after setting up objects

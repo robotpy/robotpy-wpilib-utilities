@@ -1,17 +1,15 @@
-import functools
 import inspect
 import logging
 from typing import (
     Any,
     Callable,
     ClassVar,
-    Dict,
     NoReturn,
     Optional,
-    Sequence,
     Union,
     overload,
 )
+from collections.abc import Sequence
 
 import wpilib
 
@@ -85,7 +83,7 @@ class _State:
 
         if invalid_args:
             raise ValueError(
-                "Invalid parameter names in %s: %s" % (name, ",".join(invalid_args))
+                "Invalid parameter names in {}: {}".format(name, ",".join(invalid_args))
             )
 
         self.name = name
@@ -136,7 +134,7 @@ StateMethod = Callable[..., None]
 class _StateData:
     def __init__(self, wrapper: _State) -> None:
         self.name = wrapper.name
-        self.duration_attr = "%s_duration" % self.name
+        self.duration_attr = f"{self.name}_duration"
         self.expires: float = 0xFFFFFFFF
         self.ran = False
         self.run = wrapper.run
@@ -261,7 +259,7 @@ def default_state(f: StateMethod) -> _State:
     return _State(f, first=False, must_finish=True, is_default=True)
 
 
-def _get_class_members(cls: type) -> Dict[str, Any]:
+def _get_class_members(cls: type) -> dict[str, Any]:
     """Get the members of the given class in definition order, bases first."""
     d = {}
     for cls in reversed(cls.__mro__):

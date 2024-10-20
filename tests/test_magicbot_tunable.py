@@ -71,10 +71,9 @@ def test_type_hinted_empty_sequences() -> None:
         class_var_typing_list: ClassVar[tunable[List[int]]] = tunable([])
         inst_typing_list: List[int] = tunable([])
 
-        # TODO(davo): re-enable after py3.8 is dropped
-        # generic_list = tunable[list[int]]([])
-        # class_var_list: ClassVar[tunable[list[int]]] = tunable([])
-        # inst_list: list[int] = tunable([])
+        generic_list = tunable[list[int]]([])
+        class_var_list: ClassVar[tunable[list[int]]] = tunable([])
+        inst_list: list[int] = tunable([])
 
     component = Component()
     setup_tunables(component, "test_type_hinted_sequences")
@@ -88,9 +87,9 @@ def test_type_hinted_empty_sequences() -> None:
         "generic_typing_list",
         "class_var_typing_list",
         "inst_typing_list",
-        # "generic_list",
-        # "class_var_list",
-        # "inst_list",
+        "generic_list",
+        "class_var_list",
+        "inst_list",
     ]:
         assert nt.getTopic(name).getTypeString() == "int[]"
         entry = nt.getEntry(name)

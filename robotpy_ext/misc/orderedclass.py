@@ -1,6 +1,6 @@
 """
-    Taken from the python documentation, distributed under
-    that same license
+Taken from the python documentation, distributed under
+that same license
 """
 
 import collections

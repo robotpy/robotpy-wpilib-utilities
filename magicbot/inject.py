@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -9,8 +9,8 @@ class MagicInjectError(ValueError):
 
 
 def get_injection_requests(
-    type_hints: Dict[str, type], cname: str, component: Optional[Any] = None
-) -> Dict[str, type]:
+    type_hints: dict[str, type], cname: str, component: Optional[Any] = None
+) -> dict[str, type]:
     """
     Given a dict of type hints, filter it to the requested injection types.
 
@@ -52,8 +52,8 @@ def get_injection_requests(
 
 
 def find_injections(
-    requests: Dict[str, type], injectables: Dict[str, Any], cname: str
-) -> Dict[str, Any]:
+    requests: dict[str, type], injectables: dict[str, Any], cname: str
+) -> dict[str, Any]:
     """
     Get a dict of the variables to inject into a given component.
 
@@ -73,15 +73,13 @@ def find_injections(
         # Raise error if injectable syntax used but no injectable was found.
         if injectable is None:
             raise MagicInjectError(
-                "Component %s has variable %s (type %s), which is absent from robot"
-                % (cname, n, inject_type)
+                f"Component {cname} has variable {n} (type {inject_type}), which is absent from robot"
             )
 
         # Raise error if injectable declared with type different than the initial type
         if not isinstance(injectable, inject_type):
             raise MagicInjectError(
-                "Component %s variable %s does not match type in robot! (Got %s, expected %s)"
-                % (cname, n, type(injectable), inject_type)
+                f"Component {cname} variable {n} does not match type in robot! (Got {type(injectable)}, expected {inject_type})"
             )
 
         to_inject[n] = injectable
