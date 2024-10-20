@@ -3,7 +3,8 @@ import functools
 import inspect
 import typing
 import warnings
-from typing import Callable, Generic, Optional, Sequence, TypeVar, Union, overload
+from typing import Callable, Generic, Optional, TypeVar, Union, overload
+from collections.abc import Sequence
 
 import ntcore
 from ntcore import NetworkTableInstance

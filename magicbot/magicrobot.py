@@ -5,7 +5,7 @@ import sys
 import types
 import typing
 
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable
 
 import hal
 import wpilib
@@ -72,9 +72,9 @@ class MagicRobot(wpilib.RobotBase):
 
         self.__last_error_report = -10
 
-        self._components: List[Tuple[str, Any]] = []
-        self._feedbacks: List[Tuple[Callable[[], Any], Callable[[Any], Any]]] = []
-        self._reset_components: List[Tuple[Dict[str, Any], Any]] = []
+        self._components: list[tuple[str, Any]] = []
+        self._feedbacks: list[tuple[Callable[[], Any], Callable[[Any], Any]]] = []
+        self._reset_components: list[tuple[dict[str, Any], Any]] = []
 
         self.__done = False
 
@@ -125,7 +125,7 @@ class MagicRobot(wpilib.RobotBase):
 
         self.watchdog = SimpleWatchdog(self.control_loop_wait_time)
 
-        self.__periodics: List[Tuple[Callable[[], None], str]] = [
+        self.__periodics: list[tuple[Callable[[], None], str]] = [
             (self.robotPeriodic, "robotPeriodic()"),
         ]
 
@@ -397,7 +397,7 @@ class MagicRobot(wpilib.RobotBase):
         except:
             self.onException(forceReport=True)
 
-        auto_functions: Tuple[Callable[[], None], ...] = (self._enabled_periodic,)
+        auto_functions: tuple[Callable[[], None], ...] = (self._enabled_periodic,)
 
         if self.use_teleop_in_autonomous:
             auto_functions = (self.teleopPeriodic,) + auto_functions
@@ -649,7 +649,7 @@ class MagicRobot(wpilib.RobotBase):
 
         self._components = components
 
-    def _collect_injectables(self) -> Dict[str, Any]:
+    def _collect_injectables(self) -> dict[str, Any]:
         injectables = {}
         cls = type(self)
 
@@ -672,7 +672,7 @@ class MagicRobot(wpilib.RobotBase):
 
         return injectables
 
-    def _create_component(self, name: str, ctyp: type, injectables: Dict[str, Any]):
+    def _create_component(self, name: str, ctyp: type, injectables: dict[str, Any]):
         type_hints = typing.get_type_hints(ctyp.__init__)
         NoneType = type(None)
         init_return_type = type_hints.pop("return", NoneType)
@@ -699,7 +699,7 @@ class MagicRobot(wpilib.RobotBase):
 
         return component
 
-    def _setup_vars(self, cname: str, component, injectables: Dict[str, Any]) -> None:
+    def _setup_vars(self, cname: str, component, injectables: dict[str, Any]) -> None:
         self.logger.debug("Injecting magic variables into %s", cname)
 
         type_hints = typing.get_type_hints(type(component))

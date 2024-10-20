@@ -4,13 +4,12 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Dict,
     NoReturn,
     Optional,
-    Sequence,
     Union,
     overload,
 )
+from collections.abc import Sequence
 
 import wpilib
 
@@ -260,7 +259,7 @@ def default_state(f: StateMethod) -> _State:
     return _State(f, first=False, must_finish=True, is_default=True)
 
 
-def _get_class_members(cls: type) -> Dict[str, Any]:
+def _get_class_members(cls: type) -> dict[str, Any]:
     """Get the members of the given class in definition order, bases first."""
     d = {}
     for cls in reversed(cls.__mro__):

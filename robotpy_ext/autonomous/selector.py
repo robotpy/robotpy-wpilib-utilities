@@ -3,7 +3,8 @@ import inspect
 import logging
 import os
 from glob import glob
-from typing import Callable, Sequence, Union
+from typing import Callable, Union
+from collections.abc import Sequence
 
 import hal
 import wpilib

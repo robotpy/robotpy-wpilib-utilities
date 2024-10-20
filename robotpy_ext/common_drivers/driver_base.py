@@ -1,4 +1,4 @@
-class DriverBase(object):
+class DriverBase:
     """
     This should be the base class for all drivers in the cdl,
     currently all it does is spit out a warning message if the driver has not been verified.
