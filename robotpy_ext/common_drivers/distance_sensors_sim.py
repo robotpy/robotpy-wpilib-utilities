@@ -1,5 +1,4 @@
 import math
-import wpilib
 
 from wpilib.simulation import AnalogInputSim
 

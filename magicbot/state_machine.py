@@ -1,4 +1,3 @@
-import functools
 import inspect
 import logging
 from typing import (
