@@ -84,7 +84,7 @@ class _State:
 
         if invalid_args:
             raise ValueError(
-                "Invalid parameter names in %s: %s" % (name, ",".join(invalid_args))
+                "Invalid parameter names in {}: {}".format(name, ",".join(invalid_args))
             )
 
         self.name = name
@@ -135,7 +135,7 @@ StateMethod = Callable[..., None]
 class _StateData:
     def __init__(self, wrapper: _State) -> None:
         self.name = wrapper.name
-        self.duration_attr = "%s_duration" % self.name
+        self.duration_attr = f"{self.name}_duration"
         self.expires: float = 0xFFFFFFFF
         self.ran = False
         self.run = wrapper.run

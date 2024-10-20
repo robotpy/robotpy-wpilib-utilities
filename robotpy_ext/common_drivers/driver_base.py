@@ -16,7 +16,5 @@ class DriverBase(object):
         """
         if not self.verified:
             print(
-                "Warning, device driver {} has not been verified yet, please use with caution!".format(
-                    self.__class__.__name__
-                )
+                f"Warning, device driver {self.__class__.__name__} has not been verified yet, please use with caution!"
             )

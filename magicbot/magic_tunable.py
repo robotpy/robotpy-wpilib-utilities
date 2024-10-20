@@ -185,9 +185,9 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
     cls = component.__class__
 
     if prefix is None:
-        prefix = "/%s" % cname
+        prefix = f"/{cname}"
     else:
-        prefix = "/%s/%s" % (prefix, cname)
+        prefix = f"/{prefix}/{cname}"
 
     NetworkTables = NetworkTableInstance.getDefault()
 
@@ -202,9 +202,9 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
             continue
 
         if prop._ntsubtable:
-            key = "%s/%s/%s" % (prefix, prop._ntsubtable, n)
+            key = f"{prefix}/{prop._ntsubtable}/{n}"
         else:
-            key = "%s/%s" % (prefix, n)
+            key = f"{prefix}/{n}"
 
         topic = prop._topic_type(NetworkTables.getTopic(key))
         ntvalue = topic.getEntry(prop._ntdefault)
@@ -344,9 +344,9 @@ def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components
     .. note:: This isn't useful for normal use.
     """
     if prefix is None:
-        prefix = "/%s" % cname
+        prefix = f"/{cname}"
     else:
-        prefix = "/%s/%s" % (prefix, cname)
+        prefix = f"/{prefix}/{cname}"
 
     nt = NetworkTableInstance.getDefault().getTable(prefix)
     feedbacks = []

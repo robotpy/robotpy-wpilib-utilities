@@ -73,15 +73,13 @@ def find_injections(
         # Raise error if injectable syntax used but no injectable was found.
         if injectable is None:
             raise MagicInjectError(
-                "Component %s has variable %s (type %s), which is absent from robot"
-                % (cname, n, inject_type)
+                f"Component {cname} has variable {n} (type {inject_type}), which is absent from robot"
             )
 
         # Raise error if injectable declared with type different than the initial type
         if not isinstance(injectable, inject_type):
             raise MagicInjectError(
-                "Component %s variable %s does not match type in robot! (Got %s, expected %s)"
-                % (cname, n, type(injectable), inject_type)
+                f"Component {cname} variable {n} does not match type in robot! (Got {type(injectable)}, expected {inject_type})"
             )
 
         to_inject[n] = injectable

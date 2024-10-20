@@ -46,15 +46,15 @@ copyright = "2015, RobotPy development team"
 
 intersphinx_mapping = {
     "commandsv1": (
-        "https://robotpy.readthedocs.io/projects/commands-v1/en/%s/" % rtd_version,
+        f"https://robotpy.readthedocs.io/projects/commands-v1/en/{rtd_version}/",
         None,
     ),
     "networktables": (
-        "https://robotpy.readthedocs.io/projects/pynetworktables/en/%s/" % rtd_version,
+        f"https://robotpy.readthedocs.io/projects/pynetworktables/en/{rtd_version}/",
         None,
     ),
     "wpilib": (
-        "https://robotpy.readthedocs.io/projects/wpilib/en/%s/" % rtd_version,
+        f"https://robotpy.readthedocs.io/projects/wpilib/en/{rtd_version}/",
         None,
     ),
 }

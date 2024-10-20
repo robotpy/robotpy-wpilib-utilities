@@ -609,8 +609,7 @@ class MagicRobot(wpilib.RobotBase):
             # If the type is not actually a type, give a meaningful error
             if not isinstance(ctyp, type):
                 raise TypeError(
-                    "%s has a non-type annotation on %s (%r); lone non-injection variable annotations are disallowed, did you want to assign a static variable?"
-                    % (cls.__name__, m, ctyp)
+                    f"{cls.__name__} has a non-type annotation on {m} ({ctyp!r}); lone non-injection variable annotations are disallowed, did you want to assign a static variable?"
                 )
 
             component = self._create_component(m, ctyp, injectables)
@@ -690,8 +689,7 @@ class MagicRobot(wpilib.RobotBase):
         # Ensure that mandatory methods are there
         if not callable(getattr(component, "execute", None)):
             raise ValueError(
-                "Component %s (%r) must have a method named 'execute'"
-                % (name, component)
+                f"Component {name} ({component!r}) must have a method named 'execute'"
             )
 
         # Automatically inject a logger object
