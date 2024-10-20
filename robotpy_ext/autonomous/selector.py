@@ -196,7 +196,9 @@ class AutonomousModeSelector:
         elif len(default_modes) != 1:
             if not wpilib.DriverStation.isFMSAttached():
                 raise RuntimeError(
-                    "More than one autonomous mode was specified as default! (modes: {})".format(", ".join(default_modes))
+                    "More than one autonomous mode was specified as default! (modes: {})".format(
+                        ", ".join(default_modes)
+                    )
                 )
 
         # must PutData after setting up objects
