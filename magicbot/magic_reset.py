@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 V = TypeVar("V")
 
@@ -36,7 +36,7 @@ class will_reset_to(Generic[V]):
         self.default = default
 
 
-def collect_resets(cls: type) -> Dict[str, Any]:
+def collect_resets(cls: type) -> dict[str, Any]:
     """
     Get all the ``will_reset_to`` variables and their values from a class.
 
