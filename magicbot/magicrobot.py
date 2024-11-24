@@ -67,10 +67,14 @@ class MagicRobot(wpilib.RobotBase):
 
     def __init__(self) -> None:
         super().__init__()
+        hal.report(
+            hal.tResourceType.kResourceType_Framework.value,
+            hal.tInstances.kFramework_MagicBot.value,
+        )
 
         self._exclude_from_injection = ["logger"]
 
-        self.__last_error_report = -10
+        self.__last_error_report = -10.0
 
         self._components: list[tuple[str, Any]] = []
         self._feedbacks: list[tuple[Callable[[], Any], Callable[[Any], Any]]] = []
