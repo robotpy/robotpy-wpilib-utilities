@@ -49,7 +49,7 @@ class MagicComponent:
 
     def on_enable(self) -> None:
         """
-        Called when the robot enters autonomous or teleoperated mode. This
+        Called when the robot enters autonomous, teleoperated or test mode mode. This
         function should initialize your component to a "safe" state so
         that unexpected things don't happen when enabling the robot.
 
@@ -60,7 +60,7 @@ class MagicComponent:
 
     def on_disable(self) -> None:
         """
-        Called when the robot leaves autonomous or teleoperated
+        Called when the robot leaves autonomous, teleoperated or test mode
         """
 
     def execute(self) -> None:

@@ -526,6 +526,9 @@ class MagicRobot(wpilib.RobotBase):
         wpilib.LiveWindow.setEnabled(True)
         # Shuffleboard.enableActuatorWidgets()
 
+        # initialize things
+        self._on_mode_enable_components()
+
         try:
             self.testInit()
         except:
@@ -558,6 +561,8 @@ class MagicRobot(wpilib.RobotBase):
 
         wpilib.LiveWindow.setEnabled(False)
         # Shuffleboard.disableActuatorWidgets()
+
+        self._on_mode_disable_components()
 
     def _on_mode_enable_components(self) -> None:
         # initialize things
