@@ -729,15 +729,15 @@ class MagicRobot(wpilib.RobotBase):
                 self.onException()
             else:
                 setter(value)
-        
-        for reset_dict, component in self._reset_components:
-            component.__dict__.update(reset_dict)
 
         watchdog.addEpoch("@magicbot.feedback")
 
         for periodic, name in self.__periodics:
             periodic()
             watchdog.addEpoch(name)
+
+        for reset_dict, component in self._reset_components:
+            component.__dict__.update(reset_dict)
 
     def _enabled_periodic(self) -> None:
         """Run components and all periodic methods."""
