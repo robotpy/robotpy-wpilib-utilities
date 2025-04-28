@@ -729,6 +729,9 @@ class MagicRobot(wpilib.RobotBase):
                 self.onException()
             else:
                 setter(value)
+        
+        for reset_dict, component in self._reset_components:
+            component.__dict__.update(reset_dict)
 
         watchdog.addEpoch("@magicbot.feedback")
 
@@ -748,6 +751,3 @@ class MagicRobot(wpilib.RobotBase):
             watchdog.addEpoch(name)
 
         self._do_periodics()
-
-        for reset_dict, component in self._reset_components:
-            component.__dict__.update(reset_dict)
