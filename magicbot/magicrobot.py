@@ -413,8 +413,6 @@ class MagicRobot(wpilib.RobotBase):
             watchdog=self.watchdog,
         )
 
-        self._on_mode_disable_components()
-
     def _disabled(self) -> None:
         """
         This function is called in disabled mode. You should not
@@ -513,8 +511,6 @@ class MagicRobot(wpilib.RobotBase):
                 delay.wait()
                 watchdog.reset()
 
-        self._on_mode_disable_components()
-
     def _test(self) -> None:
         """Called when the robot is in test mode"""
         watchdog = self.watchdog
@@ -561,8 +557,6 @@ class MagicRobot(wpilib.RobotBase):
 
         wpilib.LiveWindow.setEnabled(False)
         # Shuffleboard.disableActuatorWidgets()
-
-        self._on_mode_disable_components()
 
     def _on_mode_enable_components(self) -> None:
         # initialize things

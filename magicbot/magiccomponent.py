@@ -60,7 +60,7 @@ class MagicComponent:
 
     def on_disable(self) -> None:
         """
-        Called when the robot leaves autonomous, teleoperated or test mode
+        Called when the robot enters disabled mode.
         """
 
     def execute(self) -> None:
