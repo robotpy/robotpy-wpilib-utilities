@@ -736,6 +736,9 @@ class MagicRobot(wpilib.RobotBase):
             periodic()
             watchdog.addEpoch(name)
 
+        for reset_dict, component in self._reset_components:
+            component.__dict__.update(reset_dict)
+
     def _enabled_periodic(self) -> None:
         """Run components and all periodic methods."""
         watchdog = self.watchdog
@@ -748,6 +751,3 @@ class MagicRobot(wpilib.RobotBase):
             watchdog.addEpoch(name)
 
         self._do_periodics()
-
-        for reset_dict, component in self._reset_components:
-            component.__dict__.update(reset_dict)
