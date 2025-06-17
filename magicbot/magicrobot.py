@@ -5,10 +5,11 @@ import sys
 import types
 import typing
 
-from typing import Any, Callable
+from typing import Any, Callable, List, Tuple
 
 import hal
 import wpilib
+from wpilib import Notifier
 
 from ntcore import NetworkTableInstance
 
@@ -88,6 +89,11 @@ class MagicRobot(wpilib.RobotBase):
         self.__lv_update = wpilib.LiveWindow.updateValues
         # self.__sf_update = Shuffleboard.update
 
+        self._periodic_callbacks: typing.List[Tuple[Callable[[], None], float]] = []
+        self._notifiers: List[Notifier] = []
+
+        self.loop_time = self.control_loop_wait_time
+
     def _simulationInit(self) -> None:
         pass
 
@@ -98,6 +104,16 @@ class MagicRobot(wpilib.RobotBase):
         hal.simPeriodicBefore()
         self._simulationPeriodic()
         hal.simPeriodicAfter()
+
+    def addPeriodic(self, callback: Callable[[], None], period: float):
+        """
+        Add a callback to run at a specific period with a starting time offset.
+
+        This is scheduled with MagicRobot's loop, so MagicRobot and the callback run synchronously.
+        """
+        
+        print(f"Registering periodic: {callback.__name__}, every {period}s")
+        self._periodic_callbacks.append((callback, period))
 
     def robotInit(self) -> None:
         """
@@ -558,6 +574,20 @@ class MagicRobot(wpilib.RobotBase):
         wpilib.LiveWindow.setEnabled(False)
         # Shuffleboard.disableActuatorWidgets()
 
+
+    def _stop_notifiers(self):
+        for notifier in self._notifiers:
+            notifier.stop()
+        self._notifiers.clear()
+
+    def _restart_periodics(self):
+        self._stop_notifiers()
+        for callback, period in self._periodic_callbacks:
+            notifier = Notifier(callback)
+            notifier.setName(f"Periodic-{callback.__name__}")
+            notifier.startPeriodic(period)
+            self._notifiers.append(notifier)
+
     def _on_mode_enable_components(self) -> None:
         # initialize things
         for _, component in self._components:
@@ -567,6 +597,7 @@ class MagicRobot(wpilib.RobotBase):
                     on_enable()
                 except:
                     self.onException(forceReport=True)
+        self._restart_periodics()
 
     def _on_mode_disable_components(self) -> None:
         # deinitialize things
@@ -577,6 +608,7 @@ class MagicRobot(wpilib.RobotBase):
                     on_disable()
                 except:
                     self.onException(forceReport=True)
+        self._stop_notifiers()
 
     def _create_components(self) -> None:
         #
@@ -737,6 +769,12 @@ class MagicRobot(wpilib.RobotBase):
 
         for reset_dict, component in self._reset_components:
             component.__dict__.update(reset_dict)
+        
+        self.loop_time = max(self.control_loop_wait_time, self.watchdog.getTime())
+        
+    def get_period(self) -> float:
+        """Get the period of the robot loop in seconds."""
+        return self.loop_time
 
     def _enabled_periodic(self) -> None:
         """Run components and all periodic methods."""
