@@ -67,10 +67,7 @@ class MagicRobot(wpilib.RobotBase):
 
     def __init__(self) -> None:
         super().__init__()
-        hal.report(
-            hal.tResourceType.kResourceType_Framework.value,
-            hal.tInstances.kFramework_MagicBot.value,
-        )
+        hal.reportUsage("Framework", "Magicbot")
 
         self._exclude_from_injection = ["logger"]
 
@@ -85,7 +82,6 @@ class MagicRobot(wpilib.RobotBase):
         # cache these
         self.__is_ds_attached = wpilib.DriverStation.isDSAttached
         self.__sd_update = wpilib.SmartDashboard.updateValues
-        self.__lv_update = wpilib.LiveWindow.updateValues
         # self.__sf_update = Shuffleboard.update
 
     def _simulationInit(self) -> None:
@@ -116,7 +112,6 @@ class MagicRobot(wpilib.RobotBase):
         # cache these
         self.__is_ds_attached = wpilib.DriverStation.isDSAttached
         self.__sd_update = wpilib.SmartDashboard.updateValues
-        self.__lv_update = wpilib.LiveWindow.updateValues
         # self.__sf_update = Shuffleboard.update
 
         self.__nt = NetworkTableInstance.getDefault().getTable("/robot")
@@ -259,14 +254,11 @@ class MagicRobot(wpilib.RobotBase):
         You may use it for any code you need to run
         during all modes of the robot (e.g NetworkTables updates)
 
-        The default implementation will update
-        SmartDashboard, LiveWindow and Shuffleboard.
+        The default implementation will update SmartDashboard
         """
         watchdog = self.watchdog
         self.__sd_update()
         watchdog.addEpoch("SmartDashboard")
-        self.__lv_update()
-        watchdog.addEpoch("LiveWindow")
         # self.__sf_update()
         # watchdog.addEpoch("Shuffleboard")
 
@@ -519,7 +511,6 @@ class MagicRobot(wpilib.RobotBase):
         self.__nt_put_mode("test")
         self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
-        wpilib.LiveWindow.setEnabled(True)
         # Shuffleboard.enableActuatorWidgets()
 
         # initialize things
@@ -555,7 +546,6 @@ class MagicRobot(wpilib.RobotBase):
                 delay.wait()
                 watchdog.reset()
 
-        wpilib.LiveWindow.setEnabled(False)
         # Shuffleboard.disableActuatorWidgets()
 
     def _on_mode_enable_components(self) -> None:
