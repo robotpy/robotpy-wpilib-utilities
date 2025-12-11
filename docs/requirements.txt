@@ -1,5 +1,5 @@
 # This file is intended for use on readthedocs
-sphinx-autodoc-typehints
+sphinx-autodoc-typehints<3.6
 sphinx-rtd-theme
 robotpy-sphinx-plugin
 -e .
