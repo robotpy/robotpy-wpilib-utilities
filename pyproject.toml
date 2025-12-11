@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "robotpy-wpilib-utilities"
+dynamic = ["version"]
+description = "Useful utility functions/objects for RobotPy"
+readme = "README.rst"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: BSD License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering"
+]
+dependencies = [
+  "wpilib>=2026.1.1b1,<2027",
+]
+
+[[project.authors]]
+name = "RobotPy Development Team"
+email = "robotpy@googlegroups.com"
+
+[project.urls]
+"Source code" = "https://github.com/robotpy/robotpy-wpilib-utilities"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".github",
+    ".readthedocs.yml",
+    "docs",
+    "devtools",
+    "tests",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["magicbot", "robotpy_ext"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.sdist.hooks.vcs]
+version-file = "robotpy_ext/version.py"
