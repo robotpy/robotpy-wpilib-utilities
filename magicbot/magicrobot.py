@@ -2,6 +2,7 @@ import contextlib
 import inspect
 import logging
 import sys
+import toposort
 import types
 import typing
 
@@ -620,6 +621,24 @@ class MagicRobot(wpilib.RobotBase):
             # Store for later
             components.append((m, component))
             injectables[m] = component
+
+        # Sort components so that setup functions can rely on the setup of an
+        # injected variable being called already
+        dag = {}
+        for cname, component in components:
+            setup = getattr(component, "setup", None)
+            if setup is None:
+                dag[cname] = []
+            else:
+                type_hints = typing.get_type_hints(type(component))
+                requests = get_injection_requests(type_hints, cname, component)
+                dag[cname] = list(requests.keys())
+
+        # Recreate the ordered component list
+        components = [
+            (cname, injectables[cname])
+            for cname in list(toposort.toposort_flatten(dag))
+        ]
 
         # For each new component, perform magic injection
         for cname, component in components:
