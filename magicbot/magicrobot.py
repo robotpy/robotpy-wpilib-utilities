@@ -634,8 +634,8 @@ class MagicRobot(wpilib.RobotBase):
                 requests = get_injection_requests(type_hints, cname, component)
                 dag[cname] = list(requests.keys())
 
-        # Recreate the ordered component list
-        components = [
+        # Create an ordered component list based on possible setup() dependencies
+        setup_ordered_components = [
             (cname, injectables[cname])
             for cname in list(toposort.toposort_flatten(dag))
         ]
@@ -657,11 +657,15 @@ class MagicRobot(wpilib.RobotBase):
         self._feedbacks += collect_feedbacks(self, "robot", None)
 
         # Call setup functions for components
-        for cname, component in components:
+        # This is the one time we call the components out of declaration order
+        # so that dependencies within them don't break
+        for cname, component in setup_ordered_components:
             setup = getattr(component, "setup", None)
             if setup is not None:
                 setup()
-            # ... and grab all the feedback methods
+
+        # Grab all the feedback methods
+        for cname, component in setup_ordered_components:
             self._feedbacks += collect_feedbacks(component, cname, "components")
 
         # Call setup functions for autonomous modes

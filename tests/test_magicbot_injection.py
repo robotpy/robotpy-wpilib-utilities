@@ -274,3 +274,11 @@ def test_typehints_inject():
 
 def test_toposort_inject():
     bot = _make_bot(TopoSortBot)
+    # The above only succeeds if the components are initialised
+    # with dependencies within them being accounted for.
+    # We want to check that the robot still ticks execute()
+    # on each component in the order it was declared.
+    assert len(bot._components) == 4
+    expected_names = ["a", "b", "c", "d"]
+    for (name, _), expected in zip(bot._components, expected_names):
+        assert name == expected
