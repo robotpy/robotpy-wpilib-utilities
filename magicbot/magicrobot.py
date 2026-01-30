@@ -665,7 +665,7 @@ class MagicRobot(wpilib.RobotBase):
                 setup()
 
         # Grab all the feedback methods
-        for cname, component in setup_ordered_components:
+        for cname, component in components:
             self._feedbacks += collect_feedbacks(component, cname, "components")
 
         # Call setup functions for autonomous modes
