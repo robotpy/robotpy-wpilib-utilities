@@ -2,6 +2,7 @@ import contextlib
 import inspect
 import logging
 import sys
+import toposort
 import types
 import typing
 
@@ -621,6 +622,24 @@ class MagicRobot(wpilib.RobotBase):
             components.append((m, component))
             injectables[m] = component
 
+        # Sort components so that setup functions can rely on the setup of an
+        # injected variable being called already
+        dag = {}
+        for cname, component in components:
+            setup = getattr(component, "setup", None)
+            if setup is None:
+                dag[cname] = []
+            else:
+                type_hints = typing.get_type_hints(type(component))
+                requests = get_injection_requests(type_hints, cname, component)
+                dag[cname] = list(requests.keys())
+
+        # Create an ordered component list based on possible setup() dependencies
+        setup_ordered_components = [
+            (cname, injectables[cname])
+            for cname in list(toposort.toposort_flatten(dag))
+        ]
+
         # For each new component, perform magic injection
         for cname, component in components:
             setup_tunables(component, cname, "components")
@@ -638,11 +657,15 @@ class MagicRobot(wpilib.RobotBase):
         self._feedbacks += collect_feedbacks(self, "robot", None)
 
         # Call setup functions for components
-        for cname, component in components:
+        # This is the one time we call the components out of declaration order
+        # so that dependencies within them don't break
+        for cname, component in setup_ordered_components:
             setup = getattr(component, "setup", None)
             if setup is not None:
                 setup()
-            # ... and grab all the feedback methods
+
+        # Grab all the feedback methods
+        for cname, component in components:
             self._feedbacks += collect_feedbacks(component, cname, "components")
 
         # Call setup functions for autonomous modes
