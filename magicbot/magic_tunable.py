@@ -4,7 +4,7 @@ import inspect
 import typing
 import warnings
 from typing import Callable, Generic, TypeVar, overload
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import ntcore
 from ntcore import NetworkTableInstance
@@ -14,6 +14,8 @@ from wpiutil.wpistruct.typing import StructSerializable, is_wpistruct_type
 
 T = TypeVar("T")
 V = TypeVar("V", bound=ValueT | StructSerializable | Sequence[StructSerializable])
+JsonPrimitive = bool | float | str
+JsonValue = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
 
 
 class tunable(Generic[V]):
@@ -60,6 +62,9 @@ class tunable(Generic[V]):
     .. versionchanged:: 2024.1.0
        Added support for WPILib Struct serializable types.
        Integer defaults now create integer topics instead of double topics.
+
+    .. versionchanged:: 2026.1.0
+       Added support for publishing JSON topic properties.
     """
 
     # the way this works is we use a special class to indicate that it
@@ -75,6 +80,7 @@ class tunable(Generic[V]):
         "_ntdefault",
         "_ntsubtable",
         "_ntwritedefault",
+        "_topic_properties",
         # "__doc__",
         "__orig_class__",
         "_topic_type",
@@ -87,6 +93,7 @@ class tunable(Generic[V]):
         *,
         writeDefault: bool = True,
         subtable: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
         doc=None,
     ) -> None:
         if doc is not None:
@@ -95,6 +102,7 @@ class tunable(Generic[V]):
         self._ntdefault = default
         self._ntsubtable = subtable
         self._ntwritedefault = writeDefault
+        self._topic_properties = properties
         # self.__doc__ = doc
 
         # Defer checks for empty sequences to check type hints.
@@ -202,12 +210,15 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
         else:
             key = f"{prefix}/{n}"
 
-        topic = prop._topic_type(NetworkTables.getTopic(key))
-        ntvalue = topic.getEntry(prop._ntdefault)
+        topic = NetworkTables.getTopic(key)
+        typed_topic = prop._topic_type(topic)
+        ntvalue = typed_topic.getEntry(prop._ntdefault)
         if prop._ntwritedefault:
             ntvalue.set(prop._ntdefault)
         else:
             ntvalue.setDefault(prop._ntdefault)
+        if prop._topic_properties is not None:
+            topic.setProperties(prop._topic_properties)
         tunables[prop] = ntvalue
 
     component._tunables = tunables
