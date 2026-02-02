@@ -3,7 +3,7 @@ import functools
 import inspect
 import typing
 import warnings
-from typing import Callable, Generic, Optional, TypeVar, Union, overload
+from typing import Callable, Generic, TypeVar, overload
 from collections.abc import Sequence
 
 import ntcore
@@ -13,7 +13,7 @@ from wpiutil.wpistruct.typing import StructSerializable, is_wpistruct_type
 
 
 T = TypeVar("T")
-V = TypeVar("V", bound=Union[ValueT, StructSerializable, Sequence[StructSerializable]])
+V = TypeVar("V", bound=ValueT | StructSerializable | Sequence[StructSerializable])
 
 
 class tunable(Generic[V]):
@@ -86,7 +86,7 @@ class tunable(Generic[V]):
         default: V,
         *,
         writeDefault: bool = True,
-        subtable: Optional[str] = None,
+        subtable: str | None = None,
         doc=None,
     ) -> None:
         if doc is not None:
@@ -109,7 +109,7 @@ class tunable(Generic[V]):
             self._topic_type = topic_type
 
     def __set_name__(self, owner: type, name: str) -> None:
-        type_hint: Optional[type] = None
+        type_hint: type | None = None
         # __orig_class__ is set after __init__, check it here.
         orig_class = getattr(self, "__orig_class__", None)
         if orig_class is not None:
@@ -154,7 +154,7 @@ class tunable(Generic[V]):
         instance._tunables[self].set(value)
 
 
-def _get_topic_type_for_value(value) -> Optional[Callable[[ntcore.Topic], typing.Any]]:
+def _get_topic_type_for_value(value) -> Callable[[ntcore.Topic], typing.Any] | None:
     topic_type = _get_topic_type(type(value))
     # bytes and str are Sequences. They must be checked before Sequence.
     if topic_type is None and isinstance(value, collections.abc.Sequence):
@@ -166,7 +166,7 @@ def _get_topic_type_for_value(value) -> Optional[Callable[[ntcore.Topic], typing
     return topic_type
 
 
-def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
+def setup_tunables(component, cname: str, prefix: str | None = "components") -> None:
     """
     Connects the tunables on an object to NetworkTables.
 
@@ -221,7 +221,7 @@ def feedback(f: Callable[[T], V]) -> Callable[[T], V]: ...
 def feedback(*, key: str) -> Callable[[Callable[[T], V]], Callable[[T], V]]: ...
 
 
-def feedback(f=None, *, key: Optional[str] = None) -> Callable:
+def feedback(f=None, *, key: str | None = None) -> Callable:
     """
     This decorator allows you to create NetworkTables values that are
     automatically updated with the return value of a method.
@@ -305,9 +305,7 @@ _array_topic_types = {
 }
 
 
-def _get_topic_type(
-    return_annotation,
-) -> Optional[Callable[[ntcore.Topic], typing.Any]]:
+def _get_topic_type(return_annotation) -> Callable[[ntcore.Topic], typing.Any] | None:
     if return_annotation in _topic_types:
         return _topic_types[return_annotation]
     if is_wpistruct_type(return_annotation):
@@ -332,7 +330,7 @@ def _get_topic_type(
     return None
 
 
-def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components"):
+def collect_feedbacks(component, cname: str, prefix: str | None = "components"):
     """
     Finds all methods decorated with :func:`feedback` on an object
     and returns a list of 2-tuples (method, NetworkTables entry setter).
