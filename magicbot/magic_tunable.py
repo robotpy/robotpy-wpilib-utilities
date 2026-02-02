@@ -11,7 +11,6 @@ from ntcore import NetworkTableInstance
 from ntcore.types import ValueT
 from wpiutil.wpistruct.typing import StructSerializable, is_wpistruct_type
 
-
 T = TypeVar("T")
 V = TypeVar("V", bound=ValueT | StructSerializable | Sequence[StructSerializable])
 JsonPrimitive = bool | float | str
