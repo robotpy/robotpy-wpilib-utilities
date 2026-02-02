@@ -229,10 +229,19 @@ def feedback(f: Callable[[T], V]) -> Callable[[T], V]: ...
 
 
 @overload
-def feedback(*, key: str) -> Callable[[Callable[[T], V]], Callable[[T], V]]: ...
+def feedback(
+    *,
+    key: str | None = None,
+    properties: Mapping[str, JsonValue] | None = None,
+) -> Callable[[Callable[[T], V]], Callable[[T], V]]: ...
 
 
-def feedback(f=None, *, key: str | None = None) -> Callable:
+def feedback(
+    f=None,
+    *,
+    key: str | None = None,
+    properties: Mapping[str, JsonValue] | None = None,
+) -> Callable:
     """
     This decorator allows you to create NetworkTables values that are
     automatically updated with the return value of a method.
@@ -280,9 +289,12 @@ def feedback(f=None, *, key: str | None = None) -> Callable:
     .. versionchanged:: 2024.1.0
        WPILib Struct serializable types are supported when the return type is type hinted.
        An ``int`` return type hint now creates an integer topic.
+
+    .. versionchanged:: 2026.1.0
+       Added support for JSON topic properties for type hinted feedback methods.
     """
     if f is None:
-        return functools.partial(feedback, key=key)
+        return functools.partial(feedback, key=key, properties=properties)
 
     if not callable(f):
         raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
@@ -295,8 +307,7 @@ def feedback(f=None, *, key: str | None = None) -> Callable:
         )
 
     # Set attributes to be checked during injection
-    f._magic_feedback = True
-    f._magic_feedback_key = key
+    f._magic_feedback = (key, properties)
 
     return f
 
@@ -357,8 +368,9 @@ def collect_feedbacks(component, cname: str, prefix: str | None = "components"):
     feedbacks = []
 
     for name, method in inspect.getmembers(component, inspect.ismethod):
-        if getattr(method, "_magic_feedback", False):
-            key = method._magic_feedback_key
+        feedback_params = getattr(method, "_magic_feedback", None)
+        if feedback_params is not None:
+            key, topic_properties = feedback_params
             if key is None:
                 if name.startswith("get_"):
                     key = name[4:]
@@ -375,8 +387,11 @@ def collect_feedbacks(component, cname: str, prefix: str | None = "components"):
                 entry = nt.getEntry(key)
                 setter = entry.setValue
             else:
-                publisher = topic_type(nt.getTopic(key)).publish()
+                topic = nt.getTopic(key)
+                publisher = topic_type(topic).publish()
                 setter = publisher.set
+                if topic_properties is not None:
+                    topic.setProperties(topic_properties)
 
             feedbacks.append((method, setter))
 
