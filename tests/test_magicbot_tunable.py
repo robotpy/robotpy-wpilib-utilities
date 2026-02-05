@@ -9,7 +9,8 @@ from magicbot.magic_tunable import setup_tunables, tunable
 
 def test_tunable() -> None:
     class Component:
-        an_int = tunable(1, properties={"units": "seconds"})
+        an_int = tunable(1, properties={"units": "beans"})
+        a_float = tunable(2.0).with_properties(unit="seconds")
         ints = tunable([0])
         floats = tunable([1.0, 2.0])
         rotation = tunable(geometry.Rotation2d())
@@ -21,6 +22,7 @@ def test_tunable() -> None:
 
     for name, type_str, value in [
         ("an_int", "int", 1),
+        ("a_float", "double", 2.0),
         ("ints", "int[]", [0]),
         ("floats", "double[]", [1.0, 2.0]),
     ]:
@@ -29,7 +31,10 @@ def test_tunable() -> None:
         assert topic.genericSubscribe().get().value() == value
         assert getattr(component, name) == value
 
-    assert nt.getTopic("an_int").getProperty("units") == "seconds"
+    assert isinstance(component.an_int, int)
+
+    assert nt.getTopic("an_int").getProperty("units") == "beans"
+    assert nt.getTopic("a_float").getProperty("unit") == "seconds"
 
     for name, value in [
         ("rotation", geometry.Rotation2d()),

@@ -1,10 +1,18 @@
+from __future__ import annotations
+
 import collections.abc
 import functools
 import inspect
 import typing
 import warnings
-from typing import Callable, Generic, TypeVar, overload
 from collections.abc import Mapping, Sequence
+from typing import Callable, Generic, TypeVar, overload
+
+if typing.TYPE_CHECKING:
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
 
 import ntcore
 from ntcore import NetworkTableInstance
@@ -114,6 +122,10 @@ class tunable(Generic[V]):
                     f"tunable is not publishable to NetworkTables, type: {checked_type.__name__}"
                 )
             self._topic_type = topic_type
+
+    def with_properties(self, **kwargs: JsonValue) -> Self:
+        self._topic_properties = kwargs
+        return self
 
     def __set_name__(self, owner: type, name: str) -> None:
         type_hint: type | None = None
