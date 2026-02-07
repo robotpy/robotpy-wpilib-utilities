@@ -254,27 +254,6 @@ def _apply_feedback(
     return f
 
 
-class _FeedbackDecorator:
-    __slots__ = ("_key", "_properties")
-
-    def __init__(
-        self,
-        *,
-        key: str | None = None,
-        properties: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        self._key = key
-        self._properties = dict(properties) if properties is not None else None
-
-    def with_properties(self, **kwargs: JsonValue) -> _FeedbackDecorator:
-        merged = dict(self._properties or {})
-        merged.update(kwargs)
-        return _FeedbackDecorator(key=self._key, properties=merged)
-
-    def __call__(self, f: Callable[[T], V]) -> Callable[[T], V]:
-        return _apply_feedback(f, key=self._key, properties=self._properties)
-
-
 class _FeedbackDescriptor:
     """
     This decorator allows you to create NetworkTables values that are
@@ -331,6 +310,17 @@ class _FeedbackDescriptor:
        Added ``.with_properties()`` for chained property configuration.
     """
 
+    __slots__ = ("_key", "_properties")
+
+    def __init__(
+        self,
+        *,
+        key: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
+    ) -> None:
+        self._key = key
+        self._properties = dict(properties) if properties is not None else None
+
     @overload
     def __call__(self, f: Callable[[T], V]) -> Callable[[T], V]: ...
 
@@ -340,7 +330,7 @@ class _FeedbackDescriptor:
         *,
         key: str | None = None,
         properties: Mapping[str, JsonValue] | None = None,
-    ) -> _FeedbackDecorator: ...
+    ) -> _FeedbackDescriptor: ...
 
     def __call__(
         self,
@@ -350,11 +340,13 @@ class _FeedbackDescriptor:
         properties: Mapping[str, JsonValue] | None = None,
     ) -> Callable:
         if f is None:
-            return _FeedbackDecorator(key=key, properties=properties)
-        return _apply_feedback(f, key=key, properties=properties)
+            return _FeedbackDescriptor(key=key, properties=properties)
+        return _apply_feedback(f, key=self._key, properties=self._properties)
 
-    def with_properties(self, **kwargs: JsonValue) -> _FeedbackDecorator:
-        return _FeedbackDecorator(properties=kwargs)
+    def with_properties(self, **kwargs: JsonValue) -> _FeedbackDescriptor:
+        merged = dict(self._properties or {})
+        merged.update(kwargs)
+        return _FeedbackDescriptor(key=self._key, properties=merged)
 
 
 feedback = _FeedbackDescriptor()
