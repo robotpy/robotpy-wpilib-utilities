@@ -268,9 +268,7 @@ class _FeedbackDecorator:
             return _FeedbackDecorator(key=key, properties=properties)
 
         if not callable(f):
-            raise TypeError(
-                f"Illegal use of feedback decorator on non-callable {f!r}"
-            )
+            raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
         sig = inspect.signature(f)
         name = f.__name__
 
