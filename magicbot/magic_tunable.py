@@ -1,24 +1,28 @@
+from __future__ import annotations
+
 import collections.abc
 import functools
 import inspect
 import typing
 import warnings
-from typing import Callable, Generic, Optional, TypeVar, Union, overload
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Callable, Generic, TypeVar, overload
+
+if typing.TYPE_CHECKING:
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
 
 import ntcore
 from ntcore import NetworkTableInstance
 from ntcore.types import ValueT
-
-
-class StructSerializable(typing.Protocol):
-    """Any type that is a wpiutil.wpistruct."""
-
-    WPIStruct: typing.ClassVar
-
+from wpiutil.wpistruct.typing import StructSerializable, is_wpistruct_type
 
 T = TypeVar("T")
-V = TypeVar("V", bound=Union[ValueT, StructSerializable, Sequence[StructSerializable]])
+V = TypeVar("V", bound=ValueT | StructSerializable | Sequence[StructSerializable])
+JsonPrimitive = bool | float | str
+JsonValue = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
 
 
 class tunable(Generic[V]):
@@ -65,6 +69,9 @@ class tunable(Generic[V]):
     .. versionchanged:: 2024.1.0
        Added support for WPILib Struct serializable types.
        Integer defaults now create integer topics instead of double topics.
+
+    .. versionchanged:: 2026.1.0
+       Added support for publishing JSON topic properties.
     """
 
     # the way this works is we use a special class to indicate that it
@@ -80,6 +87,7 @@ class tunable(Generic[V]):
         "_ntdefault",
         "_ntsubtable",
         "_ntwritedefault",
+        "_topic_properties",
         # "__doc__",
         "__orig_class__",
         "_topic_type",
@@ -91,7 +99,8 @@ class tunable(Generic[V]):
         default: V,
         *,
         writeDefault: bool = True,
-        subtable: Optional[str] = None,
+        subtable: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
         doc=None,
     ) -> None:
         if doc is not None:
@@ -100,6 +109,7 @@ class tunable(Generic[V]):
         self._ntdefault = default
         self._ntsubtable = subtable
         self._ntwritedefault = writeDefault
+        self._topic_properties = properties
         # self.__doc__ = doc
 
         # Defer checks for empty sequences to check type hints.
@@ -113,8 +123,12 @@ class tunable(Generic[V]):
                 )
             self._topic_type = topic_type
 
+    def with_properties(self, **kwargs: JsonValue) -> Self:
+        self._topic_properties = kwargs
+        return self
+
     def __set_name__(self, owner: type, name: str) -> None:
-        type_hint: Optional[type] = None
+        type_hint: type | None = None
         # __orig_class__ is set after __init__, check it here.
         orig_class = getattr(self, "__orig_class__", None)
         if orig_class is not None:
@@ -159,7 +173,7 @@ class tunable(Generic[V]):
         instance._tunables[self].set(value)
 
 
-def _get_topic_type_for_value(value) -> Optional[Callable[[ntcore.Topic], typing.Any]]:
+def _get_topic_type_for_value(value) -> Callable[[ntcore.Topic], typing.Any] | None:
     topic_type = _get_topic_type(type(value))
     # bytes and str are Sequences. They must be checked before Sequence.
     if topic_type is None and isinstance(value, collections.abc.Sequence):
@@ -171,7 +185,7 @@ def _get_topic_type_for_value(value) -> Optional[Callable[[ntcore.Topic], typing
     return topic_type
 
 
-def setup_tunables(component, cname: str, prefix: Optional[str] = "components") -> None:
+def setup_tunables(component, cname: str, prefix: str | None = "components") -> None:
     """
     Connects the tunables on an object to NetworkTables.
 
@@ -207,12 +221,15 @@ def setup_tunables(component, cname: str, prefix: Optional[str] = "components") 
         else:
             key = f"{prefix}/{n}"
 
-        topic = prop._topic_type(NetworkTables.getTopic(key))
-        ntvalue = topic.getEntry(prop._ntdefault)
+        topic = NetworkTables.getTopic(key)
+        typed_topic = prop._topic_type(topic)
+        ntvalue = typed_topic.getEntry(prop._ntdefault)
         if prop._ntwritedefault:
             ntvalue.set(prop._ntdefault)
         else:
             ntvalue.setDefault(prop._ntdefault)
+        if prop._topic_properties is not None:
+            topic.setProperties(prop._topic_properties)
         tunables[prop] = ntvalue
 
     component._tunables = tunables
@@ -223,10 +240,19 @@ def feedback(f: Callable[[T], V]) -> Callable[[T], V]: ...
 
 
 @overload
-def feedback(*, key: str) -> Callable[[Callable[[T], V]], Callable[[T], V]]: ...
+def feedback(
+    *,
+    key: str | None = None,
+    properties: Mapping[str, JsonValue] | None = None,
+) -> Callable[[Callable[[T], V]], Callable[[T], V]]: ...
 
 
-def feedback(f=None, *, key: Optional[str] = None) -> Callable:
+def feedback(
+    f=None,
+    *,
+    key: str | None = None,
+    properties: Mapping[str, JsonValue] | None = None,
+) -> Callable:
     """
     This decorator allows you to create NetworkTables values that are
     automatically updated with the return value of a method.
@@ -274,9 +300,12 @@ def feedback(f=None, *, key: Optional[str] = None) -> Callable:
     .. versionchanged:: 2024.1.0
        WPILib Struct serializable types are supported when the return type is type hinted.
        An ``int`` return type hint now creates an integer topic.
+
+    .. versionchanged:: 2026.1.0
+       Added support for JSON topic properties for type hinted feedback methods.
     """
     if f is None:
-        return functools.partial(feedback, key=key)
+        return functools.partial(feedback, key=key, properties=properties)
 
     if not callable(f):
         raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
@@ -289,8 +318,7 @@ def feedback(f=None, *, key: Optional[str] = None) -> Callable:
         )
 
     # Set attributes to be checked during injection
-    f._magic_feedback = True
-    f._magic_feedback_key = key
+    f._magic_feedback = (key, properties)
 
     return f
 
@@ -310,12 +338,10 @@ _array_topic_types = {
 }
 
 
-def _get_topic_type(
-    return_annotation,
-) -> Optional[Callable[[ntcore.Topic], typing.Any]]:
+def _get_topic_type(return_annotation) -> Callable[[ntcore.Topic], typing.Any] | None:
     if return_annotation in _topic_types:
         return _topic_types[return_annotation]
-    if hasattr(return_annotation, "WPIStruct"):
+    if is_wpistruct_type(return_annotation):
         return lambda topic: ntcore.StructTopic(topic, return_annotation)
 
     # Check for PEP 484 generic types
@@ -331,13 +357,13 @@ def _get_topic_type(
         inner_type = args[0]
         if inner_type in _array_topic_types:
             return _array_topic_types[inner_type]
-        if hasattr(inner_type, "WPIStruct"):
+        if is_wpistruct_type(inner_type):
             return lambda topic: ntcore.StructArrayTopic(topic, inner_type)
 
     return None
 
 
-def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components"):
+def collect_feedbacks(component, cname: str, prefix: str | None = "components"):
     """
     Finds all methods decorated with :func:`feedback` on an object
     and returns a list of 2-tuples (method, NetworkTables entry setter).
@@ -353,8 +379,9 @@ def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components
     feedbacks = []
 
     for name, method in inspect.getmembers(component, inspect.ismethod):
-        if getattr(method, "_magic_feedback", False):
-            key = method._magic_feedback_key
+        feedback_params = getattr(method, "_magic_feedback", None)
+        if feedback_params is not None:
+            key, topic_properties = feedback_params
             if key is None:
                 if name.startswith("get_"):
                     key = name[4:]
@@ -371,8 +398,11 @@ def collect_feedbacks(component, cname: str, prefix: Optional[str] = "components
                 entry = nt.getEntry(key)
                 setter = entry.setValue
             else:
-                publisher = topic_type(nt.getTopic(key)).publish()
+                topic = nt.getTopic(key)
+                publisher = topic_type(topic).publish()
                 setter = publisher.set
+                if topic_properties is not None:
+                    topic.setProperties(topic_properties)
 
             feedbacks.append((method, setter))
 

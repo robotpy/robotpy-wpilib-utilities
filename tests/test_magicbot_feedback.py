@@ -40,7 +40,7 @@ class TypeHintedComponent:
     def get_int(self) -> int:
         return 0
 
-    @magicbot.feedback
+    @magicbot.feedback(properties={"unit": "seconds"})
     def get_float(self) -> float:
         return 0.5
 
@@ -83,6 +83,8 @@ def test_feedbacks_with_type_hints():
         topic = nt.getTopic(name)
         assert topic.getTypeString() == type_str
         assert topic.genericSubscribe().get().value() == value
+
+    assert nt.getTopic("type_hinted/float").getProperty("unit") == "seconds"
 
     for name, value in [
         ("type_hinted/rotation", geometry.Rotation2d()),
