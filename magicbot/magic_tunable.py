@@ -234,7 +234,7 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
     component._tunables = tunables
 
 
-class _FeedbackDescriptor:
+class _FeedbackDecorator:
     """
     This decorator allows you to create NetworkTables values that are
     automatically updated with the return value of a method.
@@ -285,9 +285,6 @@ class _FeedbackDescriptor:
 
     .. versionchanged:: 2026.1.0
        Added support for JSON topic properties for type hinted feedback methods.
-
-    .. versionchanged:: 2026.1.0
-       Added ``.with_properties()`` for chained property configuration.
     """
 
     __slots__ = ("_key", "_properties")
@@ -310,7 +307,7 @@ class _FeedbackDescriptor:
         *,
         key: str | None = None,
         properties: Mapping[str, JsonValue] | None = None,
-    ) -> _FeedbackDescriptor: ...
+    ) -> _FeedbackDecorator: ...
 
     def __call__(
         self,
@@ -320,7 +317,7 @@ class _FeedbackDescriptor:
         properties: Mapping[str, JsonValue] | None = None,
     ) -> Callable:
         if f is None:
-            return _FeedbackDescriptor(key=key, properties=properties)
+            return _FeedbackDecorator(key=key, properties=properties)
 
         if not callable(f):
             raise TypeError(
@@ -337,13 +334,13 @@ class _FeedbackDescriptor:
         f._magic_feedback = (self._key, self._properties)
         return f
 
-    def with_properties(self, **kwargs: JsonValue) -> _FeedbackDescriptor:
+    def with_properties(self, **kwargs: JsonValue) -> _FeedbackDecorator:
         merged = dict(self._properties or {})
         merged.update(kwargs)
-        return _FeedbackDescriptor(key=self._key, properties=merged)
+        return _FeedbackDecorator(key=self._key, properties=merged)
 
 
-feedback = _FeedbackDescriptor()
+feedback = _FeedbackDecorator()
 
 
 _topic_types = {
