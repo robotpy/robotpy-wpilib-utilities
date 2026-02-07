@@ -296,7 +296,7 @@ class _FeedbackDecorator:
         properties: Mapping[str, JsonValue] | None = None,
     ) -> None:
         self._key = key
-        self._properties = dict(properties) if properties is not None else None
+        self._properties = properties
 
     @overload
     def __call__(self, f: Callable[[T], V]) -> Callable[[T], V]: ...
@@ -335,9 +335,7 @@ class _FeedbackDecorator:
         return f
 
     def with_properties(self, **kwargs: JsonValue) -> _FeedbackDecorator:
-        merged = dict(self._properties or {})
-        merged.update(kwargs)
-        return _FeedbackDecorator(key=self._key, properties=merged)
+        return _FeedbackDecorator(key=self._key, properties=kwargs)
 
 
 feedback = _FeedbackDecorator()
