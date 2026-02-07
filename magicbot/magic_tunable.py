@@ -235,58 +235,6 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
 
 
 class _FeedbackDecorator:
-    """
-    This decorator allows you to create NetworkTables values that are
-    automatically updated with the return value of a method.
-
-    ``key`` is an optional parameter, and if it is not supplied,
-    the key will default to the method name with a leading ``get_`` removed.
-    If the method does not start with ``get_``, the key will be the full
-    name of the method.
-
-    The key of the NetworkTables value will vary based on what kind of
-    object the decorated method belongs to:
-
-    * A component: ``/components/COMPONENTNAME/VARNAME``
-    * Your main robot class: ``/robot/VARNAME``
-
-    The NetworkTables value will be auto-updated in all modes.
-
-    .. warning:: The function should only act as a getter, and must not
-                 take any arguments (other than self).
-
-    Example::
-
-        from magicbot import feedback
-
-        class MyComponent:
-            navx: ...
-
-            @feedback
-            def get_angle(self) -> float:
-                return self.navx.getYaw()
-
-        class MyRobot(magicbot.MagicRobot):
-            my_component: MyComponent
-
-            ...
-
-    In this example, the NetworkTable key is stored at
-    ``/components/my_component/angle``.
-
-    .. seealso:: :class:`~wpilib.LiveWindow` may suit your needs,
-                 especially if you wish to monitor WPILib objects.
-
-    .. versionadded:: 2018.1.0
-
-    .. versionchanged:: 2024.1.0
-       WPILib Struct serializable types are supported when the return type is type hinted.
-       An ``int`` return type hint now creates an integer topic.
-
-    .. versionchanged:: 2026.1.0
-       Added support for JSON topic properties for type hinted feedback methods.
-    """
-
     __slots__ = ("_key", "_properties")
 
     def __init__(
@@ -339,6 +287,56 @@ class _FeedbackDecorator:
 
 
 feedback = _FeedbackDecorator()
+"""
+This decorator allows you to create NetworkTables values that are
+automatically updated with the return value of a method.
+
+``key`` is an optional parameter, and if it is not supplied,
+the key will default to the method name with a leading ``get_`` removed.
+If the method does not start with ``get_``, the key will be the full
+name of the method.
+
+The key of the NetworkTables value will vary based on what kind of
+object the decorated method belongs to:
+
+* A component: ``/components/COMPONENTNAME/VARNAME``
+* Your main robot class: ``/robot/VARNAME``
+
+The NetworkTables value will be auto-updated in all modes.
+
+.. warning:: The function should only act as a getter, and must not
+             take any arguments (other than self).
+
+Example::
+
+    from magicbot import feedback
+
+    class MyComponent:
+        navx: ...
+
+        @feedback
+        def get_angle(self) -> float:
+            return self.navx.getYaw()
+
+    class MyRobot(magicbot.MagicRobot):
+        my_component: MyComponent
+        ...
+
+In this example, the NetworkTable key is stored at
+``/components/my_component/angle``.
+
+.. seealso:: :class:`~wpilib.LiveWindow` may suit your needs,
+             especially if you wish to monitor WPILib objects.
+
+.. versionadded:: 2018.1.0
+
+.. versionchanged:: 2024.1.0
+   WPILib Struct serializable types are supported when the return type is type hinted.
+   An ``int`` return type hint now creates an integer topic.
+
+.. versionchanged:: 2026.1.0
+   Added support for JSON topic properties for type hinted feedback methods.
+"""
 
 
 _topic_types = {
