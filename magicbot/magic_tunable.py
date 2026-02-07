@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import collections.abc
-import functools
 import inspect
 import typing
 import warnings
@@ -235,24 +234,48 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
     component._tunables = tunables
 
 
-@overload
-def feedback(f: Callable[[T], V]) -> Callable[[T], V]: ...
-
-
-@overload
-def feedback(
+def _apply_feedback(
+    f: Callable,
     *,
-    key: str | None = None,
-    properties: Mapping[str, JsonValue] | None = None,
-) -> Callable[[Callable[[T], V]], Callable[[T], V]]: ...
-
-
-def feedback(
-    f=None,
-    *,
-    key: str | None = None,
-    properties: Mapping[str, JsonValue] | None = None,
+    key: str | None,
+    properties: Mapping[str, JsonValue] | None,
 ) -> Callable:
+    if not callable(f):
+        raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
+    sig = inspect.signature(f)
+    name = f.__name__
+
+    if len(sig.parameters) != 1:
+        raise ValueError(
+            f"{name} may not take arguments other than 'self' (must be a simple getter method)"
+        )
+
+    f._magic_feedback = (key, properties)
+    return f
+
+
+class _FeedbackDecorator:
+    __slots__ = ("_key", "_properties")
+
+    def __init__(
+        self,
+        *,
+        key: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
+    ) -> None:
+        self._key = key
+        self._properties = dict(properties) if properties is not None else None
+
+    def with_properties(self, **kwargs: JsonValue) -> _FeedbackDecorator:
+        merged = dict(self._properties or {})
+        merged.update(kwargs)
+        return _FeedbackDecorator(key=self._key, properties=merged)
+
+    def __call__(self, f: Callable[[T], V]) -> Callable[[T], V]:
+        return _apply_feedback(f, key=self._key, properties=self._properties)
+
+
+class _FeedbackDescriptor:
     """
     This decorator allows you to create NetworkTables values that are
     automatically updated with the return value of a method.
@@ -303,24 +326,38 @@ def feedback(
 
     .. versionchanged:: 2026.1.0
        Added support for JSON topic properties for type hinted feedback methods.
+
+    .. versionchanged:: 2026.1.0
+       Added ``.with_properties()`` for chained property configuration.
     """
-    if f is None:
-        return functools.partial(feedback, key=key, properties=properties)
 
-    if not callable(f):
-        raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
-    sig = inspect.signature(f)
-    name = f.__name__
+    @overload
+    def __call__(self, f: Callable[[T], V]) -> Callable[[T], V]: ...
 
-    if len(sig.parameters) != 1:
-        raise ValueError(
-            f"{name} may not take arguments other than 'self' (must be a simple getter method)"
-        )
+    @overload
+    def __call__(
+        self,
+        *,
+        key: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
+    ) -> _FeedbackDecorator: ...
 
-    # Set attributes to be checked during injection
-    f._magic_feedback = (key, properties)
+    def __call__(
+        self,
+        f=None,
+        *,
+        key: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
+    ) -> Callable:
+        if f is None:
+            return _FeedbackDecorator(key=key, properties=properties)
+        return _apply_feedback(f, key=key, properties=properties)
 
-    return f
+    def with_properties(self, **kwargs: JsonValue) -> _FeedbackDecorator:
+        return _FeedbackDecorator(properties=kwargs)
+
+
+feedback = _FeedbackDescriptor()
 
 
 _topic_types = {
