@@ -234,26 +234,6 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
     component._tunables = tunables
 
 
-def _apply_feedback(
-    f: Callable,
-    *,
-    key: str | None,
-    properties: Mapping[str, JsonValue] | None,
-) -> Callable:
-    if not callable(f):
-        raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
-    sig = inspect.signature(f)
-    name = f.__name__
-
-    if len(sig.parameters) != 1:
-        raise ValueError(
-            f"{name} may not take arguments other than 'self' (must be a simple getter method)"
-        )
-
-    f._magic_feedback = (key, properties)
-    return f
-
-
 class _FeedbackDescriptor:
     """
     This decorator allows you to create NetworkTables values that are
@@ -341,7 +321,21 @@ class _FeedbackDescriptor:
     ) -> Callable:
         if f is None:
             return _FeedbackDescriptor(key=key, properties=properties)
-        return _apply_feedback(f, key=self._key, properties=self._properties)
+
+        if not callable(f):
+            raise TypeError(
+                f"Illegal use of feedback decorator on non-callable {f!r}"
+            )
+        sig = inspect.signature(f)
+        name = f.__name__
+
+        if len(sig.parameters) != 1:
+            raise ValueError(
+                f"{name} may not take arguments other than 'self' (must be a simple getter method)"
+            )
+
+        f._magic_feedback = (self._key, self._properties)
+        return f
 
     def with_properties(self, **kwargs: JsonValue) -> _FeedbackDescriptor:
         merged = dict(self._properties or {})
