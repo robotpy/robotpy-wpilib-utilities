@@ -5,7 +5,7 @@ import inspect
 import typing
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import Callable, Generic, TypeVar, overload
+from typing import Callable, Generic, TypeAlias, TypeVar, overload
 
 if typing.TYPE_CHECKING:
     try:
@@ -20,8 +20,8 @@ from wpiutil.wpistruct.typing import StructSerializable, is_wpistruct_type
 
 T = TypeVar("T")
 V = TypeVar("V", bound=ValueT | StructSerializable | Sequence[StructSerializable])
-JsonPrimitive = bool | float | str
-JsonValue = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
+JsonPrimitive: TypeAlias = bool | float | str
+JsonValue: TypeAlias = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
 
 
 class tunable(Generic[V]):
@@ -235,6 +235,8 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
 
 
 class _FeedbackDecorator:
+    """The underlying type of :func:`feedback`."""
+
     __slots__ = ("_key", "_properties")
 
     def __init__(
@@ -379,7 +381,7 @@ def _get_topic_type(return_annotation) -> Callable[[ntcore.Topic], typing.Any] |
 
 def collect_feedbacks(component, cname: str, prefix: str | None = "components"):
     """
-    Finds all methods decorated with :func:`feedback` on an object
+    Finds all methods decorated with :deco:`feedback` on an object
     and returns a list of 2-tuples (method, NetworkTables entry setter).
 
     .. note:: This isn't useful for normal use.
