@@ -44,7 +44,7 @@ class TypeHintedComponent:
     def get_float(self) -> float:
         return 0.5
 
-    @magicbot.feedback.with_properties(unit="meters")
+    @magicbot.feedback.with_properties(units="meters")
     def get_distance(self) -> float:
         return 1.5
 
@@ -95,7 +95,7 @@ def test_feedbacks_with_type_hints():
         assert topic.genericSubscribe().get().value() == value
 
     assert nt.getTopic("type_hinted/float").getProperty("unit") == "seconds"
-    assert nt.getTopic("type_hinted/distance").getProperty("unit") == "meters"
+    assert nt.getTopic("type_hinted/distance").getProperty("units") == "meters"
     assert nt.getTopic("type_hinted/velocity").getProperty("unit") == "m/s"
 
     for name, value in [
