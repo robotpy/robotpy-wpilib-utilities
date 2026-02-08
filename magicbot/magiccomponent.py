@@ -1,7 +1,8 @@
 import logging
+from typing import Protocol
 
 
-class MagicComponent:
+class MagicComponent(Protocol):
     """
     To automagically retrieve variables defined in your base robot
     object, you can add the following::
