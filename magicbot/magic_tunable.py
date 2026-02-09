@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import collections.abc
-import functools
 import inspect
 import typing
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import Callable, Generic, TypeVar, overload
+from typing import Callable, Generic, TypeAlias, TypeVar, overload
 
 if typing.TYPE_CHECKING:
     try:
@@ -21,8 +20,8 @@ from wpiutil.wpistruct.typing import StructSerializable, is_wpistruct_type
 
 T = TypeVar("T")
 V = TypeVar("V", bound=ValueT | StructSerializable | Sequence[StructSerializable])
-JsonPrimitive = bool | float | str
-JsonValue = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
+JsonPrimitive: TypeAlias = bool | float | str
+JsonValue: TypeAlias = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
 
 
 class tunable(Generic[V]):
@@ -235,92 +234,109 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
     component._tunables = tunables
 
 
-@overload
-def feedback(f: Callable[[T], V]) -> Callable[[T], V]: ...
+class _FeedbackDecorator:
+    """The underlying type of :func:`feedback`."""
+
+    __slots__ = ("_key", "_properties")
+
+    def __init__(
+        self,
+        *,
+        key: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
+    ) -> None:
+        self._key = key
+        self._properties = properties
+
+    @overload
+    def __call__(self, f: Callable[[T], V]) -> Callable[[T], V]: ...
+
+    @overload
+    def __call__(
+        self,
+        *,
+        key: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
+    ) -> _FeedbackDecorator: ...
+
+    def __call__(
+        self,
+        f=None,
+        *,
+        key: str | None = None,
+        properties: Mapping[str, JsonValue] | None = None,
+    ) -> Callable:
+        if f is None:
+            return _FeedbackDecorator(key=key, properties=properties)
+
+        if not callable(f):
+            raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
+        sig = inspect.signature(f)
+        name = f.__name__
+
+        if len(sig.parameters) != 1:
+            raise ValueError(
+                f"{name} may not take arguments other than 'self' (must be a simple getter method)"
+            )
+
+        f._magic_feedback = (self._key, self._properties)
+        return f
+
+    def with_properties(self, **kwargs: JsonValue) -> _FeedbackDecorator:
+        return _FeedbackDecorator(key=self._key, properties=kwargs)
 
 
-@overload
-def feedback(
-    *,
-    key: str | None = None,
-    properties: Mapping[str, JsonValue] | None = None,
-) -> Callable[[Callable[[T], V]], Callable[[T], V]]: ...
+feedback = _FeedbackDecorator()
+"""
+This decorator allows you to create NetworkTables values that are
+automatically updated with the return value of a method.
 
+``key`` is an optional parameter, and if it is not supplied,
+the key will default to the method name with a leading ``get_`` removed.
+If the method does not start with ``get_``, the key will be the full
+name of the method.
 
-def feedback(
-    f=None,
-    *,
-    key: str | None = None,
-    properties: Mapping[str, JsonValue] | None = None,
-) -> Callable:
-    """
-    This decorator allows you to create NetworkTables values that are
-    automatically updated with the return value of a method.
+The key of the NetworkTables value will vary based on what kind of
+object the decorated method belongs to:
 
-    ``key`` is an optional parameter, and if it is not supplied,
-    the key will default to the method name with a leading ``get_`` removed.
-    If the method does not start with ``get_``, the key will be the full
-    name of the method.
+* A component: ``/components/COMPONENTNAME/VARNAME``
+* Your main robot class: ``/robot/VARNAME``
 
-    The key of the NetworkTables value will vary based on what kind of
-    object the decorated method belongs to:
+The NetworkTables value will be auto-updated in all modes.
 
-    * A component: ``/components/COMPONENTNAME/VARNAME``
-    * Your main robot class: ``/robot/VARNAME``
+.. warning:: The function should only act as a getter, and must not
+             take any arguments (other than self).
 
-    The NetworkTables value will be auto-updated in all modes.
+Example::
 
-    .. warning:: The function should only act as a getter, and must not
-                 take any arguments (other than self).
+    from magicbot import feedback
 
-    Example::
+    class MyComponent:
+        navx: ...
 
-        from magicbot import feedback
+        @feedback
+        def get_angle(self) -> float:
+            return self.navx.getYaw()
 
-        class MyComponent:
-            navx: ...
+    class MyRobot(magicbot.MagicRobot):
+        my_component: MyComponent
+        ...
 
-            @feedback
-            def get_angle(self) -> float:
-                return self.navx.getYaw()
+In this example, the NetworkTable key is stored at
+``/components/my_component/angle``.
 
-        class MyRobot(magicbot.MagicRobot):
-            my_component: MyComponent
+.. seealso:: :class:`~wpilib.LiveWindow` may suit your needs,
+             especially if you wish to monitor WPILib objects.
 
-            ...
+.. versionadded:: 2018.1.0
 
-    In this example, the NetworkTable key is stored at
-    ``/components/my_component/angle``.
+.. versionchanged:: 2024.1.0
+   WPILib Struct serializable types are supported when the return type is type hinted.
+   An ``int`` return type hint now creates an integer topic.
 
-    .. seealso:: :class:`~wpilib.LiveWindow` may suit your needs,
-                 especially if you wish to monitor WPILib objects.
-
-    .. versionadded:: 2018.1.0
-
-    .. versionchanged:: 2024.1.0
-       WPILib Struct serializable types are supported when the return type is type hinted.
-       An ``int`` return type hint now creates an integer topic.
-
-    .. versionchanged:: 2026.1.0
-       Added support for JSON topic properties for type hinted feedback methods.
-    """
-    if f is None:
-        return functools.partial(feedback, key=key, properties=properties)
-
-    if not callable(f):
-        raise TypeError(f"Illegal use of feedback decorator on non-callable {f!r}")
-    sig = inspect.signature(f)
-    name = f.__name__
-
-    if len(sig.parameters) != 1:
-        raise ValueError(
-            f"{name} may not take arguments other than 'self' (must be a simple getter method)"
-        )
-
-    # Set attributes to be checked during injection
-    f._magic_feedback = (key, properties)
-
-    return f
+.. versionchanged:: 2026.1.0
+   Added support for JSON topic properties for type hinted feedback methods.
+"""
 
 
 _topic_types = {
@@ -365,7 +381,7 @@ def _get_topic_type(return_annotation) -> Callable[[ntcore.Topic], typing.Any] |
 
 def collect_feedbacks(component, cname: str, prefix: str | None = "components"):
     """
-    Finds all methods decorated with :func:`feedback` on an object
+    Finds all methods decorated with :deco:`feedback` on an object
     and returns a list of 2-tuples (method, NetworkTables entry setter).
 
     .. note:: This isn't useful for normal use.
