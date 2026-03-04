@@ -199,6 +199,20 @@ class TopoSortBot(magicbot.MagicRobot):
         pass
 
 
+class ExternalDependencyComponent(DumbComponent):
+    setting: float
+
+    def setup(self):
+        pass
+
+
+class ExternalDependencyBot(magicbot.MagicRobot):
+    component: ExternalDependencyComponent
+
+    def createObjects(self) -> None:
+        self.component_setting = 2.5
+
+
 R = TypeVar("R", bound=magicbot.MagicRobot)
 
 
@@ -282,3 +296,9 @@ def test_toposort_inject():
     expected_names = ["a", "b", "c", "d"]
     for (name, _), expected in zip(bot._components, expected_names):
         assert name == expected
+
+
+def test_toposort_ignores_non_component_dependencies():
+    bot = _make_bot(ExternalDependencyBot)
+
+    assert bot.component.setting == 2.5

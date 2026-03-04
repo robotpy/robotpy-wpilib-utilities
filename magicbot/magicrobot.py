@@ -624,6 +624,8 @@ class MagicRobot(wpilib.RobotBase):
 
         # Sort components so that setup functions can rely on the setup of an
         # injected variable being called already
+        component_by_id = {id(component): cname for cname, component in components}
+
         dag = {}
         for cname, component in components:
             setup = getattr(component, "setup", None)
@@ -632,7 +634,21 @@ class MagicRobot(wpilib.RobotBase):
             else:
                 type_hints = typing.get_type_hints(type(component))
                 requests = get_injection_requests(type_hints, cname, component)
-                dag[cname] = list(requests.keys())
+
+                deps = []
+                for n in requests:
+                    injectable = injectables.get(n)
+                    if injectable is None:
+                        injectable = injectables.get(f"{cname}_{n}")
+
+                    # Only include dependencies that are other magic components.
+                    # This keeps toposort nodes aligned with `components` and
+                    # ignores scalar/robot-level injectables (ex: config values).
+                    dep_name = component_by_id.get(id(injectable))
+                    if dep_name is not None:
+                        deps.append(dep_name)
+
+                dag[cname] = deps
 
         # Create an ordered component list based on possible setup() dependencies
         setup_ordered_components = [
