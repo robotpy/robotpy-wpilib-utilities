@@ -166,17 +166,17 @@ def test_command_runner_keeps_alive_requested_command():
     assert command.end_calls == []
 
 
-def test_command_runner_interrupts_command_not_requested_next_loop():
+def test_command_runner_keeps_running_until_finished_without_run_call():
     _, runner = make_runner()
-    command = RecordingCommand()
+    command = RecordingCommand(finished_after=2)
 
     runner.run(command)
     runner.execute()
     runner.execute()
 
     assert command.initialize_calls == 1
-    assert command.execute_calls == 1
-    assert command.end_calls == [True]
+    assert command.execute_calls == 2
+    assert command.end_calls == [False]
 
 
 def test_command_runner_deduplicates_same_command_requested_twice():
