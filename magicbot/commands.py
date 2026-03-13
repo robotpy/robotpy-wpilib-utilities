@@ -6,6 +6,22 @@ import commands2
 
 
 class CommandRunner:
+    """
+    A MagicBot component that executes ``commands2.Command`` instances using
+    keep-alive semantics.
+
+    Call :meth:`run` each loop that a stored command instance should remain
+    active. Commands that are not re-requested on a later loop are interrupted
+    automatically if they are interruptible.
+
+    Multiple different commands may be active concurrently. Repeated
+    :meth:`run` calls for the same command instance in a single loop are
+    deduplicated.
+
+    This component intentionally does not expose or depend on
+    ``commands2.CommandScheduler``.
+    """
+
     robot: object
 
     def __init__(self) -> None:
@@ -13,6 +29,10 @@ class CommandRunner:
         self._active: set[commands2.Command] = set()
 
     def run(self, command: commands2.Command) -> None:
+        """
+        Request that a stored command instance remain active for the current
+        robot loop.
+        """
         self._requested.add(command)
 
     def _discard(self, command: commands2.Command) -> None:
