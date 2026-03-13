@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import commands2
 import magicbot
+import magicbot.commands
 
 
 class RecordingCommand(commands2.Command):
