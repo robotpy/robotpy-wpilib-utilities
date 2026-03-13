@@ -25,7 +25,7 @@ class CommandRunner:
     robot: object
 
     def __init__(self) -> None:
-        self._requested: set[commands2.Command] = set()
+        self._requested: dict[commands2.Command, None] = {}
         self._active: set[commands2.Command] = set()
 
     def run(self, command: commands2.Command) -> None:
@@ -33,10 +33,10 @@ class CommandRunner:
         Request that a stored command instance remain active for the current
         robot loop.
         """
-        self._requested.add(command)
+        self._requested.setdefault(command, None)
 
     def _discard(self, command: commands2.Command) -> None:
-        self._requested.discard(command)
+        self._requested.pop(command, None)
         self._active.discard(command)
 
     def _call(self, command: commands2.Command, func: Callable[[], object]) -> bool:
@@ -68,7 +68,9 @@ class CommandRunner:
                 self._active.add(command)
 
         finished: list[commands2.Command] = []
-        for command in list(self._active):
+        for command in list(self._requested):
+            if command not in self._active:
+                continue
             if not self._call(command, command.execute):
                 continue
             if command.isFinished():

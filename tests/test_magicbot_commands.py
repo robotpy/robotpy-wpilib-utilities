@@ -28,6 +28,27 @@ class RecordingCommand(commands2.Command):
         self.end_calls.append(interrupted)
 
 
+class OrderedRecordingCommand(RecordingCommand):
+    def __init__(
+        self, name: str, events: list[tuple[str, str]], *, hash_value: int
+    ) -> None:
+        super().__init__()
+        self.name = name
+        self.events = events
+        self.hash_value = hash_value
+
+    def __hash__(self) -> int:
+        return self.hash_value
+
+    def initialize(self):
+        super().initialize()
+        self.events.append(("initialize", self.name))
+
+    def execute(self):
+        super().execute()
+        self.events.append(("execute", self.name))
+
+
 class RaiseOnInitialize(commands2.Command):
     def initialize(self):
         raise RuntimeError("initialize boom")
@@ -183,6 +204,32 @@ def test_command_runner_executes_multiple_commands_concurrently():
     assert first.execute_calls == 1
     assert second.initialize_calls == 1
     assert second.execute_calls == 1
+
+
+def test_command_runner_executes_commands_in_run_call_order():
+    _, runner = make_runner()
+    events: list[tuple[str, str]] = []
+    first = OrderedRecordingCommand("first", events, hash_value=1)
+    second = OrderedRecordingCommand("second", events, hash_value=8)
+
+    runner.run(first)
+    runner.run(second)
+    runner.execute()
+
+    assert events == [
+        ("initialize", "first"),
+        ("initialize", "second"),
+        ("execute", "first"),
+        ("execute", "second"),
+    ]
+
+    events.clear()
+
+    runner.run(second)
+    runner.run(first)
+    runner.execute()
+
+    assert events == [("execute", "second"), ("execute", "first")]
 
 
 def test_command_runner_delegates_initialize_exception_to_robot():
