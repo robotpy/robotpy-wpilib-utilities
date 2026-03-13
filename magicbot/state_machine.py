@@ -623,6 +623,7 @@ class StateMachine:
             if self.__state != state:
                 state.ran = False
                 self.__state = state
+                self.current_state = ""
 
         if state is not None:
             # is this the first time this was executed?
