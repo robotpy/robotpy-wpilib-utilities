@@ -1,3 +1,5 @@
+from . import commands
+from .commands import CommandRunner
 from .magicrobot import MagicRobot
 from .magic_tunable import feedback, tunable
 from .magic_reset import will_reset_to
@@ -11,6 +13,8 @@ from .state_machine import (
 )
 
 __all__ = (
+    "commands",
+    "CommandRunner",
     "MagicRobot",
     "feedback",
     "tunable",
