@@ -154,6 +154,65 @@ class TypeHintsBot(magicbot.MagicRobot):
         self.injectables = [self.injectable]
 
 
+class FooableComponent(DumbComponent):
+    def setup(self):
+        def foo(self):
+            pass
+
+        self.foo = foo.__get__(self)
+
+
+class DependentComponentB(FooableComponent):
+    pass
+
+
+class DependentComponentD(FooableComponent):
+    def setup(self):
+        super().setup()
+
+
+class DependentComponentC(FooableComponent):
+    d: DependentComponentD
+
+    def setup(self):
+        super().setup()
+        self.d.foo()
+
+
+class DependentComponentA(FooableComponent):
+    b: DependentComponentB
+    c: DependentComponentC
+
+    def setup(self):
+        super().setup()
+        self.b.foo()
+        self.c.foo()
+
+
+class TopoSortBot(magicbot.MagicRobot):
+    a: DependentComponentA
+    b: DependentComponentB
+    c: DependentComponentC
+    d: DependentComponentD
+
+    def createObjects(self) -> None:
+        pass
+
+
+class ExternalDependencyComponent(DumbComponent):
+    setting: float
+
+    def setup(self):
+        pass
+
+
+class ExternalDependencyBot(magicbot.MagicRobot):
+    component: ExternalDependencyComponent
+
+    def createObjects(self) -> None:
+        self.component_setting = 2.5
+
+
 R = TypeVar("R", bound=magicbot.MagicRobot)
 
 
@@ -225,3 +284,21 @@ def test_typehints_inject():
     assert bot.component.some_int == 1
     assert isinstance(bot.component.injectable, Injectable)
     assert bot.component.injectable.num == 42
+
+
+def test_toposort_inject():
+    bot = _make_bot(TopoSortBot)
+    # The above only succeeds if the components are initialised
+    # with dependencies within them being accounted for.
+    # We want to check that the robot still ticks execute()
+    # on each component in the order it was declared.
+    assert len(bot._components) == 4
+    expected_names = ["a", "b", "c", "d"]
+    for (name, _), expected in zip(bot._components, expected_names):
+        assert name == expected
+
+
+def test_toposort_ignores_non_component_dependencies():
+    bot = _make_bot(ExternalDependencyBot)
+
+    assert bot.component.setting == 2.5

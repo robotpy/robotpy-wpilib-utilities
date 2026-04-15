@@ -1,4 +1,6 @@
+import inspect
 import logging
+import typing
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -28,12 +30,22 @@ def get_injection_requests(
                 raise MagicInjectError(message)
             continue
 
-        # If the variable has been set, skip it
-        if component is not None and hasattr(component, n):
+        # If the variable has been set (on instance or class), skip it.
+        # Use getattr_static so descriptors (ex: tunable) do not execute.
+        if component is not None:
+            try:
+                inspect.getattr_static(component, n)
+            except AttributeError:
+                pass
+            else:
+                continue
+
+        # Ignore class variables, they are not injection requests
+        origin = getattr(inject_type, "__origin__", None)
+        if origin is typing.ClassVar:
             continue
 
         # Check for generic types from the typing module
-        origin = getattr(inject_type, "__origin__", None)
         if origin is not None:
             inject_type = origin
 

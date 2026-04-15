@@ -25,7 +25,15 @@ Tunable
 .. automodule:: magicbot.magic_tunable
     :members:
     :undoc-members:
+    :exclude-members: feedback
     :show-inheritance:
+
+.. autodecorator:: magicbot.magic_tunable.feedback
+
+.. autoclass:: magicbot.magic_tunable._FeedbackDecorator
+    :members:
+    :undoc-members:
+    :special-members: __call__
 
 Resettable
 ~~~~~~~~~~

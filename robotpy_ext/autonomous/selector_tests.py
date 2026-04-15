@@ -2,7 +2,6 @@ import logging
 from pyfrc.test_support.controller import TestController as PyfrcTestController
 from ntcore.util import ChooserControl
 
-
 autonomous_seconds = 15
 
 

@@ -13,6 +13,7 @@ from magicbot.state_machine import (
 
 from magicbot.magic_tunable import setup_tunables
 
+import ntcore
 import pytest
 
 
@@ -537,6 +538,36 @@ def test_default_state_machine():
     assert sm.didDefault == True
     assert sm.defaultInit == False
     assert sm.didDone == False
+
+
+def test_default_state_clears_current_state_topic_when_disengaged():
+    class _SM(StateMachine):
+        @state(first=True)
+        def active(self):
+            pass
+
+        @default_state
+        def idle(self):
+            pass
+
+    sm = _SM()
+    setup_tunables(sm, "test_default_state_clears_current_state_topic_when_disengaged")
+    nt = ntcore.NetworkTableInstance.getDefault().getTable(
+        "/components/test_default_state_clears_current_state_topic_when_disengaged/state"
+    )
+
+    sm.execute()
+    assert sm.current_state == ""
+    assert nt.getEntry("current_state").getString(None) == ""
+
+    sm.engage()
+    sm.execute()
+    assert sm.current_state == "active"
+    assert nt.getEntry("current_state").getString(None) == "active"
+
+    sm.execute()
+    assert sm.current_state == ""
+    assert nt.getEntry("current_state").getString(None) == ""
 
 
 def test_short_timed_state(wpitime):
