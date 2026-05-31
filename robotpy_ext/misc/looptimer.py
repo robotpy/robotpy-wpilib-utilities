@@ -2,7 +2,7 @@ import logging
 import math
 import wpilib
 
-_getFPGATimestamp = wpilib.Timer.getFPGATimestamp
+_getTimestamp = wpilib.Timer.getTimestamp
 
 
 class LoopTimer:
@@ -34,7 +34,7 @@ class LoopTimer:
     def reset(self) -> None:
         self.timer.reset()
 
-        self.start = self.last = _getFPGATimestamp()
+        self.start = self.last = _getTimestamp()
         self.min_time = math.inf
         self.max_time = -1
         self.loops = 0
@@ -46,7 +46,7 @@ class LoopTimer:
         """
 
         # compute min/max/count
-        now = _getFPGATimestamp()
+        now = _getTimestamp()
         diff = now - self.last
         self.min_time = min(self.min_time, diff)
         self.max_time = max(self.max_time, diff)

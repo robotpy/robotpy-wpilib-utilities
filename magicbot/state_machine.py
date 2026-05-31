@@ -16,7 +16,7 @@ import wpilib
 from .magic_tunable import tunable
 
 if wpilib.RobotBase.isSimulation():
-    getTime = wpilib.Timer.getFPGATimestamp
+    getTime = wpilib.Timer.getTimestamp
 else:
     from time import monotonic as getTime
 

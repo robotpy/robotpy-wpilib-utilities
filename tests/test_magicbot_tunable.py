@@ -2,7 +2,7 @@ from typing import ClassVar, List, Sequence
 
 import ntcore
 import pytest
-from wpimath import geometry
+import wpimath as geometry
 
 from magicbot.magic_tunable import setup_tunables, tunable
 
