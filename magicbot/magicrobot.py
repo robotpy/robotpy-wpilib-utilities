@@ -692,7 +692,7 @@ class MagicRobot(wpilib.RobotBase):
         self._components = components
 
     def _collect_injectables(self) -> dict[str, Any]:
-        injectables = {}
+        injectables = {"robot": self}
         cls = type(self)
 
         for n in dir(self):
