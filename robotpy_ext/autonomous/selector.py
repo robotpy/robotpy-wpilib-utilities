@@ -2,9 +2,8 @@ import importlib
 import inspect
 import logging
 import os
+from collections.abc import Callable, Sequence
 from glob import glob
-from typing import Callable, Union
-from collections.abc import Sequence
 
 import hal
 import wpilib
@@ -122,7 +121,7 @@ class AutonomousModeSelector:
                 module = importlib.import_module("." + module_name, autonomous_pkgname)
                 # module = imp.load_source('.' + module_name, module_filename)
             except:
-                if not wpilib.DriverStation.isFMSAttached():
+                if not wpilib.DriverStationBackend.isFMSAttached():
                     raise
 
             #
@@ -144,13 +143,13 @@ class AutonomousModeSelector:
                     try:
                         instance = obj(*args, **kwargs)
                     except:
-                        if not wpilib.DriverStation.isFMSAttached():
+                        if not wpilib.DriverStationBackend.isFMSAttached():
                             raise
                         else:
                             continue
 
                     if mode_name in self.modes:
-                        if not wpilib.DriverStation.isFMSAttached():
+                        if not wpilib.DriverStationBackend.isFMSAttached():
                             raise RuntimeError(
                                 f"Duplicate name {mode_name} in {module_filename}"
                             )
@@ -194,7 +193,7 @@ class AutonomousModeSelector:
         if len(default_modes) == 0:
             self.chooser.setDefaultOption("None", None)
         elif len(default_modes) != 1:
-            if not wpilib.DriverStation.isFMSAttached():
+            if not wpilib.DriverStationBackend.isFMSAttached():
                 raise RuntimeError(
                     "More than one autonomous mode was specified as default! (modes: {})".format(
                         ", ".join(default_modes)
@@ -216,9 +215,9 @@ class AutonomousModeSelector:
     def run(
         self,
         control_loop_wait_time: float = 0.020,
-        iter_fn: Union[Callable[[], None], Sequence[Callable[[], None]]] = None,
+        iter_fn: Callable[[], None] | Sequence[Callable[[], None]] = None,
         on_exception: Callable = None,
-        watchdog: Union[wpilib.Watchdog, SimpleWatchdog] = None,
+        watchdog: wpilib.Watchdog | SimpleWatchdog = None,
     ) -> None:
         """
         This method implements the entire autonomous loop.
@@ -274,9 +273,9 @@ class AutonomousModeSelector:
         # Autonomous control loop
         #
 
-        observe = hal.observeUserProgramAutonomous
-        refreshData = wpilib.DriverStation.refreshData
-        isAutonomousEnabled = wpilib.DriverStation.isAutonomousEnabled
+        observe = hal.observeUserProgram
+        refreshData = wpilib.DriverStationBackend.refreshData
+        isAutonomousEnabled = wpilib.DriverStationBackend.isAutonomousEnabled
 
         with NotifierDelay(control_loop_wait_time) as delay:
             while not self.robot_exit:
@@ -284,7 +283,7 @@ class AutonomousModeSelector:
                 if not isAutonomousEnabled():
                     break
 
-                observe()
+                observe(hal.getControlWord().getValue())
                 try:
                     self._on_iteration(timer.get())
                 except:
@@ -384,5 +383,5 @@ class AutonomousModeSelector:
             self.active_mode.on_iteration(time_elapsed)
 
     def _on_exception(self, forceReport: bool = False):
-        if not wpilib.DriverStation.isFMSAttached():
+        if not wpilib.DriverStationBackend.isFMSAttached():
             raise

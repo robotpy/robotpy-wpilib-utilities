@@ -1,5 +1,6 @@
-import wpilib
 import logging
+
+import wpilib
 
 logger = logging.getLogger("simple_watchdog")
 
@@ -30,7 +31,7 @@ class SimpleWatchdog:
 
         :param timeout: The watchdog's timeout in seconds with microsecond resolution.
         """
-        self._get_time = wpilib.RobotController.getFPGATime
+        self._get_time = wpilib.RobotController.getTime
 
         self._startTime = 0  # us
         self._timeout = int(timeout * 1e6)  # us

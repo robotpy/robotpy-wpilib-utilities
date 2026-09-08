@@ -1,5 +1,6 @@
 import hal
 import wpilib
+from wpiutil import sync
 
 
 class NotifierDelay:
@@ -22,13 +23,11 @@ class NotifierDelay:
         if delay_period < 0.001:
             raise ValueError("You probably don't want to delay less than 1ms!")
 
-        # Convert the delay period to microseconds, as FPGA timestamps are microseconds
+        # Convert the delay period to microseconds, as WPILib timestamps are microseconds
         self.delay_period = int(delay_period * 1e6)
-        self._notifier = hal.initializeNotifier()[0]
-        self._expiry_time = wpilib.RobotController.getFPGATime() + self.delay_period
+        self._notifier = hal.createNotifier()[0]
+        self._expiry_time = wpilib.RobotController.getTime() + self.delay_period
         self._update_alarm(self._notifier)
-
-        # wpilib.Resource._add_global_resource(self)
 
     def __del__(self):
         self.free()
@@ -47,8 +46,7 @@ class NotifierDelay:
         handle = self._notifier
         if handle is None:
             return
-        hal.stopNotifier(handle)
-        hal.cleanNotifier(handle)
+        hal.destroyNotifier(handle)
         self._notifier = None
 
     def wait(self) -> None:
@@ -56,9 +54,9 @@ class NotifierDelay:
         handle = self._notifier
         if handle is None:
             return
-        hal.waitForNotifierAlarm(handle)
+        sync.waitForObject(handle)
         self._expiry_time += self.delay_period
         self._update_alarm(handle)
 
     def _update_alarm(self, handle) -> None:
-        hal.updateNotifierAlarm(handle, self._expiry_time)
+        hal.setNotifierAlarm(handle, self._expiry_time, 0, True, True)

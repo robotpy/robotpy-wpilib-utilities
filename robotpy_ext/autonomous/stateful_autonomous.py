@@ -1,7 +1,7 @@
 import functools
 import inspect
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import ntcore
 import wpilib
@@ -86,7 +86,7 @@ class _State:
 
 
 def timed_state(
-    f: Optional[Callable] = None,
+    f: Callable | None = None,
     duration: float = None,
     next_state: str = None,
     first: bool = False,
@@ -128,7 +128,7 @@ def timed_state(
     return wrapper
 
 
-def state(f: Optional[Callable] = None, first: bool = False):
+def state(f: Callable | None = None, first: bool = False):
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StatefulAutonomous`, it indicates that the function
@@ -412,7 +412,6 @@ class StatefulAutonomous:
 
     def on_disable(self):
         """Called when the autonomous mode is disabled"""
-        pass
 
     def done(self):
         """Call this function to indicate that no more states should be called"""

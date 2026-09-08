@@ -4,8 +4,8 @@ import collections.abc
 import inspect
 import typing
 import warnings
-from collections.abc import Mapping, Sequence
-from typing import Callable, Generic, TypeAlias, TypeVar, overload
+from collections.abc import Callable, Mapping, Sequence
+from typing import Generic, TypeAlias, TypeVar, overload
 
 if typing.TYPE_CHECKING:
     try:
@@ -158,12 +158,13 @@ class tunable(Generic[V]):
         self._topic_type = topic_type
 
     @overload
-    def __get__(self, instance: None, owner=None) -> "tunable[V]": ...
+    def __get__(self, instance: None, owner=None) -> tunable[V]: ...
 
     @overload
     def __get__(self, instance, owner=None) -> V: ...
 
     def __get__(self, instance, owner=None):
+        print(f"Getting {self} from {instance}")
         if instance is not None:
             return instance._tunables[self].get()
         return self

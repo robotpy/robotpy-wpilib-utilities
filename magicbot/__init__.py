@@ -1,7 +1,6 @@
-from .magicrobot import MagicRobot
-from .magic_tunable import feedback, tunable
 from .magic_reset import will_reset_to
-
+from .magic_tunable import feedback, tunable
+from .magicrobot import MagicRobot
 from .state_machine import (
     AutonomousStateMachine,
     StateMachine,
@@ -11,13 +10,13 @@ from .state_machine import (
 )
 
 __all__ = (
-    "MagicRobot",
-    "feedback",
-    "tunable",
-    "will_reset_to",
     "AutonomousStateMachine",
+    "MagicRobot",
     "StateMachine",
     "default_state",
+    "feedback",
     "state",
     "timed_state",
+    "tunable",
+    "will_reset_to",
 )

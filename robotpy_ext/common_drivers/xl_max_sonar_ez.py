@@ -6,8 +6,7 @@ some of the methods
 
 import wpilib
 
-from . import driver_base
-from . import units
+from . import driver_base, units
 
 
 class MaxSonarEZPulseWidth(driver_base.DriverBase):

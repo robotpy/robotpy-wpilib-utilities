@@ -55,7 +55,7 @@ class Toggle:
             the return value will be `True` until the time expires
             """
 
-            now = wpilib.Timer.getFPGATimestamp()
+            now = wpilib.Timer.getTimestamp()
             if now - self.latest < self.debounce_period:
                 return True
 
