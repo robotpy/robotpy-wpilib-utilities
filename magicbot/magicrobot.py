@@ -2,24 +2,23 @@ import contextlib
 import inspect
 import logging
 import sys
-import toposort
 import types
 import typing
-
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import hal
+import toposort
 import wpilib
-
 from ntcore import NetworkTableInstance
 
 from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 
-from .inject import get_injection_requests, find_injections
-from .magic_tunable import setup_tunables, tunable, collect_feedbacks
+from .inject import find_injections, get_injection_requests
 from .magic_reset import collect_resets
+from .magic_tunable import collect_feedbacks, setup_tunables, tunable
 
 __all__ = ["MagicRobot"]
 
@@ -160,7 +159,6 @@ class MagicRobot(wpilib.RobotBase):
            This method is called after every component's ``on_enable`` method,
            but before the selected autonomous mode's ``on_enable`` method.
         """
-        pass
 
     def teleopInit(self) -> None:
         """
@@ -172,7 +170,6 @@ class MagicRobot(wpilib.RobotBase):
         .. note:: The ``on_enable`` functions of all components are called
                   before this function is called.
         """
-        pass
 
     def teleopPeriodic(self):
         """
@@ -205,7 +202,6 @@ class MagicRobot(wpilib.RobotBase):
         .. note:: The ``on_disable`` functions of all components are called
                   before this function is called.
         """
-        pass
 
     def disabledPeriodic(self):
         """
@@ -230,11 +226,9 @@ class MagicRobot(wpilib.RobotBase):
         Users should override this method for initialization code which will be
         called each time the robot enters disabled mode.
         """
-        pass
 
     def testPeriodic(self) -> None:
         """Periodic code for test mode should go here."""
-        pass
 
     def robotPeriodic(self) -> None:
         """
@@ -286,7 +280,7 @@ class MagicRobot(wpilib.RobotBase):
                             set this to True
         """
         # If the FMS is not attached, crash the robot program
-        if not wpilib.DriverStation.isFMSAttached():
+        if not wpilib.DriverStationBackend.isFMSAttached():
             raise
 
         # Otherwise, if the FMS is attached then try to report the error via
@@ -351,7 +345,9 @@ class MagicRobot(wpilib.RobotBase):
         hal.observeUserProgramStarting()
 
         while not self.__done:
-            isEnabled, isAutonomous, isTest = self.getControlState()
+            isEnabled = wpilib.DriverStationBackend.isEnabled()
+            isAutonomous = wpilib.DriverStationBackend.isAutonomous()
+            isTest = wpilib.DriverStationBackend.isUtility()
 
             if not isEnabled:
                 self._disabled()
@@ -417,8 +413,8 @@ class MagicRobot(wpilib.RobotBase):
             self.onException(forceReport=True)
         watchdog.addEpoch("disabledInit()")
 
-        refreshData = wpilib.DriverStation.refreshData
-        DSControlWord = wpilib.DSControlWord
+        refreshData = wpilib.DriverStationBackend.refreshData
+        DSControlWord = hal.getControlWord
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
@@ -431,7 +427,7 @@ class MagicRobot(wpilib.RobotBase):
                     ds_attached = not ds_attached
                     self.__nt_put_is_ds_attached(ds_attached)
 
-                hal.observeUserProgramDisabled()
+                # hal.observeUserProgramDisabled() Idk man
                 try:
                     self.disabledPeriodic()
                 except:
@@ -470,9 +466,10 @@ class MagicRobot(wpilib.RobotBase):
             self.onException(forceReport=True)
         watchdog.addEpoch("teleopInit()")
 
-        observe = hal.observeUserProgramTeleop
-        refreshData = wpilib.DriverStation.refreshData
-        isTeleopEnabled = wpilib.DriverStation.isTeleopEnabled
+        observe = hal.observeUserProgram
+        telop_word = hal.getControlWord().getValue
+        refreshData = wpilib.DriverStationBackend.refreshData
+        isTeleopEnabled = wpilib.DriverStationBackend.isTeleopEnabled
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
@@ -480,7 +477,7 @@ class MagicRobot(wpilib.RobotBase):
                 if not isTeleopEnabled():
                     break
 
-                observe()
+                observe(telop_word())
                 try:
                     self.teleopPeriodic()
                 except:
@@ -511,17 +508,17 @@ class MagicRobot(wpilib.RobotBase):
             self.onException(forceReport=True)
         watchdog.addEpoch("testInit()")
 
-        refreshData = wpilib.DriverStation.refreshData
-        DSControlWord = wpilib.DSControlWord
+        refreshData = wpilib.DriverStationBackend.refreshData
+        DSControlWord = hal.getControlWord
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
                 refreshData()
                 cw = DSControlWord()
-                if not (cw.isTest() and cw.isEnabled()):
+                if not (cw.isUtility() and cw.isEnabled()):
                     break
 
-                hal.observeUserProgramTest()
+                hal.observeUserProgram(cw.getValue())
                 try:
                     self.testPeriodic()
                 except:

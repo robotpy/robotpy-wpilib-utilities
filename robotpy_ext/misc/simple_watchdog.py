@@ -1,5 +1,6 @@
-import wpilib
 import logging
+
+import wpilib
 
 logger = logging.getLogger("simple_watchdog")
 

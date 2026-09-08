@@ -1,5 +1,6 @@
 import logging
 import math
+
 import wpilib
 
 _getTimestamp = wpilib.Timer.getTimestamp
