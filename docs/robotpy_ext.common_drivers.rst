@@ -6,9 +6,8 @@ robotpy_ext.common_drivers package
 robotpy_ext.common_drivers.distance_sensors module
 --------------------------------------------------
 
-.. automodule:: robotpy_ext.common_drivers.distance_sensors
-    :members:
-    :undoc-members:
+.. version-removed:: 2027
+   All sensors that were in this module are supported by :class:`wpilib.SharpIR`.
 
 robotpy_ext.common_drivers.driver_base module
 ---------------------------------------------

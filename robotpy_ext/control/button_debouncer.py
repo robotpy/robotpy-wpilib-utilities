@@ -29,7 +29,7 @@ class ButtonDebouncer:
         """Returns the value of the joystick button. If the button is held down, then
         True will only be returned once every ``debounce_period`` seconds"""
 
-        now = self.timer.getFPGATimestamp()
+        now = self.timer.getTimestamp()
         if self.joystick.getRawButton(self.buttonnum):
             if (now - self.latest) > self.debounce_period:
                 self.latest = now

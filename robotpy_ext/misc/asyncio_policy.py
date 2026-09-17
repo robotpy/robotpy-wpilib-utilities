@@ -12,7 +12,7 @@ class FPGATimedEventLoop(SelectorEventLoop):
     """An asyncio event loop that uses wpilib time rather than python time"""
 
     def time(self):
-        return Timer.getFPGATimestamp()
+        return Timer.getTimestamp()
 
 
 class FPGATimedEventLoopPolicy(AbstractEventLoopPolicy):

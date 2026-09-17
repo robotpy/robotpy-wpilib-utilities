@@ -1,7 +1,7 @@
 from typing import Sequence, Tuple
 
 import ntcore
-from wpimath import geometry
+import wpimath as geometry
 
 import magicbot
 
