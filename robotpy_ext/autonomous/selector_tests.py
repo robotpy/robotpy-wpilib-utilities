@@ -1,11 +1,12 @@
 import logging
-from pyfrc.test_support.controller import TestController as PyfrcTestController
+
 from ntcore.util import ChooserControl
+from wpilib.testing.controller import RobotTestController
 
 autonomous_seconds = 15
 
 
-def test_all_autonomous(control: PyfrcTestController):
+def test_all_autonomous(control: RobotTestController):
     """
     This test runs all possible autonomous modes that can be selected
     by the autonomous switcher.
