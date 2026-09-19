@@ -16,6 +16,13 @@ robotpy_ext.common_drivers.driver_base module
     :members:
     :undoc-members:
 
+robotpy_ext.common_drivers.pressure_sensors module
+--------------------------------------------------
+
+.. version-removed:: 2027
+   Use :class:`wpilib.AnalogPotentiometer```(..., 250, -25)``,
+   or wire the pressure sensor to a REV Pneumatic Hub.
+
 robotpy_ext.common_drivers.units module
 ---------------------------------------
 
