@@ -2,24 +2,22 @@ import contextlib
 import inspect
 import logging
 import sys
-import toposort
 import types
 import typing
-
 from typing import Any, Callable
 
 import hal
+import toposort
 import wpilib
-
 from ntcore import NetworkTableInstance
 
 from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 
-from .inject import get_injection_requests, find_injections
-from .magic_tunable import setup_tunables, tunable, collect_feedbacks
+from .inject import find_injections, get_injection_requests
 from .magic_reset import collect_resets
+from .magic_tunable import collect_feedbacks, setup_tunables, tunable
 
 __all__ = ["MagicRobot"]
 
@@ -286,7 +284,7 @@ class MagicRobot(wpilib.RobotBase):
                             set this to True
         """
         # If the FMS is not attached, crash the robot program
-        if not wpilib.DriverStation.isFMSAttached():
+        if not wpilib.DriverStationBackend.isFMSAttached():
             raise
 
         # Otherwise, if the FMS is attached then try to report the error via
@@ -351,13 +349,13 @@ class MagicRobot(wpilib.RobotBase):
         hal.observeUserProgramStarting()
 
         while not self.__done:
-            isEnabled, isAutonomous, isTest = self.getControlState()
+            word = wpilib.DriverStationBackend.getControlWord()
 
-            if not isEnabled:
+            if not word.isEnabled():
                 self._disabled()
-            elif isAutonomous:
+            elif word.isAutonomous():
                 self.autonomous()
-            elif isTest:
+            elif word.isUtility():
                 self._test()
             else:
                 self._operatorControl()
@@ -417,8 +415,8 @@ class MagicRobot(wpilib.RobotBase):
             self.onException(forceReport=True)
         watchdog.addEpoch("disabledInit()")
 
-        refreshData = wpilib.DriverStation.refreshData
-        DSControlWord = wpilib.DSControlWord
+        refreshData = wpilib.DriverStationBackend.refreshData
+        DSControlWord = wpilib.DriverStationBackend.getControlWord
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
@@ -431,7 +429,7 @@ class MagicRobot(wpilib.RobotBase):
                     ds_attached = not ds_attached
                     self.__nt_put_is_ds_attached(ds_attached)
 
-                hal.observeUserProgramDisabled()
+                hal.observeUserProgram(cw.getValue())
                 try:
                     self.disabledPeriodic()
                 except:
@@ -470,17 +468,18 @@ class MagicRobot(wpilib.RobotBase):
             self.onException(forceReport=True)
         watchdog.addEpoch("teleopInit()")
 
-        observe = hal.observeUserProgramTeleop
-        refreshData = wpilib.DriverStation.refreshData
-        isTeleopEnabled = wpilib.DriverStation.isTeleopEnabled
+        observe = hal.observeUserProgram
+        refreshData = wpilib.DriverStationBackend.refreshData
+        getControlWord = wpilib.DriverStationBackend.getControlWord
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
                 refreshData()
-                if not isTeleopEnabled():
+                word = getControlWord()
+                if not word.isTeleopEnabled():
                     break
 
-                observe()
+                observe(word.getValue())
                 try:
                     self.teleopPeriodic()
                 except:
@@ -511,17 +510,17 @@ class MagicRobot(wpilib.RobotBase):
             self.onException(forceReport=True)
         watchdog.addEpoch("testInit()")
 
-        refreshData = wpilib.DriverStation.refreshData
-        DSControlWord = wpilib.DSControlWord
+        refreshData = wpilib.DriverStationBackend.refreshData
+        DSControlWord = wpilib.DriverStationBackend.getControlWord
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
                 refreshData()
                 cw = DSControlWord()
-                if not (cw.isTest() and cw.isEnabled()):
+                if not cw.isUtilityEnabled():
                     break
 
-                hal.observeUserProgramTest()
+                hal.observeUserProgram(cw.getValue())
                 try:
                     self.testPeriodic()
                 except:
