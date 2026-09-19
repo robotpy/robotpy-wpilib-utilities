@@ -395,7 +395,7 @@ class StatefulAutonomous:
 
         # print out the details of this autonomous mode, and any tunables
 
-        self.battery_voltage = wpilib.DriverStation.getBatteryVoltage()
+        self.battery_voltage = wpilib.RobotController.getBatteryVoltage()
         logger.info("Battery voltage: %.02fv", self.battery_voltage)
 
         logger.info("Tunable values:")
