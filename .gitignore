@@ -50,6 +50,7 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 docs/_sidebar.rst.inc
+docs/_sidebar.toml
 
 # PyBuilder
 target/
@@ -63,5 +64,7 @@ target/
 .pycharmproject
 
 robotpy_ext/version.py
-.deploy_cfg
 
+.deploy_cfg
+networktables.json
+simgui*.json
