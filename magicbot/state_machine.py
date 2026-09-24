@@ -6,6 +6,7 @@ from typing import (
     ClassVar,
     NoReturn,
     Optional,
+    Self,
     Union,
     overload,
 )
@@ -398,7 +399,7 @@ class StateMachine:
     state_names: ClassVar[tunable[Sequence[str]]]
     state_descriptions: ClassVar[tunable[Sequence[str]]]
 
-    def __new__(cls) -> "StateMachine":
+    def __new__(cls) -> Self:
         # choose to use __new__ instead of __init__
         o = super().__new__(cls)
         o._build_states()
