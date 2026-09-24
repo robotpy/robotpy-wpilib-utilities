@@ -6,10 +6,8 @@ robotpy_ext.misc package
 robotpy_ext.misc.asyncio_policy module
 --------------------------------------
 
-.. automodule:: robotpy_ext.misc.asyncio_policy
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. version-removed:: 2027
+   This broke with Python 3.14. No reports of its breakage were received in 2026.
 
 robotpy_ext.misc.looptimer module
 ---------------------------------------
