@@ -1,5 +1,5 @@
 def test_digital_sensor(wpimock):
-    wpimock.Counter().getPeriod.return_value = 1 * 0.000147
+    wpimock.DutyCycle().getHighTime.return_value = 1 * 0.000147
 
     from robotpy_ext.common_drivers import xl_max_sonar_ez
 

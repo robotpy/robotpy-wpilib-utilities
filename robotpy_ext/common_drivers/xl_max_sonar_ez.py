@@ -29,16 +29,14 @@ class MaxSonarEZPulseWidth(driver_base.DriverBase):
         # Save value
         self.output_units = output_units
 
-        # Setup the counter
-        self.counter = wpilib.Counter(channel)
-        self.counter.setSemiPeriodMode(highSemiPeriod=True)
+        self.duty_cycle = wpilib.DutyCycle(channel)
 
         # Call the parents
         super().__init__()
 
     def get(self):
         """Return the current sonar sensor reading, in the units specified from the constructor"""
-        inches = self.counter.getPeriod() / 0.000147
+        inches = self.duty_cycle.getHighTime() / 0.000147
         return units.convert(units.inch, self.output_units, inches)
 
 
