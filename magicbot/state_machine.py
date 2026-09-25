@@ -21,6 +21,7 @@ if wpilib.RobotBase.is_simulation():
 else:
     from time import monotonic as get_time
 
+
 class IllegalCallError(TypeError):
     pass
 

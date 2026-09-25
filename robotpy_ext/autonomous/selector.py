@@ -171,7 +171,9 @@ class AutonomousModeSelector:
         # the user select one using the SmartDashboard.
 
         # Tuneable interface
-        self.chooser = tunables.Selectable[str]() # TODO: check type to make sure its correct
+        self.chooser = tunables.Selectable[
+            str
+        ]()  # TODO: check type to make sure its correct
 
         default_modes = []
         mode_names = []
