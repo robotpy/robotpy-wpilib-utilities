@@ -5,13 +5,7 @@ import inspect
 import typing
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import Callable, Generic, TypeAlias, TypeVar, overload
-
-if typing.TYPE_CHECKING:
-    try:
-        from typing import Self
-    except ImportError:
-        from typing_extensions import Self
+from typing import Callable, Generic, Self, TypeAlias, TypeVar, overload
 
 import ntcore
 from ntcore import NetworkTableInstance
