@@ -39,17 +39,17 @@ class AutonomousModeSelector:
     .. code-block:: python
 
         class MyRobot(wpilib.TimedRobot):
-
-            def robotInit(self):
+            def __init__(self):
+                super().__init__()
                 self.automodes = AutonomousModeSelector('autonomous')
 
-            def autonomousInit(self):
+            def autonomous_init(self):
                 self.automodes.start()
 
-            def autonomousPeriodic(self):
+            def autonomous_periodic(self):
                 self.automodes.periodic()
 
-            def disabledInit(self):
+            def autonomous_exit(self):
                 self.automodes.disable()
 
     If you use AutonomousModeSelector, you may also be interested in
@@ -67,7 +67,7 @@ class AutonomousModeSelector:
     .. note::
 
        For your autonomous mode's ``on_disable`` method to be called,
-       you must call :meth:`disable` in ``disabledInit``.
+       you must call :meth:`disable`.
 
        It is okay to not call :meth:`disable` if you do not need ``on_disable``.
     """
@@ -122,7 +122,7 @@ class AutonomousModeSelector:
                 module = importlib.import_module("." + module_name, autonomous_pkgname)
                 # module = imp.load_source('.' + module_name, module_filename)
             except:
-                if not wpilib.DriverStationBackend.isFMSAttached():
+                if not wpilib.RobotState.is_fms_attached():
                     raise
 
             #
@@ -144,13 +144,13 @@ class AutonomousModeSelector:
                     try:
                         instance = obj(*args, **kwargs)
                     except:
-                        if not wpilib.DriverStationBackend.isFMSAttached():
+                        if not wpilib.RobotState.is_fms_attached():
                             raise
                         else:
                             continue
 
                     if mode_name in self.modes:
-                        if not wpilib.DriverStationBackend.isFMSAttached():
+                        if not wpilib.RobotState.is_fms_attached():
                             raise RuntimeError(
                                 f"Duplicate name {mode_name} in {module_filename}"
                             )
@@ -178,23 +178,23 @@ class AutonomousModeSelector:
         for k, v in sorted(self.modes.items()):
             if getattr(v, "DEFAULT", False):
                 logger.info(" -> %s [Default]", k)
-                self.chooser.setDefaultOption(k, v)
+                self.chooser.set_default_option(k, v)
                 default_modes.append(k)
             else:
                 logger.info(" -> %s", k)
-                self.chooser.addOption(k, v)
+                self.chooser.add_option(k, v)
 
             mode_names.append(k)
 
         if len(self.modes) == 0:
             logger.warning("-- no autonomous modes were loaded!")
 
-        self.chooser.addOption("None", None)
+        self.chooser.add_option("None", None)
 
         if len(default_modes) == 0:
-            self.chooser.setDefaultOption("None", None)
+            self.chooser.set_default_option("None", None)
         elif len(default_modes) != 1:
-            if not wpilib.DriverStationBackend.isFMSAttached():
+            if not wpilib.RobotState.is_fms_attached():
                 raise RuntimeError(
                     "More than one autonomous mode was specified as default! (modes: {})".format(
                         ", ".join(default_modes)
@@ -202,14 +202,14 @@ class AutonomousModeSelector:
                 )
 
         # must PutData after setting up objects
-        wpilib.SmartDashboard.putData("Autonomous Mode", self.chooser)
+        wpilib.SmartDashboard.put_data("Autonomous Mode", self.chooser)
 
         # XXX: Compatibility with the FRC dashboard
-        wpilib.SmartDashboard.putStringArray("Auto List", mode_names)
+        wpilib.SmartDashboard.put_string_array("Auto List", mode_names)
 
         logger.info("Autonomous switcher initialized")
 
-    def endCompetition(self):
+    def end_competition(self):
         """Call this function when your robot's endCompetition function is called"""
         self.robot_exit = True
 
@@ -242,12 +242,12 @@ class AutonomousModeSelector:
             watchdog.reset()
 
             if isinstance(watchdog, SimpleWatchdog):
-                watchdog_check_expired = watchdog.printIfExpired
+                watchdog_check_expired = watchdog.print_if_expired
             else:
 
                 def watchdog_check_expired():
-                    if watchdog.isExpired():
-                        watchdog.printEpochs()
+                    if watchdog.is_expired():
+                        watchdog.print_epochs()
 
         logger.info("Begin autonomous")
 
@@ -266,32 +266,32 @@ class AutonomousModeSelector:
         try:
             self._on_autonomous_enable()
         except:
-            on_exception(forceReport=True)
+            on_exception(force_report=True)
         if watchdog is not None:
-            watchdog.addEpoch("auto on_enable")
+            watchdog.add_epoch("auto on_enable")
 
         #
         # Autonomous control loop
         #
 
-        observe = hal.observeUserProgram
-        refreshData = wpilib.DriverStationBackend.refreshData
-        getControlWord = wpilib.DriverStationBackend.getControlWord
+        observe = hal.observe_user_program
+        refresh_data = wpilib.DriverStationBackend.refresh_data
+        get_control_word = wpilib.DriverStationBackend.get_control_word
 
         with NotifierDelay(control_loop_wait_time) as delay:
             while not self.robot_exit:
-                refreshData()
-                word = getControlWord()
-                if not word.isAutonomousEnabled():
+                refresh_data()
+                word = get_control_word()
+                if not word.is_autonomous_enabled():
                     break
 
-                observe(word.getValue())
+                observe(word.get_value())
                 try:
                     self._on_iteration(timer.get())
                 except:
                     on_exception()
                 if watchdog is not None:
-                    watchdog.addEpoch("auto on_iteration")
+                    watchdog.add_epoch("auto on_iteration")
 
                 for fn in iter_fn:
                     fn()
@@ -312,7 +312,7 @@ class AutonomousModeSelector:
         try:
             self.disable()
         except:
-            on_exception(forceReport=True)
+            on_exception(force_report=True)
 
         logger.info("Autonomous mode ended")
 
@@ -320,7 +320,7 @@ class AutonomousModeSelector:
         """Start autonomous mode.
 
         This initialises the selected autonomous mode.
-        Call this from your ``autonomousInit`` method.
+        Call this from your ``autonomous_init`` method.
 
         .. versionadded:: 2020.1.5
         """
@@ -332,7 +332,7 @@ class AutonomousModeSelector:
     def periodic(self) -> None:
         """Execute one control loop iteration of the active autonomous mode.
 
-        Call this from your ``autonomousPeriodic`` method.
+        Call this from your ``autonomous_periodic`` method.
 
         .. versionadded:: 2020.1.5
         """
@@ -341,7 +341,7 @@ class AutonomousModeSelector:
     def disable(self) -> None:
         """Disables the active autonomous mode.
 
-        You can call this from your ``disabledInit`` method
+        You can call this from your ``autonomous_exit`` method
         to call your autonomous mode's ``on_disable`` method.
 
         .. versionadded:: 2020.1.5
@@ -364,12 +364,12 @@ class AutonomousModeSelector:
         # -> if you set it here, you're stuck using it. The FRC Dashboard
         #    doesn't seem to have a default (nor will it show a default),
         #    so the key will only get set if you set it.
-        auto_mode = wpilib.SmartDashboard.getString("Auto Selector", None)
+        auto_mode = wpilib.SmartDashboard.get_string("Auto Selector", None)
         if auto_mode is not None and auto_mode in self.modes:
             logger.info("Using autonomous mode set by LabVIEW dashboard")
             self.active_mode = self.modes[auto_mode]
         else:
-            self.active_mode = self.chooser.getSelected()
+            self.active_mode = self.chooser.get_selected()
 
         if self.active_mode is not None:
             logger.info("Enabling '%s'", self.active_mode.MODE_NAME)
@@ -384,6 +384,6 @@ class AutonomousModeSelector:
         if self.active_mode is not None:
             self.active_mode.on_iteration(time_elapsed)
 
-    def _on_exception(self, forceReport: bool = False):
-        if not wpilib.DriverStationBackend.isFMSAttached():
+    def _on_exception(self, force_report: bool = False):
+        if not wpilib.RobotState.is_fms_attached():
             raise

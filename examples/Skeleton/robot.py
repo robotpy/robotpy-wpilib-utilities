@@ -2,29 +2,35 @@ import magicbot
 
 
 class Robot(magicbot.MagicRobot):
-    def createObjects(self) -> None:
+    def create_objects(self) -> None:
         self.logger.info("Create objects here")
 
-    def robotPeriodic(self) -> None:
-        super().robotPeriodic()
+    def simulation_init(self) -> None:
+        pass
 
-    def disabledInit(self) -> None:
+    def robot_periodic(self) -> None:
+        super().robot_periodic()
+
+    def simulation_periodic(self) -> None:
+        pass
+
+    def disabled_init(self) -> None:
         self.logger.info("Start disabled mode")
 
-    def disabledPeriodic(self) -> None:
+    def disabled_periodic(self) -> None:
         pass
 
-    def autonomousInit(self) -> None:
+    def autonomous_init(self) -> None:
         self.logger.info("Start autonomous mode")
 
-    def teleopInit(self) -> None:
+    def teleop_init(self) -> None:
         self.logger.info("Start teleop mode")
 
-    def teleopPeriodic(self) -> None:
+    def teleop_periodic(self) -> None:
         pass
 
-    def testInit(self) -> None:
+    def utility_init(self) -> None:
         self.logger.info("Start utility mode")
 
-    def testPeriodic(self) -> None:
+    def utility_periodic(self) -> None:
         pass

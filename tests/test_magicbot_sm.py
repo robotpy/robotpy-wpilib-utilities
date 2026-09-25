@@ -440,20 +440,20 @@ def test_default_state_machine():
             self.didDone = None
 
         @state(first=True)
-        def stateOne(self):
+        def state_one(self) -> None:
             self.didOne = True
             self.didDefault = False
             self.didDone = False
 
         @state
-        def doneState(self):
+        def done_state(self) -> None:
             self.didOne = False
             self.didDefault = False
             self.didDone = True
             self.done()
 
         @default_state
-        def defaultState(self, initial_call):
+        def default_state(self, initial_call: bool) -> None:
             self.didOne = False
             self.didDefault = True
             self.defaultInit = initial_call
@@ -518,7 +518,7 @@ def test_default_state_machine():
 
     # enagage a state that will call done, check to see
     # if we come back
-    sm.engage("doneState")
+    sm.engage(sm.done_state)
     sm.execute()
     assert sm.didOne == False
     assert sm.didDefault == False
@@ -552,22 +552,22 @@ def test_default_state_clears_current_state_topic_when_disengaged():
 
     sm = _SM()
     setup_tunables(sm, "test_default_state_clears_current_state_topic_when_disengaged")
-    nt = ntcore.NetworkTableInstance.getDefault().getTable(
+    nt = ntcore.NetworkTableInstance.get_default().get_table(
         "/components/test_default_state_clears_current_state_topic_when_disengaged/state"
     )
 
     sm.execute()
     assert sm.current_state == ""
-    assert nt.getEntry("current_state").getString(None) == ""
+    assert nt.get_entry("current_state").get_string(None) == ""
 
     sm.engage()
     sm.execute()
     assert sm.current_state == "active"
-    assert nt.getEntry("current_state").getString(None) == "active"
+    assert nt.get_entry("current_state").get_string(None) == "active"
 
     sm.execute()
     assert sm.current_state == ""
-    assert nt.getEntry("current_state").getString(None) == ""
+    assert nt.get_entry("current_state").get_string(None) == ""
 
 
 def test_short_timed_state(wpitime):

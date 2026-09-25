@@ -4,15 +4,12 @@ import wpilib
 class ButtonDebouncer:
     """Useful utility class for debouncing buttons"""
 
-    def __init__(self, joystick, buttonnum, period=0.5):
+    def __init__(self, joystick: wpilib.Joystick, buttonnum: int, period: float = 0.5):
         """
         :param joystick:  Joystick object
-        :type  joystick:  :class:`wpilib.Joystick`
         :param buttonnum: Number of button to retrieve
-        :type  buttonnum: int
         :param period:    Period of time (in seconds) to wait before allowing new button
                           presses. Defaults to 0.5 seconds.
-        :type  period:    float
         """
         self.joystick = joystick
         self.buttonnum = buttonnum
@@ -29,8 +26,8 @@ class ButtonDebouncer:
         """Returns the value of the joystick button. If the button is held down, then
         True will only be returned once every ``debounce_period`` seconds"""
 
-        now = self.timer.getTimestamp()
-        if self.joystick.getRawButton(self.buttonnum):
+        now = self.timer.get_timestamp()
+        if self.joystick.get_raw_button(self.buttonnum):
             if (now - self.latest) > self.debounce_period:
                 self.latest = now
                 return True

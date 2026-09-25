@@ -1,5 +1,6 @@
 import inspect
 import logging
+from collections.abc import Sequence
 from typing import (
     Any,
     Callable,
@@ -10,16 +11,15 @@ from typing import (
     Union,
     overload,
 )
-from collections.abc import Sequence
 
 import wpilib
 
 from .magic_tunable import tunable
 
-if wpilib.RobotBase.isSimulation():
-    getTime = wpilib.Timer.getTimestamp
+if wpilib.RobotBase.is_simulation():
+    get_time = wpilib.Timer.get_timestamp
 else:
-    from time import monotonic as getTime
+    from time import monotonic as get_time
 
 
 class IllegalCallError(TypeError):
@@ -124,7 +124,7 @@ class _State:
                 setattr(
                     owner,
                     duration_attr,
-                    tunable(self.duration, writeDefault=False, subtable="state"),
+                    tunable(self.duration, write_default=False, subtable="state"),
                 )
 
 
@@ -368,8 +368,7 @@ class StateMachine:
             shooter: Shooter
             ball_pusher: BallPusher
 
-            def teleopPeriodic(self):
-
+            def teleop_periodic(self):
                 if self.joystick.getTrigger():
                     self.shooter_automation.fire()
 
@@ -379,7 +378,6 @@ class StateMachine:
       - state durations can be tuned here
       - The 'current state' is output as it happens
       - Descriptions and names of the states are here (for dashboard use)
-
 
     .. warning:: This object is not intended to be threadsafe and should not
                  be accessed from multiple threads
@@ -572,7 +570,7 @@ class StateMachine:
         @default_state mechanism instead.
         """
 
-        now = getTime()
+        now = get_time()
 
         if not self.__engaged:
             if self.__should_engage:

@@ -4,7 +4,7 @@ from wpiutil import sync
 
 
 class NotifierDelay:
-    """Synchronizes a timing loop against interrupts from the FPGA.
+    """Synchronizes a timing loop against an alarm.
 
     This will delay so that the next invocation of your loop happens at
     precisely the same period, assuming that your loop does not take longer
@@ -25,8 +25,8 @@ class NotifierDelay:
 
         # Convert the delay period to microseconds, as WPILib timestamps are microseconds
         self.delay_period = int(delay_period * 1e6)
-        self._notifier = hal.createNotifier()[0]
-        self._expiry_time = wpilib.RobotController.getTime() + self.delay_period
+        self._notifier = hal.create_notifier()[0]
+        self._expiry_time = wpilib.RobotController.get_time() + self.delay_period
         self._update_alarm(self._notifier)
 
     def __del__(self):
@@ -46,7 +46,7 @@ class NotifierDelay:
         handle = self._notifier
         if handle is None:
             return
-        hal.destroyNotifier(handle)
+        hal.destroy_notifier(handle)
         self._notifier = None
 
     def wait(self) -> None:
@@ -54,9 +54,9 @@ class NotifierDelay:
         handle = self._notifier
         if handle is None:
             return
-        sync.waitForObject(handle)
+        sync.wait_for_object(handle)
         self._expiry_time += self.delay_period
         self._update_alarm(handle)
 
     def _update_alarm(self, handle) -> None:
-        hal.setNotifierAlarm(handle, self._expiry_time, 0, True, True)
+        hal.set_notifier_alarm(handle, self._expiry_time, 0, True, True)

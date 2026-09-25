@@ -6,7 +6,7 @@ class FakeJoystick:
     def __init__(self):
         self._pressed = [False] * 2
 
-    def getRawButton(self, num):
+    def get_raw_button(self, num):
         return self._pressed[num]
 
     def press(self, num):

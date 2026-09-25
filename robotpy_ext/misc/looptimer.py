@@ -1,8 +1,9 @@
 import logging
 import math
+
 import wpilib
 
-_getTimestamp = wpilib.Timer.getTimestamp
+_getTimestamp = wpilib.Timer.get_timestamp
 
 
 class LoopTimer:
@@ -54,7 +55,7 @@ class LoopTimer:
         self.loops += 1
         self.last = now
 
-        if self.timer.advanceIfElapsed(1):
+        if self.timer.advance_if_elapsed(1):
             self.logger.info(
                 "Loops: %d; min: %.3f; max: %.3f; period: %.3f; avg: %.3f",
                 self.loops,

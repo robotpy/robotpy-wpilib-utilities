@@ -10,20 +10,20 @@ class MagicComponent(Protocol):
         class MyComponent:
 
             # other variables 'imported' automatically from MagicRobot
-            elevator_motor: Talon
+            elevator_motor: SparkMax
             other_component: MyOtherComponent
 
             ...
 
             def execute(self):
 
-                # This will be automatically set to the Talon
+                # This will be automatically set to the SparkMax
                 # instance created in robot.py
                 self.elevator_motor.set(self.value)
 
 
     What this says is "find the variable in the robot class called
-    'elevator_motor', which is a Talon". If the name and type match,
+    'elevator_motor', which is a SparkMax". If the name and type match,
     then the variable will automatically be injected into your
     component when it is created.
 
@@ -35,7 +35,7 @@ class MagicComponent(Protocol):
 
     def setup(self) -> None:
         """
-        This function is called after ``createObjects`` has been called in
+        This function is called after ``create_objects`` has been called in
         the main robot class, and after all components have been created
 
         The setup function is optional and components do not have to define

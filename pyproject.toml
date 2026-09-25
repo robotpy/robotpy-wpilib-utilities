@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
   "toposort",
-  "wpilib>=2027.0.0a4,<2027.0.0a6.post4",
+  "wpilib==2027.0.0a6.post4",
 ]
 
 [[project.authors]]

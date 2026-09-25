@@ -91,7 +91,7 @@ class tunable(Generic[V]):
         self,
         default: V,
         *,
-        writeDefault: bool = True,
+        write_default: bool = True,
         subtable: str | None = None,
         properties: Mapping[str, JsonValue] | None = None,
         doc=None,
@@ -101,7 +101,7 @@ class tunable(Generic[V]):
 
         self._ntdefault = default
         self._ntsubtable = subtable
-        self._ntwritedefault = writeDefault
+        self._ntwritedefault = write_default
         self._topic_properties = properties
         # self.__doc__ = doc
 
@@ -197,7 +197,7 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
     else:
         prefix = f"/{prefix}/{cname}"
 
-    NetworkTables = NetworkTableInstance.getDefault()
+    NetworkTables = NetworkTableInstance.get_default()
 
     tunables: dict[tunable, ntcore.Topic] = {}
 
@@ -214,15 +214,15 @@ def setup_tunables(component, cname: str, prefix: str | None = "components") -> 
         else:
             key = f"{prefix}/{n}"
 
-        topic = NetworkTables.getTopic(key)
+        topic = NetworkTables.get_topic(key)
         typed_topic = prop._topic_type(topic)
-        ntvalue = typed_topic.getEntry(prop._ntdefault)
+        ntvalue = typed_topic.get_entry(prop._ntdefault)
         if prop._ntwritedefault:
             ntvalue.set(prop._ntdefault)
         else:
-            ntvalue.setDefault(prop._ntdefault)
+            ntvalue.set_default(prop._ntdefault)
         if prop._topic_properties is not None:
-            topic.setProperties(prop._topic_properties)
+            topic.set_properties(prop._topic_properties)
         tunables[prop] = ntvalue
 
     component._tunables = tunables
@@ -310,7 +310,7 @@ Example::
 
         @feedback
         def get_angle(self) -> float:
-            return self.navx.getYaw()
+            return self.navx.get_yaw()
 
     class MyRobot(magicbot.MagicRobot):
         my_component: MyComponent
@@ -318,9 +318,6 @@ Example::
 
 In this example, the NetworkTable key is stored at
 ``/components/my_component/angle``.
-
-.. seealso:: :class:`~wpilib.LiveWindow` may suit your needs,
-             especially if you wish to monitor WPILib objects.
 
 .. versionadded:: 2018.1.0
 
@@ -385,7 +382,7 @@ def collect_feedbacks(component, cname: str, prefix: str | None = "components"):
     else:
         prefix = f"/{prefix}/{cname}"
 
-    nt = NetworkTableInstance.getDefault().getTable(prefix)
+    nt = NetworkTableInstance.get_default().get_table(prefix)
     feedbacks = []
 
     for name, method in inspect.getmembers(component, inspect.ismethod):
@@ -405,14 +402,14 @@ def collect_feedbacks(component, cname: str, prefix: str | None = "components"):
                 topic_type = None
 
             if topic_type is None:
-                entry = nt.getEntry(key)
-                setter = entry.setValue
+                entry = nt.get_entry(key)
+                setter = entry.set_value
             else:
-                topic = nt.getTopic(key)
+                topic = nt.get_topic(key)
                 publisher = topic_type(topic).publish()
                 setter = publisher.set
                 if topic_properties is not None:
-                    topic.setProperties(topic_properties)
+                    topic.set_properties(topic_properties)
 
             feedbacks.append((method, setter))
 
