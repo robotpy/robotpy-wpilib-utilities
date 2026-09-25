@@ -27,7 +27,7 @@ def wpitime():
 
     class FakeTime:
         def step(self, seconds):
-            delta = int(seconds * 1000000)
+            delta = int(seconds * 1e9) # nanoseconds
             hal.simulation.step_timing_async(delta)
 
     hal.simulation.pause_timing()

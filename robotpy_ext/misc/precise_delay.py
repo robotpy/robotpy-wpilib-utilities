@@ -23,8 +23,8 @@ class NotifierDelay:
         if delay_period < 0.001:
             raise ValueError("You probably don't want to delay less than 1ms!")
 
-        # Convert the delay period to microseconds, as WPILib timestamps are microseconds
-        self.delay_period = int(delay_period * 1e6)
+        # Convert the delay period to nanoseconds, as WPILib timestamps are nanoseconds
+        self.delay_period = int(delay_period * 1e9)
         self._notifier = hal.create_notifier()[0]
         self._expiry_time = wpilib.RobotController.get_time() + self.delay_period
         self._update_alarm(self._notifier)
