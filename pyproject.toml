@@ -29,6 +29,9 @@ email = "robotpy@googlegroups.com"
 [project.urls]
 "Source code" = "https://github.com/robotpy/robotpy-wpilib-utilities"
 
+[tool.check-wheel-contents]
+toplevel = ["magicbot", "robotpy_ext"]
+
 [tool.hatch.build.targets.sdist]
 exclude = [
     ".github",
