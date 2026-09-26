@@ -32,8 +32,8 @@ class MagicRobot(wpilib.RobotBase):
     base robot class. If you use this as your base, you must
     implement the following methods:
 
-    - :meth:`createObjects`
-    - :meth:`teleopPeriodic`
+    - :meth:`create_objects`
+    - :meth:`teleop_periodic`
 
     MagicRobot uses the :class:`.AutonomousModeSelector` to allow you
     to define multiple autonomous modes and to select one of them via
@@ -64,7 +64,7 @@ class MagicRobot(wpilib.RobotBase):
 
     def __init__(self) -> None:
         super().__init__()
-        hal.reportUsage("Framework", "Magicbot")
+        hal.report_usage("Framework", "Magicbot")
 
         self._exclude_from_injection = ["logger"]
 
@@ -77,27 +77,38 @@ class MagicRobot(wpilib.RobotBase):
         self.__done = False
 
         # cache these
-        self.__is_ds_attached = wpilib.RobotState.isDSAttached
-        self.__sd_update = wpilib.SmartDashboard.updateValues
+        self.__is_ds_attached = wpilib.RobotState.is_ds_attached
+        self.__sd_update = wpilib.SmartDashboard.update_values
 
-    def _simulationInit(self) -> None:
+    def simulation_init(self) -> None:
+        """Robot-wide simulation initialization code should go here.
+
+        Users should override this method for default Robot-wide simulation
+        related initialization which will be called when the robot is first
+        started. It will be called exactly one time after the robot class
+        constructor is called only when the robot is in simulation.
+        """
         pass
 
-    def _simulationPeriodic(self) -> None:
+    def simulation_periodic(self) -> None:
+        """Periodic simulation code should go here.
+
+        This function is called in a simulated robot after user code executes.
+        """
         pass
 
-    def __simulationPeriodic(self) -> None:
-        hal.simPeriodicBefore()
-        self._simulationPeriodic()
-        hal.simPeriodicAfter()
+    def __simulation_periodic(self) -> None:
+        hal.sim_periodic_before()
+        self.simulation_periodic()
+        hal.sim_periodic_after()
 
-    def robotInit(self) -> None:
+    def robot_init(self) -> None:
         """
         .. warning:: Internal API, don't override; use :meth:`createObjects` instead
         """
 
         # Create the user's objects and stuff here
-        self.createObjects()
+        self.create_objects()
 
         # Load autonomous modes
         self._automodes = AutonomousModeSelector("autonomous")
@@ -105,25 +116,27 @@ class MagicRobot(wpilib.RobotBase):
         # Next, create the robot components and wire them together
         self._create_components()
 
-        self.__nt = NetworkTableInstance.getDefault().getTable("/robot")
+        self.__nt = NetworkTableInstance.get_default().get_table("/robot")
 
-        self.__nt_put_is_ds_attached = self.__nt.getEntry("is_ds_attached").setBoolean
-        self.__nt_put_mode = self.__nt.getEntry("mode").setString
+        self.__nt_put_is_ds_attached = self.__nt.get_entry("is_ds_attached").set_boolean
+        self.__nt_put_mode = self.__nt.get_entry("mode").set_string
 
-        self.__nt.putBoolean("is_simulation", self.isSimulation())
+        self.__nt.put_boolean("is_simulation", self.is_simulation())
         self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
         self.watchdog = SimpleWatchdog(self.control_loop_wait_time)
 
         self.__periodics: list[tuple[Callable[[], None], str]] = [
-            (self.robotPeriodic, "robotPeriodic()"),
+            (self.robot_periodic, "robot_periodic()"),
         ]
 
-        if self.isSimulation():
-            self._simulationInit()
-            self.__periodics.append((self.__simulationPeriodic, "simulationPeriodic()"))
+        if self.is_simulation():
+            self.simulation_init()
+            self.__periodics.append(
+                (self.__simulation_periodic, "simulation_periodic()")
+            )
 
-    def createObjects(self) -> None:
+    def create_objects(self) -> None:
         """
         You should override this and initialize all of your wpilib
         objects here (and not in your components, for example). This
@@ -144,7 +157,7 @@ class MagicRobot(wpilib.RobotBase):
         """
         raise NotImplementedError
 
-    def autonomousInit(self) -> None:
+    def autonomous_init(self) -> None:
         """Initialization code for autonomous mode may go here.
 
         Users may override this method for initialization code which
@@ -160,7 +173,7 @@ class MagicRobot(wpilib.RobotBase):
         """
         pass
 
-    def teleopInit(self) -> None:
+    def teleop_init(self) -> None:
         """
         Initialization code for teleop control code may go here.
 
@@ -172,7 +185,7 @@ class MagicRobot(wpilib.RobotBase):
         """
         pass
 
-    def teleopPeriodic(self):
+    def teleop_periodic(self):
         """
         Periodic code for teleop mode should go here.
 
@@ -186,14 +199,14 @@ class MagicRobot(wpilib.RobotBase):
                   mode, set ``use_teleop_in_autonomous`` to True in your
                   robot class.
         """
-        func = self.teleopPeriodic.__func__
+        func = self.teleop_periodic.__func__
         if not hasattr(func, "firstRun"):
             self.logger.warning(
                 "Default MagicRobot.teleopPeriodic() method... Override me!"
             )
             func.firstRun = False
 
-    def disabledInit(self) -> None:
+    def disabled_init(self) -> None:
         """
         Initialization code for disabled mode may go here.
 
@@ -205,7 +218,7 @@ class MagicRobot(wpilib.RobotBase):
         """
         pass
 
-    def disabledPeriodic(self):
+    def disabled_periodic(self):
         """
         Periodic code for disabled mode should go here.
 
@@ -215,26 +228,26 @@ class MagicRobot(wpilib.RobotBase):
         This code executes before the ``execute`` functions of all
         components are called.
         """
-        func = self.disabledPeriodic.__func__
+        func = self.disabled_periodic.__func__
         if not hasattr(func, "firstRun"):
             self.logger.warning(
                 "Default MagicRobot.disabledPeriodic() method... Override me!"
             )
             func.firstRun = False
 
-    def testInit(self) -> None:
-        """Initialization code for test mode should go here.
+    def utility_init(self) -> None:
+        """Initialization code for utility mode should go here.
 
         Users should override this method for initialization code which will be
         called each time the robot enters disabled mode.
         """
         pass
 
-    def testPeriodic(self) -> None:
-        """Periodic code for test mode should go here."""
+    def utility_periodic(self) -> None:
+        """Periodic code for utility mode should go here."""
         pass
 
-    def robotPeriodic(self) -> None:
+    def robot_periodic(self) -> None:
         """
         Periodic code for all modes should go here.
 
@@ -249,120 +262,119 @@ class MagicRobot(wpilib.RobotBase):
         """
         watchdog = self.watchdog
         self.__sd_update()
-        watchdog.addEpoch("SmartDashboard")
+        watchdog.add_epoch("SmartDashboard")
 
-    def onException(self, forceReport: bool = False) -> None:
+    def on_exception(self, force_report: bool = False) -> None:
         """
         This function must *only* be called when an unexpected exception
         has occurred that would otherwise crash the robot code. Use this
-        inside your :meth:`operatorActions` function.
+        inside your :meth:`teleop_periodic` function.
 
-        If the FMS is attached (eg, during a real competition match),
+        If the FMS is attached (e.g. during a real competition match),
         this function will return without raising an error. However,
         it will try to report one-off errors to the Driver Station so
-        that it will be recorded in the Driver Station Log Viewer.
+        that it will be recorded in the Driver Station log.
         Repeated errors may not get logged.
 
         Example usage::
 
-            def teleopPeriodic(self):
+            def teleop_periodic(self):
                 try:
-                    if self.joystick.getTrigger():
+                    if self.joystick.get_trigger():
                         self.shooter.shoot()
                 except:
-                    self.onException()
+                    self.on_exception()
 
                 try:
-                    if self.joystick.getRawButton(2):
+                    if self.gamepad.get_left_bumper_button():
                         self.ball_intake.run()
                 except:
-                    self.onException()
+                    self.on_exception()
 
                 # and so on...
 
-        :param forceReport: Always report the exception to the DS. Don't
-                            set this to True
+        :param force_report: Always report the exception to the DS. Don't
+                             set this to True
         """
         # If the FMS is not attached, crash the robot program
-        if not wpilib.DriverStationBackend.isFMSAttached():
+        if not wpilib.RobotState.is_fms_attached():
             raise
 
         # Otherwise, if the FMS is attached then try to report the error via
         # the driver station console. Maybe.
-        now = wpilib.Timer.getTimestamp()
+        now = wpilib.Timer.get_timestamp()
 
         try:
             if (
-                forceReport
+                force_report
                 or (now - self.__last_error_report) > self.error_report_interval
             ):
-                wpilib.reportError("Unexpected exception", True)
+                wpilib.report_error("Unexpected exception", True)
         except:
             pass  # ok, can't do anything here
 
         self.__last_error_report = now
 
     @contextlib.contextmanager
-    def consumeExceptions(self, forceReport: bool = False):
+    def consume_exceptions(self, force_report: bool = False):
         """
         This returns a context manager which will consume any uncaught
         exceptions that might otherwise crash the robot.
 
         Example usage::
 
-            def teleopPeriodic(self):
-                with self.consumeExceptions():
-                    if self.joystick.getTrigger():
+            def teleop_periodic(self):
+                with self.consume_exceptions():
+                    if self.joystick.get_trigger():
                         self.shooter.shoot()
 
-                with self.consumeExceptions():
-                    if self.joystick.getRawButton(2):
+                with self.consume_exceptions():
+                    if self.gamepad.get_left_bumper_button():
                         self.ball_intake.run()
 
                 # and so on...
 
-        :param forceReport: Always report the exception to the DS. Don't
-                            set this to True
+        :param force_report: Always report the exception to the DS. Don't
+                             set this to True
 
-        .. seealso:: :meth:`onException` for more details
+        .. seealso:: :meth:`on_exception` for more details
         """
         try:
             yield
         except:
-            self.onException(forceReport=forceReport)
+            self.on_exception(force_report=force_report)
 
     #
     # Internal API
     #
 
-    def startCompetition(self) -> None:
+    def start_competition(self) -> None:
         """
         This runs the mode-switching loop.
 
         .. warning:: Internal API, don't override
         """
 
-        # TODO: usage reporting?
-        self.robotInit()
+        self.robot_init()
 
         # Tell the DS the robot is ready to be enabled
-        hal.observeUserProgramStarting()
+        hal.observe_user_program_starting()
 
         while not self.__done:
-            word = wpilib.DriverStationBackend.getControlWord()
+            word = wpilib.DriverStationBackend.get_control_word()
 
-            if not word.isEnabled():
+            if not word.is_enabled():
                 self._disabled()
-            elif word.isAutonomous():
+            elif word.is_autonomous():
                 self.autonomous()
-            elif word.isUtility():
+            elif word.is_utility():
                 self._test()
             else:
-                self._operatorControl()
+                self._operator_control()
 
-    def endCompetition(self) -> None:
+    def end_competition(self) -> None:
         self.__done = True
-        self._automodes.endCompetition()
+        self._automodes.end_competition()
 
     def autonomous(self) -> None:
         """
@@ -378,19 +390,19 @@ class MagicRobot(wpilib.RobotBase):
         self._on_mode_enable_components()
 
         try:
-            self.autonomousInit()
+            self.autonomous_init()
         except:
-            self.onException(forceReport=True)
+            self.on_exception(force_report=True)
 
         auto_functions: tuple[Callable[[], None], ...] = (self._enabled_periodic,)
 
         if self.use_teleop_in_autonomous:
-            auto_functions = (self.teleopPeriodic,) + auto_functions
+            auto_functions = (self.teleop_periodic,) + auto_functions
 
         self._automodes.run(
             self.control_loop_wait_time,
             auto_functions,
-            self.onException,
+            self.on_exception,
             watchdog=self.watchdog,
         )
 
@@ -410,40 +422,40 @@ class MagicRobot(wpilib.RobotBase):
 
         self._on_mode_disable_components()
         try:
-            self.disabledInit()
+            self.disabled_init()
         except:
-            self.onException(forceReport=True)
-        watchdog.addEpoch("disabledInit()")
+            self.on_exception(force_report=True)
+        watchdog.add_epoch("disabledInit()")
 
-        refreshData = wpilib.DriverStationBackend.refreshData
-        DSControlWord = wpilib.DriverStationBackend.getControlWord
+        refresh_data = wpilib.DriverStationBackend.refresh_data
+        DSControlWord = wpilib.DriverStationBackend.get_control_word
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
-                refreshData()
+                refresh_data()
                 cw = DSControlWord()
-                if cw.isEnabled():
+                if cw.is_enabled():
                     break
 
-                if ds_attached != cw.isDSAttached():
+                if ds_attached != cw.is_ds_attached():
                     ds_attached = not ds_attached
                     self.__nt_put_is_ds_attached(ds_attached)
 
-                hal.observeUserProgram(cw.getValue())
+                hal.observe_user_program(cw.get_value())
                 try:
-                    self.disabledPeriodic()
+                    self.disabled_periodic()
                 except:
-                    self.onException()
-                watchdog.addEpoch("disabledPeriodic()")
+                    self.on_exception()
+                watchdog.add_epoch("disabledPeriodic()")
 
                 self._do_periodics()
                 # watchdog.disable()
-                watchdog.printIfExpired()
+                watchdog.print_if_expired()
 
                 delay.wait()
                 watchdog.reset()
 
-    def _operatorControl(self) -> None:
+    def _operator_control(self) -> None:
         """
         This function is called in teleoperated mode. You should not
         override this function; rather, you should override the
@@ -463,32 +475,32 @@ class MagicRobot(wpilib.RobotBase):
         self._on_mode_enable_components()
 
         try:
-            self.teleopInit()
+            self.teleop_init()
         except:
-            self.onException(forceReport=True)
-        watchdog.addEpoch("teleopInit()")
+            self.on_exception(force_report=True)
+        watchdog.add_epoch("teleopInit()")
 
-        observe = hal.observeUserProgram
-        refreshData = wpilib.DriverStationBackend.refreshData
-        getControlWord = wpilib.DriverStationBackend.getControlWord
+        observe = hal.observe_user_program
+        refresh_data = wpilib.DriverStationBackend.refresh_data
+        get_control_word = wpilib.DriverStationBackend.get_control_word
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
-                refreshData()
-                word = getControlWord()
-                if not word.isTeleopEnabled():
+                refresh_data()
+                word = get_control_word()
+                if not word.is_teleop_enabled():
                     break
 
-                observe(word.getValue())
+                observe(word.get_value())
                 try:
-                    self.teleopPeriodic()
+                    self.teleop_periodic()
                 except:
-                    self.onException()
-                watchdog.addEpoch("teleopPeriodic()")
+                    self.on_exception()
+                watchdog.add_epoch("teleopPeriodic()")
 
                 self._enabled_periodic()
                 # watchdog.disable()
-                watchdog.printIfExpired()
+                watchdog.print_if_expired()
 
                 delay.wait()
                 watchdog.reset()
@@ -505,31 +517,31 @@ class MagicRobot(wpilib.RobotBase):
         self._on_mode_enable_components()
 
         try:
-            self.testInit()
+            self.utility_init()
         except:
-            self.onException(forceReport=True)
-        watchdog.addEpoch("testInit()")
+            self.on_exception(force_report=True)
+        watchdog.add_epoch("testInit()")
 
-        refreshData = wpilib.DriverStationBackend.refreshData
-        DSControlWord = wpilib.DriverStationBackend.getControlWord
+        refresh_data = wpilib.DriverStationBackend.refresh_data
+        DSControlWord = wpilib.DriverStationBackend.get_control_word
 
         with NotifierDelay(self.control_loop_wait_time) as delay:
             while not self.__done:
-                refreshData()
+                refresh_data()
                 cw = DSControlWord()
-                if not cw.isUtilityEnabled():
+                if not cw.is_utility_enabled():
                     break
 
-                hal.observeUserProgram(cw.getValue())
+                hal.observe_user_program(cw.get_value())
                 try:
-                    self.testPeriodic()
+                    self.utility_periodic()
                 except:
-                    self.onException()
-                watchdog.addEpoch("testPeriodic()")
+                    self.on_exception()
+                watchdog.add_epoch("testPeriodic()")
 
                 self._do_periodics()
                 # watchdog.disable()
-                watchdog.printIfExpired()
+                watchdog.print_if_expired()
 
                 delay.wait()
                 watchdog.reset()
@@ -542,7 +554,7 @@ class MagicRobot(wpilib.RobotBase):
                 try:
                     on_enable()
                 except:
-                    self.onException(forceReport=True)
+                    self.on_exception(force_report=True)
 
     def _on_mode_disable_components(self) -> None:
         # deinitialize things
@@ -552,7 +564,7 @@ class MagicRobot(wpilib.RobotBase):
                 try:
                     on_disable()
                 except:
-                    self.onException(forceReport=True)
+                    self.on_exception(force_report=True)
 
     def _create_components(self) -> None:
         #
@@ -739,15 +751,15 @@ class MagicRobot(wpilib.RobotBase):
             try:
                 value = method()
             except:
-                self.onException()
+                self.on_exception()
             else:
                 setter(value)
 
-        watchdog.addEpoch("@magicbot.feedback")
+        watchdog.add_epoch("@magicbot.feedback")
 
         for periodic, name in self.__periodics:
             periodic()
-            watchdog.addEpoch(name)
+            watchdog.add_epoch(name)
 
         for reset_dict, component in self._reset_components:
             component.__dict__.update(reset_dict)
@@ -760,7 +772,7 @@ class MagicRobot(wpilib.RobotBase):
             try:
                 component.execute()
             except:
-                self.onException()
-            watchdog.addEpoch(name)
+                self.on_exception()
+            watchdog.add_epoch(name)
 
         self._do_periodics()

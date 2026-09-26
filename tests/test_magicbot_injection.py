@@ -58,7 +58,7 @@ class SimpleBot(magicbot.MagicRobot):
     component2: Component2
     component3: Component3
 
-    def createObjects(self):
+    def create_objects(self):
         self.injectable = Injectable(42)
 
 
@@ -80,7 +80,7 @@ class MultilevelBot(magicbot.MagicRobot):
     dup3: DuplicateComponent
     dup3_var = 5, 6
 
-    def createObjects(self):
+    def create_objects(self):
         self.injectable = Injectable(42)
 
 
@@ -101,7 +101,7 @@ class InheritedComponent(SuperComponent):
 class InheritBot(magicbot.MagicRobot):
     component: InheritedComponent
 
-    def createObjects(self):
+    def create_objects(self):
         self.intvar = 1
         self.tupvar = 1, 2
 
@@ -109,7 +109,7 @@ class InheritBot(magicbot.MagicRobot):
 class BotBase(magicbot.MagicRobot):
     component_a: DumbComponent
 
-    def createObjects(self):
+    def create_objects(self):
         pass
 
 
@@ -123,7 +123,7 @@ class TypeHintedBot(magicbot.MagicRobot):
 
     component: DumbComponent
 
-    def createObjects(self):
+    def create_objects(self):
         self.some_float = 0.5
 
 
@@ -149,7 +149,7 @@ class TypeHintsBot(magicbot.MagicRobot):
 
     component: TypeHintedComponent
 
-    def createObjects(self):
+    def create_objects(self):
         self.injectable = Injectable(42)
         self.injectables = [self.injectable]
 
@@ -195,7 +195,7 @@ class TopoSortBot(magicbot.MagicRobot):
     c: DependentComponentC
     d: DependentComponentD
 
-    def createObjects(self) -> None:
+    def create_objects(self) -> None:
         pass
 
 
@@ -209,7 +209,7 @@ class ExternalDependencyComponent(DumbComponent):
 class ExternalDependencyBot(magicbot.MagicRobot):
     component: ExternalDependencyComponent
 
-    def createObjects(self) -> None:
+    def create_objects(self) -> None:
         self.component_setting = 2.5
 
 
@@ -218,7 +218,7 @@ R = TypeVar("R", bound=magicbot.MagicRobot)
 
 def _make_bot(cls: Type[R]) -> R:
     bot = cls()
-    bot.createObjects()
+    bot.create_objects()
     bot._automodes = Mock()
     bot._automodes.modes = {}
     bot._create_components()

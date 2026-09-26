@@ -55,11 +55,11 @@ class Toggle:
             the return value will be `True` until the time expires
             """
 
-            now = wpilib.Timer.getTimestamp()
+            now = wpilib.Timer.get_timestamp()
             if now - self.latest < self.debounce_period:
                 return True
 
-            if self.joystick.getRawButton(self.button):
+            if self.joystick.get_raw_button(self.button):
                 self.latest = now
                 return True
             else:
@@ -80,7 +80,7 @@ class Toggle:
             ).get
         else:
             self.joystick = joystick
-            self.joystickget = partial(self.joystick.getRawButton, button)
+            self.joystickget = partial(self.joystick.get_raw_button, button)
 
         self.released = False
         self.toggle = False

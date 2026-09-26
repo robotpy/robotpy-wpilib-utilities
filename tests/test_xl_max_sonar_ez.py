@@ -1,5 +1,5 @@
 def test_digital_sensor(wpimock):
-    wpimock.DutyCycle().getHighTime.return_value = 1 * 0.000147
+    wpimock.DutyCycle().get_high_time.return_value = 1 * 0.000147
 
     from robotpy_ext.common_drivers import xl_max_sonar_ez
 
@@ -11,6 +11,6 @@ def test_analog_sensor(wpimock):
     from robotpy_ext.common_drivers import xl_max_sonar_ez
 
     analog = xl_max_sonar_ez.MaxSonarEZAnalog(1)
-    analog.analog.getVoltage.return_value = 1 * 0.0049 * 2.54
+    analog.analog.get_voltage.return_value = 1 * 0.0049 * 2.54
 
     assert analog.get() == 1

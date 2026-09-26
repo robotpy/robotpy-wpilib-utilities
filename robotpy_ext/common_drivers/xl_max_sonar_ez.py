@@ -6,8 +6,7 @@ some of the methods
 
 import wpilib
 
-from . import driver_base
-from . import units
+from . import driver_base, units
 
 
 class MaxSonarEZPulseWidth(driver_base.DriverBase):
@@ -36,7 +35,7 @@ class MaxSonarEZPulseWidth(driver_base.DriverBase):
 
     def get(self):
         """Return the current sonar sensor reading, in the units specified from the constructor"""
-        inches = self.duty_cycle.getHighTime() / 0.000147
+        inches = self.duty_cycle.get_high_time() / 0.000147
         return units.convert(units.inch, self.output_units, inches)
 
 
@@ -68,5 +67,5 @@ class MaxSonarEZAnalog(driver_base.DriverBase):
 
     def get(self):
         """Return the current sonar sensor reading, in the units specified from the constructor"""
-        centimeters = self.analog.getVoltage() / 0.0049
+        centimeters = self.analog.get_voltage() / 0.0049
         return units.convert(units.centimeter, self.output_units, centimeters)

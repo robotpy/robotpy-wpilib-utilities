@@ -1,9 +1,9 @@
 # TODO: remove this once WPILib is public, and use the real thing
 
 import sys
+from unittest.mock import MagicMock
 
 import pytest
-from unittest.mock import MagicMock
 
 
 def pytest_runtest_setup():
@@ -28,14 +28,14 @@ def wpitime():
     class FakeTime:
         def step(self, seconds):
             delta = int(seconds * 1000000)
-            hal.simulation.stepTimingAsync(delta)
+            hal.simulation.step_timing_async(delta)
 
-    hal.simulation.pauseTiming()
-    hal.simulation.restartTiming()
+    hal.simulation.pause_timing()
+    hal.simulation.restart_timing()
 
     yield FakeTime()
 
-    hal.simulation.resumeTiming()
+    hal.simulation.resume_timing()
 
 
 @pytest.fixture(scope="function")
@@ -45,7 +45,7 @@ def hal(wpitime):
     yield
 
     # Reset the HAL handles
-    hal.simulation.resetGlobalHandles()
+    hal.simulation.reset_global_handles()
 
     # Reset the HAL data
-    hal.simulation.resetAllSimData()
+    hal.simulation.reset_all_sim_data()

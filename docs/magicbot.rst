@@ -8,7 +8,7 @@ magicbot module
 
 .. automodule:: magicbot.magicrobot
     :members:
-    :exclude-members: autonomous, disabled, members, operatorControl, robotInit, test
+    :exclude-members: autonomous, robot_init
     :show-inheritance:
 
 Component

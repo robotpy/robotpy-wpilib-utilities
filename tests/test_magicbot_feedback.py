@@ -68,14 +68,14 @@ class Robot(magicbot.MagicRobot):
     basic: BasicComponent
     type_hinted: TypeHintedComponent
 
-    def createObjects(self):
+    def create_objects(self):
         pass
 
 
 def test_feedbacks_with_type_hints():
     robot = Robot()
-    robot.robotInit()
-    nt = ntcore.NetworkTableInstance.getDefault().getTable("components")
+    robot.robot_init()
+    nt = ntcore.NetworkTableInstance.get_default().get_table("components")
 
     robot._do_periodics()
 
@@ -90,20 +90,20 @@ def test_feedbacks_with_type_hints():
         ("type_hinted/ints", "int[]", [0]),
         ("type_hinted/empty_strings", "string[]", []),
     ):
-        topic = nt.getTopic(name)
-        assert topic.getTypeString() == type_str
-        assert topic.genericSubscribe().get().value() == value
+        topic = nt.get_topic(name)
+        assert topic.get_type_string() == type_str
+        assert topic.generic_subscribe().get().value() == value
 
-    assert nt.getTopic("type_hinted/float").getProperty("unit") == "seconds"
-    assert nt.getTopic("type_hinted/distance").getProperty("units") == "meters"
-    assert nt.getTopic("type_hinted/velocity").getProperty("unit") == "m/s"
+    assert nt.get_topic("type_hinted/float").get_property("unit") == "seconds"
+    assert nt.get_topic("type_hinted/distance").get_property("units") == "meters"
+    assert nt.get_topic("type_hinted/velocity").get_property("unit") == "m/s"
 
     for name, value in [
         ("type_hinted/rotation", geometry.Rotation2d()),
     ]:
         struct_type = type(value)
-        assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}"
-        topic = nt.getStructTopic(name, struct_type)
+        assert nt.get_topic(name).get_type_string() == f"struct:{struct_type.__name__}"
+        topic = nt.get_struct_topic(name, struct_type)
         assert topic.subscribe(None).get() == value
 
     for name, struct_type, value in (
@@ -114,6 +114,8 @@ def test_feedbacks_with_type_hints():
             [geometry.Rotation2d(), geometry.Rotation2d()],
         ),
     ):
-        assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}[]"
-        topic = nt.getStructArrayTopic(name, struct_type)
+        assert (
+            nt.get_topic(name).get_type_string() == f"struct:{struct_type.__name__}[]"
+        )
+        topic = nt.get_struct_array_topic(name, struct_type)
         assert topic.subscribe([]).get() == value

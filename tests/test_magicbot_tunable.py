@@ -18,7 +18,7 @@ def test_tunable() -> None:
 
     component = Component()
     setup_tunables(component, "test_tunable")
-    nt = ntcore.NetworkTableInstance.getDefault().getTable("/components/test_tunable")
+    nt = ntcore.NetworkTableInstance.get_default().get_table("/components/test_tunable")
 
     for name, type_str, value in [
         ("an_int", "int", 1),
@@ -26,30 +26,32 @@ def test_tunable() -> None:
         ("ints", "int[]", [0]),
         ("floats", "double[]", [1.0, 2.0]),
     ]:
-        topic = nt.getTopic(name)
-        assert topic.getTypeString() == type_str
-        assert topic.genericSubscribe().get().value() == value
+        topic = nt.get_topic(name)
+        assert topic.get_type_string() == type_str
+        assert topic.generic_subscribe().get().value() == value
         assert getattr(component, name) == value
 
     assert isinstance(component.an_int, int)
 
-    assert nt.getTopic("an_int").getProperty("units") == "beans"
-    assert nt.getTopic("a_float").getProperty("unit") == "seconds"
+    assert nt.get_topic("an_int").get_property("units") == "beans"
+    assert nt.get_topic("a_float").get_property("unit") == "seconds"
 
     for name, value in [
         ("rotation", geometry.Rotation2d()),
     ]:
         struct_type = type(value)
-        assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}"
-        topic = nt.getStructTopic(name, struct_type)
+        assert nt.get_topic(name).get_type_string() == f"struct:{struct_type.__name__}"
+        topic = nt.get_struct_topic(name, struct_type)
         assert topic.subscribe(None).get() == value
         assert getattr(component, name) == value
 
     for name, struct_type, value in [
         ("rotations", geometry.Rotation2d, [geometry.Rotation2d()]),
     ]:
-        assert nt.getTopic(name).getTypeString() == f"struct:{struct_type.__name__}[]"
-        topic = nt.getStructArrayTopic(name, struct_type)
+        assert (
+            nt.get_topic(name).get_type_string() == f"struct:{struct_type.__name__}[]"
+        )
+        topic = nt.get_struct_array_topic(name, struct_type)
         assert topic.subscribe([]).get() == value
         assert getattr(component, name) == value
 
@@ -84,8 +86,8 @@ def test_type_hinted_empty_sequences() -> None:
 
     component = Component()
     setup_tunables(component, "test_type_hinted_sequences")
-    NetworkTables = ntcore.NetworkTableInstance.getDefault()
-    nt = NetworkTables.getTable("/components/test_type_hinted_sequences")
+    NetworkTables = ntcore.NetworkTableInstance.get_default()
+    nt = NetworkTables.get_table("/components/test_type_hinted_sequences")
 
     for name in [
         "generic_seq",
@@ -98,7 +100,7 @@ def test_type_hinted_empty_sequences() -> None:
         "class_var_list",
         "inst_list",
     ]:
-        assert nt.getTopic(name).getTypeString() == "int[]"
-        entry = nt.getEntry(name)
-        assert entry.getIntegerArray(None) == []
+        assert nt.get_topic(name).get_type_string() == "int[]"
+        entry = nt.get_entry(name)
+        assert entry.get_integer_array(None) == []
         assert getattr(component, name) == []

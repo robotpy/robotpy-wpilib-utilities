@@ -25,12 +25,12 @@ def test_all_autonomous(control: RobotTestController):
 
         # retrieve autonomous modes from chooser here
         chooser = ChooserControl("Autonomous Mode")
-        choices = chooser.getChoices()
+        choices = chooser.get_choices()
         if len(choices) == 0:
             return
 
         for choice in choices:
-            chooser.setSelected(choice)
+            chooser.set_selected(choice)
             logger.info(f"{'='*10} Testing '{choice}' {'='*10}")
 
             # Run disabled for a short period

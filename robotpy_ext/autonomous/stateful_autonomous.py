@@ -232,8 +232,8 @@ class StatefulAutonomous:
             for k, v in components.items():
                 setattr(self, k, v)
 
-        NetworkTables = ntcore.NetworkTableInstance.getDefault()
-        self.__table = NetworkTables.getTable("SmartDashboard")
+        NetworkTables = ntcore.NetworkTableInstance.get_default()
+        self.__table = NetworkTables.get_table("SmartDashboard")
         self.__sd_args = []
 
         self.__build_states()
@@ -274,7 +274,7 @@ class StatefulAutonomous:
             name = f"{name}|{vmin:0.3f}|{vmax:0.3f}"
 
         self.__tunables.append(name)
-        self.__table.putStringArray(self.MODE_NAME + "_tunables", self.__tunables)
+        self.__table.put_string_array(self.MODE_NAME + "_tunables", self.__tunables)
 
     def __register_sd_var_internal(self, name, default, add_prefix, readback):
         if " " in name:
@@ -289,17 +289,17 @@ class StatefulAutonomous:
             sd_name = f"{self.MODE_NAME}\\{name}"
 
         if isinstance(default, bool):
-            self.__table.putBoolean(sd_name, default)
-            args = (name, sd_name, self.__table.getBoolean, default)
+            self.__table.put_boolean(sd_name, default)
+            args = (name, sd_name, self.__table.get_boolean, default)
 
         elif isinstance(default, int) or isinstance(default, float):
-            self.__table.putNumber(sd_name, default)
-            args = (name, sd_name, self.__table.getNumber, default)
+            self.__table.put_number(sd_name, default)
+            args = (name, sd_name, self.__table.get_number, default)
             is_number = True
 
         elif isinstance(default, str):
-            self.__table.putString(sd_name, default)
-            args = (name, sd_name, self.__table.getString, default)
+            self.__table.put_string(sd_name, default)
+            args = (name, sd_name, self.__table.get_string, default)
 
         else:
             raise ValueError("Invalid default value")
@@ -353,11 +353,11 @@ class StatefulAutonomous:
 
         sorted_states = sorted(states.items())
 
-        self.__table.putStringArray(
+        self.__table.put_string_array(
             self.MODE_NAME + "_durations", [name for _, (name, desc) in sorted_states]
         )
 
-        self.__table.putStringArray(
+        self.__table.put_string_array(
             self.MODE_NAME + "_descriptions",
             [desc for _, (name, desc) in sorted_states],
         )
@@ -395,7 +395,7 @@ class StatefulAutonomous:
 
         # print out the details of this autonomous mode, and any tunables
 
-        self.battery_voltage = wpilib.RobotController.getBatteryVoltage()
+        self.battery_voltage = wpilib.RobotController.get_battery_voltage()
         logger.info("Battery voltage: %.02fv", self.battery_voltage)
 
         logger.info("Tunable values:")
