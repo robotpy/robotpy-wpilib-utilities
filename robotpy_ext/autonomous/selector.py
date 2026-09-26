@@ -208,9 +208,6 @@ class AutonomousModeSelector:
         # must publish after setting up objects
         tunables.publish("Autonomous Mode", self.chooser)
 
-        # XXX: Compatibility with the FRC dashboard
-        telemetry.log("Auto List", str(mode_names))
-
         logger.info("Autonomous switcher initialized")
 
     def end_competition(self):
