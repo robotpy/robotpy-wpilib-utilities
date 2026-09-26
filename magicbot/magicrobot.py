@@ -9,6 +9,7 @@ from typing import Any, Callable
 import hal
 import toposort
 import wpilib
+import telemetry
 from ntcore import NetworkTableInstance
 
 from robotpy_ext.autonomous import AutonomousModeSelector
@@ -42,7 +43,7 @@ class MagicRobot(wpilib.RobotBase):
     MagicRobot will set the following NetworkTables variables
     automatically:
 
-    - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'test'
+    - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'utility'
     - ``/robot/is_simulation``: True/False
     - ``/robot/is_ds_attached``: True/False
 
@@ -78,7 +79,6 @@ class MagicRobot(wpilib.RobotBase):
 
         # cache these
         self.__is_ds_attached = wpilib.RobotState.is_ds_attached
-        self.__sd_update = wpilib.SmartDashboard.update_values
 
     def simulation_init(self) -> None:
         """Robot-wide simulation initialization code should go here.
@@ -258,11 +258,9 @@ class MagicRobot(wpilib.RobotBase):
         You may use it for any code you need to run
         during all modes of the robot (e.g NetworkTables updates)
 
-        The default implementation will update SmartDashboard
+        By default this method does nothing.
         """
-        watchdog = self.watchdog
-        self.__sd_update()
-        watchdog.add_epoch("SmartDashboard")
+        pass
 
     def on_exception(self, force_report: bool = False) -> None:
         """
@@ -368,7 +366,7 @@ class MagicRobot(wpilib.RobotBase):
             elif word.is_autonomous():
                 self.autonomous()
             elif word.is_utility():
-                self._test()
+                self._utility()
             else:
                 self._operator_control()
 
@@ -425,7 +423,7 @@ class MagicRobot(wpilib.RobotBase):
             self.disabled_init()
         except:
             self.on_exception(force_report=True)
-        watchdog.add_epoch("disabledInit()")
+        watchdog.add_epoch("disabled_init()")
 
         refresh_data = wpilib.DriverStationBackend.refresh_data
         DSControlWord = wpilib.DriverStationBackend.get_control_word
@@ -446,7 +444,7 @@ class MagicRobot(wpilib.RobotBase):
                     self.disabled_periodic()
                 except:
                     self.on_exception()
-                watchdog.add_epoch("disabledPeriodic()")
+                watchdog.add_epoch("disabled_periodic()")
 
                 self._do_periodics()
                 # watchdog.disable()
@@ -478,7 +476,7 @@ class MagicRobot(wpilib.RobotBase):
             self.teleop_init()
         except:
             self.on_exception(force_report=True)
-        watchdog.add_epoch("teleopInit()")
+        watchdog.add_epoch("teleop_init()")
 
         observe = hal.observe_user_program
         refresh_data = wpilib.DriverStationBackend.refresh_data
@@ -496,7 +494,7 @@ class MagicRobot(wpilib.RobotBase):
                     self.teleop_periodic()
                 except:
                     self.on_exception()
-                watchdog.add_epoch("teleopPeriodic()")
+                watchdog.add_epoch("teleop_periodic()")
 
                 self._enabled_periodic()
                 # watchdog.disable()
@@ -505,12 +503,12 @@ class MagicRobot(wpilib.RobotBase):
                 delay.wait()
                 watchdog.reset()
 
-    def _test(self) -> None:
-        """Called when the robot is in test mode"""
+    def _utility(self) -> None:
+        """Called when the robot is in utility mode"""
         watchdog = self.watchdog
         watchdog.reset()
 
-        self.__nt_put_mode("test")
+        self.__nt_put_mode("utility")
         self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
         # initialize things
@@ -520,7 +518,7 @@ class MagicRobot(wpilib.RobotBase):
             self.utility_init()
         except:
             self.on_exception(force_report=True)
-        watchdog.add_epoch("testInit()")
+        watchdog.add_epoch("utility_init()")
 
         refresh_data = wpilib.DriverStationBackend.refresh_data
         DSControlWord = wpilib.DriverStationBackend.get_control_word
@@ -537,7 +535,7 @@ class MagicRobot(wpilib.RobotBase):
                     self.utility_periodic()
                 except:
                     self.on_exception()
-                watchdog.add_epoch("testPeriodic()")
+                watchdog.add_epoch("utility_periodic()")
 
                 self._do_periodics()
                 # watchdog.disable()
