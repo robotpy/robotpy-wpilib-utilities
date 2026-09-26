@@ -210,7 +210,10 @@ class AutonomousModeSelector:
         logger.info("Autonomous switcher initialized")
 
     def end_competition(self):
-        """Call this function when your robot's endCompetition function is called"""
+        """
+        If you use :meth:`run`, call this method in your robot's
+        ``end_competition`` method.
+        """
         self.robot_exit = True
 
     def run(
@@ -235,7 +238,7 @@ class AutonomousModeSelector:
         :param iter_fn: Called at the end of every iteration while
                         autonomous mode is executing
         :param on_exception: Called when an uncaught exception is raised,
-                             must take a single keyword arg "forceReport"
+                             must take a single keyword arg "force_report"
         :param watchdog: a WPILib Watchdog to feed every iteration
         """
         if watchdog is not None:
