@@ -425,7 +425,7 @@ class MagicRobot(wpilib.RobotBase):
             self.disabled_init()
         except:
             self.on_exception(force_report=True)
-        watchdog.add_epoch("disabledInit()")
+        watchdog.add_epoch("disabled_init()")
 
         refresh_data = wpilib.DriverStationBackend.refresh_data
         DSControlWord = wpilib.DriverStationBackend.get_control_word
@@ -446,7 +446,7 @@ class MagicRobot(wpilib.RobotBase):
                     self.disabled_periodic()
                 except:
                     self.on_exception()
-                watchdog.add_epoch("disabledPeriodic()")
+                watchdog.add_epoch("disabled_periodic()")
 
                 self._do_periodics()
                 # watchdog.disable()
@@ -478,7 +478,7 @@ class MagicRobot(wpilib.RobotBase):
             self.teleop_init()
         except:
             self.on_exception(force_report=True)
-        watchdog.add_epoch("teleopInit()")
+        watchdog.add_epoch("teleop_init()")
 
         observe = hal.observe_user_program
         refresh_data = wpilib.DriverStationBackend.refresh_data
@@ -496,7 +496,7 @@ class MagicRobot(wpilib.RobotBase):
                     self.teleop_periodic()
                 except:
                     self.on_exception()
-                watchdog.add_epoch("teleopPeriodic()")
+                watchdog.add_epoch("teleop_periodic()")
 
                 self._enabled_periodic()
                 # watchdog.disable()
@@ -520,7 +520,7 @@ class MagicRobot(wpilib.RobotBase):
             self.utility_init()
         except:
             self.on_exception(force_report=True)
-        watchdog.add_epoch("testInit()")
+        watchdog.add_epoch("utility_init()")
 
         refresh_data = wpilib.DriverStationBackend.refresh_data
         DSControlWord = wpilib.DriverStationBackend.get_control_word
@@ -537,7 +537,7 @@ class MagicRobot(wpilib.RobotBase):
                     self.utility_periodic()
                 except:
                     self.on_exception()
-                watchdog.add_epoch("testPeriodic()")
+                watchdog.add_epoch("utility_periodic()")
 
                 self._do_periodics()
                 # watchdog.disable()
