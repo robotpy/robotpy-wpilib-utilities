@@ -59,7 +59,7 @@ class MagicRobot(wpilib.RobotBase):
     #: It is recommended to use this instead of print statements.
     logger = logging.getLogger("robot")
 
-    #: If True, teleopPeriodic will be called in autonomous mode
+    #: If True, teleop_periodic will be called in autonomous mode
     use_teleop_in_autonomous = False
 
     def __init__(self) -> None:
@@ -104,7 +104,7 @@ class MagicRobot(wpilib.RobotBase):
 
     def robot_init(self) -> None:
         """
-        .. warning:: Internal API, don't override; use :meth:`createObjects` instead
+        .. warning:: Internal API, don't override; use :meth:`create_objects` instead
         """
 
         # Create the user's objects and stuff here
@@ -202,7 +202,7 @@ class MagicRobot(wpilib.RobotBase):
         func = self.teleop_periodic.__func__
         if not hasattr(func, "firstRun"):
             self.logger.warning(
-                "Default MagicRobot.teleopPeriodic() method... Override me!"
+                "Default MagicRobot.teleop_periodic() method... Override me!"
             )
             func.firstRun = False
 
@@ -231,7 +231,7 @@ class MagicRobot(wpilib.RobotBase):
         func = self.disabled_periodic.__func__
         if not hasattr(func, "firstRun"):
             self.logger.warning(
-                "Default MagicRobot.disabledPeriodic() method... Override me!"
+                "Default MagicRobot.disabled_periodic() method... Override me!"
             )
             func.firstRun = False
 
@@ -239,7 +239,7 @@ class MagicRobot(wpilib.RobotBase):
         """Initialization code for utility mode should go here.
 
         Users should override this method for initialization code which will be
-        called each time the robot enters disabled mode.
+        called each time the robot enters utility mode.
         """
         pass
 
@@ -410,7 +410,7 @@ class MagicRobot(wpilib.RobotBase):
         """
         This function is called in disabled mode. You should not
         override this function; rather, you should override the
-        :meth:`disabledPeriodic` function instead.
+        :meth:`disabled_periodic` function instead.
 
         .. warning:: Internal API, don't override
         """
@@ -459,7 +459,7 @@ class MagicRobot(wpilib.RobotBase):
         """
         This function is called in teleoperated mode. You should not
         override this function; rather, you should override the
-        :meth:`teleopPeriodics` function instead.
+        :meth:`teleop_periodic` function instead.
 
         .. warning:: Internal API, don't override
         """
