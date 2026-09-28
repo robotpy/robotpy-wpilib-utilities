@@ -6,8 +6,7 @@ import sys
 import subprocess
 
 if __name__ == "__main__":
-    tests_dir = abspath(dirname(__file__))
-    root = dirname(tests_dir)
+    root = abspath(dirname(__file__))
     os.chdir(root)
 
     subprocess.check_call([sys.executable, "-m", "pytest"])

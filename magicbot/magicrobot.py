@@ -10,6 +10,7 @@ import hal
 import toposort
 import wpilib
 import telemetry
+import tunables
 from ntcore import NetworkTableInstance
 
 from robotpy_ext.autonomous import AutonomousModeSelector
@@ -79,6 +80,7 @@ class MagicRobot(wpilib.RobotBase):
 
         # cache these
         self.__is_ds_attached = wpilib.RobotState.is_ds_attached
+        self.__tunables_update = tunables.TunableRegistry.update
 
     def simulation_init(self) -> None:
         """Robot-wide simulation initialization code should go here.
@@ -258,9 +260,11 @@ class MagicRobot(wpilib.RobotBase):
         You may use it for any code you need to run
         during all modes of the robot (e.g NetworkTables updates)
 
-        By default this method does nothing.
+        The default implementation will update WPILib's Tunables (Not to be confused with magicbots)
         """
-        pass
+        watchdog = self.watchdog
+        self.__tunables_update()
+        watchdog.add_epoch("WPI Tunables")
 
     def on_exception(self, force_report: bool = False) -> None:
         """

@@ -4,7 +4,7 @@ import logging
 import os
 from collections.abc import Sequence
 from glob import glob
-from typing import Callable, Union
+from typing import Callable, Union, Any
 
 import hal
 import wpilib
@@ -171,9 +171,7 @@ class AutonomousModeSelector:
         # the user select one using the SmartDashboard.
 
         # Tuneable interface
-        self.chooser = tunables.Selectable[
-            str
-        ]()  # TODO: check type to make sure its correct
+        self.chooser = tunables.Selectable[Any]()
 
         default_modes = []
         mode_names = []
@@ -364,16 +362,7 @@ class AutonomousModeSelector:
     def _on_autonomous_enable(self) -> None:
         """Selects the active autonomous mode and enables it"""
 
-        # XXX: FRC Dashboard compatibility
-        # -> if you set it here, you're stuck using it. The FRC Dashboard
-        #    doesn't seem to have a default (nor will it show a default),
-        #    so the key will only get set if you set it.
-        auto_mode = self.chooser.get_selected()
-        if auto_mode is not None and auto_mode in self.modes:
-            logger.info("Using autonomous mode set by LabVIEW dashboard")
-            self.active_mode = self.modes[auto_mode]
-        else:
-            self.active_mode = self.chooser.get_selected()
+        self.active_mode = self.chooser.get_selected()
 
         if self.active_mode is not None:
             logger.info("Enabling '%s'", self.active_mode.MODE_NAME)
