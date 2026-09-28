@@ -70,7 +70,7 @@ class Toggle:
     ):
         """
         :param joystick: :class:`wpilib.Joystick` that contains the button to toggle
-        :param button: Number of button that will act as toggle. Same value used in `getRawButton()`
+        :param button: Number of button that will act as toggle. Same value used in `get_raw_button()`
         :param debounce_period: Period in seconds to wait before registering a new button press.
         """
 

@@ -369,7 +369,7 @@ class StateMachine:
             ball_pusher: BallPusher
 
             def teleop_periodic(self):
-                if self.joystick.getTrigger():
+                if self.joystick.get_trigger():
                     self.shooter_automation.fire()
 
     This object has a lot of really useful NetworkTables integration as well:

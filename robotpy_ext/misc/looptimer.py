@@ -15,11 +15,10 @@ class LoopTimer:
     Example usage::
 
         class Robot(wpilib.TimedRobot):
-
-            def teleopInit(self):
+            def teleop_init(self):
                 self.loop_timer = LoopTimer(self.logger)
 
-            def teleopPeriodic(self):
+            def teleop_periodic(self):
                 self.loop_timer.measure()
 
     Mainly intended for debugging purposes to measure how much lag.
