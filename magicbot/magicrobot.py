@@ -9,7 +9,6 @@ from typing import Any, Callable
 import hal
 import toposort
 import wpilib
-import telemetry
 import tunables
 from ntcore import NetworkTableInstance
 
@@ -260,11 +259,12 @@ class MagicRobot(wpilib.RobotBase):
         You may use it for any code you need to run
         during all modes of the robot (e.g NetworkTables updates)
 
-        The default implementation will update WPILib's Tunables (Not to be confused with magicbots)
+        The default implementation will update WPILib's Tunables
+        (Not to be confused with Magicbot's which auto updates)
         """
         watchdog = self.watchdog
         self.__tunables_update()
-        watchdog.add_epoch("WPI Tunables")
+        watchdog.add_epoch("TunableRegistry.update()")
 
     def on_exception(self, force_report: bool = False) -> None:
         """

@@ -9,7 +9,6 @@ from typing import Callable, Union, Any
 import hal
 import wpilib
 import tunables
-import telemetry
 
 from ..misc.precise_delay import NotifierDelay
 from ..misc.simple_watchdog import SimpleWatchdog
