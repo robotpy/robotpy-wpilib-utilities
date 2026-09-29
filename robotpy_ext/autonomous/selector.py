@@ -169,7 +169,6 @@ class AutonomousModeSelector:
         # now that we have a bunch of valid autonomous mode objects, let
         # the user select one using the SmartDashboard.
 
-        # Tuneable interface
         self.chooser = tunables.Selectable[Any]()
 
         default_modes = []
