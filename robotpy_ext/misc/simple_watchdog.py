@@ -23,7 +23,7 @@ class SimpleWatchdog:
     """
 
     # Used for timeout print rate-limiting
-    kMinPrintPeriod = 1000000  # us
+    kMinPrintPeriod = 1e9  # ns
 
     def __init__(self, timeout: float):
         """Watchdog constructor.
@@ -32,16 +32,16 @@ class SimpleWatchdog:
         """
         self._get_time = wpilib.RobotController.get_time
 
-        self._startTime = 0  # us
-        self._timeout = int(timeout * 1e6)  # us
-        self._expirationTime = 0  # us
-        self._lastTimeoutPrintTime = 0  # us
-        self._lastEpochsPrintTime = 0  # us
+        self._startTime = 0  # ns
+        self._timeout = int(timeout * 1e9)  # ns
+        self._expirationTime = 0  # ns
+        self._lastTimeoutPrintTime = 0  # ns
+        self._lastEpochsPrintTime = 0  # ns
         self._epochs: list[tuple[str, int]] = []
 
     def get_time(self) -> float:
         """Returns the time in seconds since the watchdog was last fed."""
-        return (self._get_time() - self._startTime) / 1e6
+        return (self._get_time() - self._startTime) / 1e9
 
     def set_timeout(self, timeout: float) -> None:
         """Sets the watchdog's timeout.
@@ -50,14 +50,14 @@ class SimpleWatchdog:
                         resolution.
         """
         self._epochs.clear()
-        timeout = int(timeout * 1e6)  # us
+        timeout = int(timeout * 1e9)  # ns
         self._timeout = timeout
         self._startTime = self._get_time()
         self._expirationTime = self._startTime + timeout
 
     def get_timeout(self) -> float:
         """Returns the watchdog's timeout in seconds."""
-        return self._timeout / 1e6
+        return self._timeout / 1e9
 
     def is_expired(self) -> bool:
         """Returns true if the watchdog timer has expired."""
@@ -84,10 +84,10 @@ class SimpleWatchdog:
         ):
             self._lastEpochsPrintTime = now
             prev = self._startTime
-            logger.warning("Watchdog not fed after %.6fs", (now - prev) / 1e6)
+            logger.warning("Watchdog not fed after %.6fs", (now - prev) / 1e9)
             epoch_logs = []
             for key, value in self._epochs:
-                time = (value - prev) / 1e6
+                time = (value - prev) / 1e9
                 epoch_logs.append(f"\t{key}: {time:.6f}")
                 prev = value
             logger.info("Epochs:\n%s", "\n".join(epoch_logs))

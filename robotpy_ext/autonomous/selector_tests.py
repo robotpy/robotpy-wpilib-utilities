@@ -1,6 +1,6 @@
 import logging
 
-from ntcore.util import ChooserControl
+from ntcore.util import SelectableControl
 from wpilib.testing.controller import RobotTestController
 
 autonomous_seconds = 15
@@ -24,7 +24,7 @@ def test_all_autonomous(control: RobotTestController):
         control.step_timing(seconds=0.5, autonomous=True, enabled=False)
 
         # retrieve autonomous modes from chooser here
-        chooser = ChooserControl("Autonomous Mode")
+        chooser = SelectableControl("Autonomous Mode")
         choices = chooser.get_choices()
         if len(choices) == 0:
             return

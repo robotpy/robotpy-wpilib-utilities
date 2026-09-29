@@ -9,6 +9,7 @@ from typing import Any, Callable
 import hal
 import toposort
 import wpilib
+import tunables
 from ntcore import NetworkTableInstance
 
 from robotpy_ext.autonomous import AutonomousModeSelector
@@ -42,7 +43,7 @@ class MagicRobot(wpilib.RobotBase):
     MagicRobot will set the following NetworkTables variables
     automatically:
 
-    - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'test'
+    - ``/robot/mode``: one of 'disabled', 'auto', 'teleop', or 'utility'
     - ``/robot/is_simulation``: True/False
     - ``/robot/is_ds_attached``: True/False
 
@@ -78,7 +79,7 @@ class MagicRobot(wpilib.RobotBase):
 
         # cache these
         self.__is_ds_attached = wpilib.RobotState.is_ds_attached
-        self.__sd_update = wpilib.SmartDashboard.update_values
+        self.__tunables_update = tunables.TunableRegistry.update
 
     def simulation_init(self) -> None:
         """Robot-wide simulation initialization code should go here.
@@ -258,11 +259,12 @@ class MagicRobot(wpilib.RobotBase):
         You may use it for any code you need to run
         during all modes of the robot (e.g NetworkTables updates)
 
-        The default implementation will update SmartDashboard
+        The default implementation will update WPILib's Tunables
+        (Not to be confused with Magicbot's which auto updates)
         """
         watchdog = self.watchdog
-        self.__sd_update()
-        watchdog.add_epoch("SmartDashboard")
+        self.__tunables_update()
+        watchdog.add_epoch("TunableRegistry.update()")
 
     def on_exception(self, force_report: bool = False) -> None:
         """
@@ -368,7 +370,7 @@ class MagicRobot(wpilib.RobotBase):
             elif word.is_autonomous():
                 self.autonomous()
             elif word.is_utility():
-                self._test()
+                self._utility()
             else:
                 self._operator_control()
 
@@ -505,12 +507,12 @@ class MagicRobot(wpilib.RobotBase):
                 delay.wait()
                 watchdog.reset()
 
-    def _test(self) -> None:
-        """Called when the robot is in test mode"""
+    def _utility(self) -> None:
+        """Called when the robot is in utility mode"""
         watchdog = self.watchdog
         watchdog.reset()
 
-        self.__nt_put_mode("test")
+        self.__nt_put_mode("utility")
         self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
         # initialize things

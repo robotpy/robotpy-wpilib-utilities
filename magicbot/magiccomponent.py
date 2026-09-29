@@ -50,7 +50,7 @@ class MagicComponent(Protocol):
 
     def on_enable(self) -> None:
         """
-        Called when the robot enters autonomous, teleoperated or test mode mode. This
+        Called when the robot enters autonomous, teleoperated or utility mode mode. This
         function should initialize your component to a "safe" state so
         that unexpected things don't happen when enabling the robot.
 

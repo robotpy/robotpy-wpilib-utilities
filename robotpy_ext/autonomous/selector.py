@@ -4,10 +4,11 @@ import logging
 import os
 from collections.abc import Sequence
 from glob import glob
-from typing import Callable, Union
+from typing import Callable, Union, Any
 
 import hal
 import wpilib
+import tunables
 
 from ..misc.precise_delay import NotifierDelay
 from ..misc.simple_watchdog import SimpleWatchdog
@@ -168,8 +169,7 @@ class AutonomousModeSelector:
         # now that we have a bunch of valid autonomous mode objects, let
         # the user select one using the SmartDashboard.
 
-        # SmartDashboard interface
-        self.chooser = wpilib.SendableChooser()
+        self.chooser = tunables.Selectable[Any]()
 
         default_modes = []
         mode_names = []
@@ -178,21 +178,21 @@ class AutonomousModeSelector:
         for k, v in sorted(self.modes.items()):
             if getattr(v, "DEFAULT", False):
                 logger.info(" -> %s [Default]", k)
-                self.chooser.set_default_option(k, v)
+                self.chooser.add_default(k, v)
                 default_modes.append(k)
             else:
                 logger.info(" -> %s", k)
-                self.chooser.add_option(k, v)
+                self.chooser.add(k, v)
 
             mode_names.append(k)
 
         if len(self.modes) == 0:
             logger.warning("-- no autonomous modes were loaded!")
 
-        self.chooser.add_option("None", None)
+        self.chooser.add("None", None)
 
         if len(default_modes) == 0:
-            self.chooser.set_default_option("None", None)
+            self.chooser.set_default("None")
         elif len(default_modes) != 1:
             if not wpilib.RobotState.is_fms_attached():
                 raise RuntimeError(
@@ -201,11 +201,8 @@ class AutonomousModeSelector:
                     )
                 )
 
-        # must PutData after setting up objects
-        wpilib.SmartDashboard.put_data("Autonomous Mode", self.chooser)
-
-        # XXX: Compatibility with the FRC dashboard
-        wpilib.SmartDashboard.put_string_array("Auto List", mode_names)
+        # must publish after setting up objects
+        tunables.publish("Autonomous Mode", self.chooser)
 
         logger.info("Autonomous switcher initialized")
 
@@ -363,16 +360,7 @@ class AutonomousModeSelector:
     def _on_autonomous_enable(self) -> None:
         """Selects the active autonomous mode and enables it"""
 
-        # XXX: FRC Dashboard compatibility
-        # -> if you set it here, you're stuck using it. The FRC Dashboard
-        #    doesn't seem to have a default (nor will it show a default),
-        #    so the key will only get set if you set it.
-        auto_mode = wpilib.SmartDashboard.get_string("Auto Selector", None)
-        if auto_mode is not None and auto_mode in self.modes:
-            logger.info("Using autonomous mode set by LabVIEW dashboard")
-            self.active_mode = self.modes[auto_mode]
-        else:
-            self.active_mode = self.chooser.get_selected()
+        self.active_mode = self.chooser.get_selected()
 
         if self.active_mode is not None:
             logger.info("Enabling '%s'", self.active_mode.MODE_NAME)
