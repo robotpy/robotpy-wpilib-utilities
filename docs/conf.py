@@ -44,16 +44,8 @@ project = "RobotPy WPILib Utilities"
 copyright = "2015, RobotPy development team"
 
 intersphinx_mapping = {
-    "commandsv1": (
-        f"https://robotpy.readthedocs.io/projects/commands-v1/en/{rtd_version}/",
-        None,
-    ),
-    "networktables": (
-        f"https://robotpy.readthedocs.io/projects/pynetworktables/en/{rtd_version}/",
-        None,
-    ),
     "wpilib": (
-        f"https://robotpy.readthedocs.io/projects/wpilib/en/{rtd_version}/",
+        f"https://robotpy.readthedocs.io/projects/robotpy/en/{rtd_version}/",
         None,
     ),
 }
