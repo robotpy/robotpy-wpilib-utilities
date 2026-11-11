@@ -1,7 +1,7 @@
 import inspect
 import logging
 import typing
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ class MagicInjectError(ValueError):
 
 
 def get_injection_requests(
-    type_hints: dict[str, type], cname: str, component: Optional[Any] = None
+    type_hints: dict[str, type], cname: str, component: Any | None = None
 ) -> dict[str, type]:
     """
     Given a dict of type hints, filter it to the requested injection types.

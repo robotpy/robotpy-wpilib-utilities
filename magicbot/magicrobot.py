@@ -4,15 +4,17 @@ import logging
 import sys
 import types
 import typing
-from typing import Any, Callable
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 import hal
 import toposort
-import wpilib
 import tunables
+import wpilib
+import wpiutil
 from ntcore import NetworkTableInstance
 
-from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.misc import NotifierDelay
 from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 
@@ -25,6 +27,13 @@ __all__ = ["MagicRobot"]
 
 class MagicInjectError(ValueError):
     pass
+
+
+_MODE_NAMES = {
+    hal.RobotMode.AUTONOMOUS: "auto",
+    hal.RobotMode.TELEOPERATED: "teleop",
+    hal.RobotMode.UTILITY: "utility",
+}
 
 
 class MagicRobot(wpilib.RobotBase):
@@ -63,6 +72,10 @@ class MagicRobot(wpilib.RobotBase):
     #: If True, teleop_periodic will be called in autonomous mode
     use_teleop_in_autonomous = False
 
+    #: If True, decorated OpModes are automatically discovered, registered,
+    #: and published to the Driver Station
+    opmode_auto_discover = True
+
     def __init__(self) -> None:
         super().__init__()
         hal.report_usage("Framework", "Magicbot")
@@ -74,6 +87,18 @@ class MagicRobot(wpilib.RobotBase):
         self._components: list[tuple[str, Any]] = []
         self._feedbacks: list[tuple[Callable[[], Any], Callable[[Any], Any]]] = []
         self._reset_components: list[tuple[dict[str, Any], Any]] = []
+
+        # opmode id -> (name, class)
+        self.__opmodes: dict[int, tuple[str, type]] = {}
+
+        # opmode lifecycle state
+        self.__last_mode_id = -1
+        self.__last_enabled_state = False
+
+        self.__opmode: wpilib.OpMode | None = None
+        self.__opmode_name = ""
+        self.__opmode_started = False
+        self.__opmode_injectables: dict[str, Any] = {}
 
         self.__done = False
 
@@ -89,14 +114,12 @@ class MagicRobot(wpilib.RobotBase):
         started. It will be called exactly one time after the robot class
         constructor is called only when the robot is in simulation.
         """
-        pass
 
     def simulation_periodic(self) -> None:
         """Periodic simulation code should go here.
 
         This function is called in a simulated robot after user code executes.
         """
-        pass
 
     def __simulation_periodic(self) -> None:
         hal.sim_periodic_before()
@@ -111,19 +134,24 @@ class MagicRobot(wpilib.RobotBase):
         # Create the user's objects and stuff here
         self.create_objects()
 
-        # Load autonomous modes
-        self._automodes = AutonomousModeSelector("autonomous")
-
         # Next, create the robot components and wire them together
         self._create_components()
+
+        # Register the OpModes and make them visible to the driver station
+        if self.opmode_auto_discover:
+            self._discover_opmodes()
+        self.publish_opmodes()
 
         self.__nt = NetworkTableInstance.get_default().get_table("/robot")
 
         self.__nt_put_is_ds_attached = self.__nt.get_entry("is_ds_attached").set_boolean
         self.__nt_put_mode = self.__nt.get_entry("mode").set_string
+        self.__nt_put_opmode = self.__nt.get_entry("opmode").set_string
 
         self.__nt.put_boolean("is_simulation", self.is_simulation())
         self.__nt_put_is_ds_attached(self.__is_ds_attached())
+        self.__nt_put_mode("disabled")
+        self.__nt_put_opmode("")
 
         self.watchdog = SimpleWatchdog(self.control_loop_wait_time)
 
@@ -158,55 +186,6 @@ class MagicRobot(wpilib.RobotBase):
         """
         raise NotImplementedError
 
-    def autonomous_init(self) -> None:
-        """Initialization code for autonomous mode may go here.
-
-        Users may override this method for initialization code which
-        will be called each time the robot enters autonomous mode,
-        regardless of the selected autonomous mode.
-
-        This can be useful for code that must be run at the beginning of a match.
-
-        .. note::
-
-           This method is called after every component's ``on_enable`` method,
-           but before the selected autonomous mode's ``on_enable`` method.
-        """
-        pass
-
-    def teleop_init(self) -> None:
-        """
-        Initialization code for teleop control code may go here.
-
-        Users may override this method for initialization code which will be
-        called each time the robot enters teleop mode.
-
-        .. note:: The ``on_enable`` functions of all components are called
-                  before this function is called.
-        """
-        pass
-
-    def teleop_periodic(self):
-        """
-        Periodic code for teleop mode should go here.
-
-        Users should override this method for code which will be called
-        periodically at a regular rate while the robot is in teleop mode.
-
-        This code executes before the ``execute`` functions of all
-        components are called.
-
-        .. note:: If you want this function to be called in autonomous
-                  mode, set ``use_teleop_in_autonomous`` to True in your
-                  robot class.
-        """
-        func = self.teleop_periodic.__func__
-        if not hasattr(func, "firstRun"):
-            self.logger.warning(
-                "Default MagicRobot.teleop_periodic() method... Override me!"
-            )
-            func.firstRun = False
-
     def disabled_init(self) -> None:
         """
         Initialization code for disabled mode may go here.
@@ -217,7 +196,6 @@ class MagicRobot(wpilib.RobotBase):
         .. note:: The ``on_disable`` functions of all components are called
                   before this function is called.
         """
-        pass
 
     def disabled_periodic(self):
         """
@@ -236,17 +214,29 @@ class MagicRobot(wpilib.RobotBase):
             )
             func.firstRun = False
 
-    def utility_init(self) -> None:
-        """Initialization code for utility mode should go here.
-
-        Users should override this method for initialization code which will be
-        called each time the robot enters utility mode.
+    def disabled_exit(self) -> None:
         """
-        pass
+        Code that runs once when the robot exits disabled mode may go here.
 
-    def utility_periodic(self) -> None:
-        """Periodic code for utility mode should go here."""
-        pass
+        This is called before the selected OpMode is started.
+        """
+
+    def none_periodic(self) -> None:
+        """
+        Periodic code for when no OpMode is selected may go here.
+
+        This is called periodically at a regular rate while no OpMode is
+        selected, including when the Driver Station is disconnected.
+        """
+
+    def driver_station_connected(self) -> None:
+        """
+        Code that needs to know the DS state should go here.
+
+        Users may override this method for initialization that needs to occur
+        after the DS is connected, such as needing the alliance information.
+        This is called once, when the DS first connects.
+        """
 
     def robot_periodic(self) -> None:
         """
@@ -362,191 +352,331 @@ class MagicRobot(wpilib.RobotBase):
         # Tell the DS the robot is ready to be enabled
         hal.observe_user_program_starting()
 
-        while not self.__done:
-            word = wpilib.DriverStationBackend.get_control_word()
-
-            if not word.is_enabled():
-                self._disabled()
-            elif word.is_autonomous():
-                self.autonomous()
-            elif word.is_utility():
-                self._utility()
-            else:
-                self._operator_control()
+        with NotifierDelay(self.control_loop_wait_time) as delay:
+            while not self.__done:
+                self._loop_func()
+                delay.wait()
 
     def end_competition(self) -> None:
         self.__done = True
-        self._automodes.end_competition()
 
-    def autonomous(self) -> None:
-        """
-        MagicRobot will do The Right Thing and automatically load all
-        autonomous mode routines defined in the autonomous folder.
+    def _loop_func(self):
+        watchdog = self.watchdog
+        watchdog.reset()
 
-        .. warning:: Internal API, don't override
-        """
+        wpilib.DriverStationBackend.refresh_data()
+        word = wpilib.DriverStationBackend.get_control_word()
 
-        self.__nt_put_mode("auto")
+        enabled = word.is_enabled()
+        ds_attached = word.is_ds_attached()
+        mode_id = word.get_opmode_id() if ds_attached else 0
+
+        mode_changed = mode_id != self.__last_mode_id
+        self.__last_mode_id = mode_id
+
+        # Opmode change
+        if mode_changed and self.__opmode:
+            self._end_opmode()
+
+        # setup new opmode
+        just_created_opmode = False
+        if mode_changed and mode_id != 0 and self.__opmode is None:
+            entry = self.__opmodes.get(mode_id)
+            if entry is None:
+                wpilib.report_error(f"No opmodes found for mode {mode_id}")
+            else:
+                opmode = self._create_opmode(*entry)
+                if opmode is not None:
+                    self.__opmode_disabled_periodic(opmode)
+                    just_created_opmode = True
+
+        just_called_disabled_init = False
+        if self.__last_enabled_state != enabled:
+            if enabled:
+                self.disabled_exit()
+                watchdog.add_epoch("disabled_exit()")
+            else:
+                # Transitioning to disabled. Only tear down an opmode that was actually
+                # running; a freshly selected opmode entering its disabled phase must
+                # persist so it can be started on the next enable.
+                if self.__opmode is not None:
+                    self._end_opmode()
+                    self.__last_mode_id = -1
+                self.disabled_init()
+                watchdog.add_epoch("disabled_init()")
+            self.__last_enabled_state = enabled
+
+        # Start the opmode if enabled and not already started. This single check
+        # covers both the disabled->enabled transition and an opmode constructed
+        # while the robot is already enabled.
+        opmode = self.__opmode
+        if enabled and opmode is not None and not self.__opmode_started:
+            self._start_opmode(opmode, word.get_robot_mode())
+
+        opmode = self.__opmode
+        if opmode is not None and self.__opmode_started:
+            try:
+                opmode.periodic()
+            except:
+                self.on_exception()
+            watchdog.add_epoch("opmode.periodic()")
+
+            self._enabled_periodic()
+        else:
+            if not enabled:
+                if not just_called_disabled_init:
+                    try:
+                        self.disabled_periodic()
+                    except:
+                        self.on_exception()
+                    watchdog.add_epoch("disabled_periodic()")
+
+                if opmode is not None and not just_created_opmode:
+                    self.__opmode_disabled_periodic(opmode)
+
+            if mode_id == 0:
+                try:
+                    self.none_periodic()
+                except:
+                    self.on_exception()
+                watchdog.add_epoch("none_periodic()")
+
+            self._do_periodics()
+
+        hal.observe_user_program(word.get_value())
+
+        # watchdog.disable()
+        watchdog.print_if_expired()
+
+    def _start_opmode(self, opmode: wpilib.OpMode, robot_mode: hal.RobotMode) -> None:
+        self.logger.info("Starting OpMode %s", self.__opmode_name)
+
+        self.__nt_put_mode(_MODE_NAMES.get(robot_mode, "unknown"))
+        self.__nt_put_opmode(self.__opmode_name)
         self.__nt_put_is_ds_attached(self.__is_ds_attached())
 
+        self.__opmode_started = True
+
+        # initialize things
         self._on_mode_enable_components()
+        self.watchdog.add_epoch("on_enable")
 
         try:
-            self.autonomous_init()
+            opmode.start()
         except:
             self.on_exception(force_report=True)
+        self.watchdog.add_epoch("opmode.start()")
 
-        auto_functions: tuple[Callable[[], None], ...] = (self._enabled_periodic,)
+    def _end_opmode(self) -> None:
+        opmode = self.__opmode
+        name = self.__opmode_name
+        if opmode is None:
+            return
 
-        if self.use_teleop_in_autonomous:
-            auto_functions = (self.teleop_periodic,) + auto_functions
+        # If the opmode was started, end it
+        if self.__opmode_started:
+            self.logger.info("Ending OpMode %s", name)
+            try:
+                opmode.end()
+            except:
+                self.on_exception(force_report=True)
+            self.watchdog.add_epoch("opmode.end()")
 
-        self._automodes.run(
-            self.control_loop_wait_time,
-            auto_functions,
-            self.on_exception,
-            watchdog=self.watchdog,
+        # regardless of whether the opmode was started, discard it
+        self.__opmode = None
+        self.__opmode_name = ""
+        self.__opmode_started = False
+        self.__nt_put_opmode("")
+
+        close = getattr(opmode, "close", None)
+        if close is not None:
+            try:
+                close()
+            except:
+                self.on_exception(force_report=True)
+
+    def _create_opmode(self, name: str, opmode_cls: type) -> wpilib.OpMode | None:
+        """Creates an opmode instance and performs magic injection on it"""
+        self.logger.info("Creating OpMode %s", name)
+
+        injectables = self.__opmode_injectables
+
+        try:
+            # inject __init__ parameters, if the user defined __init__
+            init = opmode_cls.__init__
+            if inspect.isfunction(init):
+                type_hints = typing.get_type_hints(init)
+                type_hints.pop("return", None)
+                requests = get_injection_requests(type_hints, name)
+                injections = find_injections(requests, injectables, name)
+            else:
+                injections = {}
+
+            opmode = opmode_cls(**injections)
+
+            # inject class variable annotations
+            opmode.logger = logging.getLogger(name)
+            self._setup_vars(name, opmode, injectables)
+            setup_tunables(opmode, name, "opmodes")
+
+            setup = getattr(opmode, "setup", None)
+            if setup is not None:
+                setup()
+
+            if opmode.get_callbacks():
+                self.logger.warning(
+                    "OpMode %s has periodic callbacks, which MagicRobot does not run",
+                    name,
+                )
+        except:
+            self.on_exception(force_report=True)
+            return None
+        finally:
+            self.watchdog.add_epoch("opmode create")
+
+        self.__opmode = opmode
+        self.__opmode_name = name
+        self.__opmode_started = False
+        return opmode
+
+    def __opmode_disabled_periodic(self, opmode: wpilib.OpMode) -> None:
+        try:
+            opmode.disabled_periodic()
+        except:
+            self.on_exception()
+        self.watchdog.add_epoch("opmode.disabled_periodic()")
+
+    def add_opmode(
+        self,
+        opmode_cls: type,
+        mode: hal.RobotMode,
+        name: str = "",
+        group: str = "",
+        description: str = "",
+        text_color: wpiutil.Color | None = None,
+        background_color: wpiutil.Color | None = None,
+    ) -> None:
+        """
+        Adds an operating mode option. It's necessary to call
+        :meth:`publish_opmodes` to make the added modes visible to the
+        driver station. If you call this from :meth:`create_objects`, the
+        modes are published for you.
+
+        The OpMode is constructed each time it is selected on the driver
+        station. Its ``__init__`` parameters and class variable annotations
+        are injected the same way as for components.
+
+        The text_color and background_color parameters are optional, but
+        setting only one has no effect.
+
+        :param opmode_cls: OpMode class; must be a subclass of :class:`wpilib.OpMode`
+        :param mode: robot mode
+        :param name: name of the operating mode; defaults to the class name
+        :param group: group of the operating mode
+        :param description: description of the operating mode
+        :param text_color: text color
+        :param background_color: background color
+        """
+        if not inspect.isclass(opmode_cls) or not issubclass(opmode_cls, wpilib.OpMode):
+            raise TypeError(f"{opmode_cls!r} is not a subclass of wpilib.OpMode")
+
+        if not name:
+            name = opmode_cls.__name__
+
+        if text_color is None or background_color is None:
+            opmode_id = wpilib.RobotState.add_opmode(mode, name, group, description)
+        else:
+            opmode_id = wpilib.RobotState.add_opmode(
+                mode, name, group, description, text_color, background_color
+            )
+
+        if opmode_id == 0:
+            wpilib.report_error(
+                f"Error adding OpMode {opmode_cls.__name__}: duplicate name {name!r}"
+            )
+            return
+
+        self.__opmodes[opmode_id] = (name, opmode_cls)
+        self.logger.info(
+            "-> OpMode %s (%s, class: %s)", name, mode.name, opmode_cls.__name__
         )
+        self.publish_opmodes()
 
-    def _disabled(self) -> None:
+    def remove_opmode(self, mode: hal.RobotMode, name: str) -> None:
         """
-        This function is called in disabled mode. You should not
-        override this function; rather, you should override the
-        :meth:`disabled_periodic` function instead.
+        Removes an operating mode option. It's necessary to call
+        :meth:`publish_opmodes` to make the removed mode no longer visible
+        to the driver station.
 
-        .. warning:: Internal API, don't override
+        :param mode: robot mode
+        :param name: name of the operating mode
         """
-        watchdog = self.watchdog
-        watchdog.reset()
+        opmode_id = wpilib.RobotState.remove_opmode(mode, name)
+        if opmode_id != 0:
+            self.__opmodes.pop(opmode_id, None)
 
-        self.__nt_put_mode("disabled")
-        ds_attached = None
+    def publish_opmodes(self) -> None:
+        """Publishes the operating mode options to the driver station."""
+        wpilib.RobotState.publish_opmodes()
 
-        self._on_mode_disable_components()
-        try:
-            self.disabled_init()
-        except:
-            self.on_exception(force_report=True)
-        watchdog.add_epoch("disabled_init()")
-
-        refresh_data = wpilib.DriverStationBackend.refresh_data
-        DSControlWord = wpilib.DriverStationBackend.get_control_word
-
-        with NotifierDelay(self.control_loop_wait_time) as delay:
-            while not self.__done:
-                refresh_data()
-                cw = DSControlWord()
-                if cw.is_enabled():
-                    break
-
-                if ds_attached != cw.is_ds_attached():
-                    ds_attached = not ds_attached
-                    self.__nt_put_is_ds_attached(ds_attached)
-
-                hal.observe_user_program(cw.get_value())
-                try:
-                    self.disabled_periodic()
-                except:
-                    self.on_exception()
-                watchdog.add_epoch("disabled_periodic()")
-
-                self._do_periodics()
-                # watchdog.disable()
-                watchdog.print_if_expired()
-
-                delay.wait()
-                watchdog.reset()
-
-    def _operator_control(self) -> None:
+    def clear_opmodes(self) -> None:
         """
-        This function is called in teleoperated mode. You should not
-        override this function; rather, you should override the
-        :meth:`teleop_periodic` function instead.
-
-        .. warning:: Internal API, don't override
+        Clears all operating mode options and publishes an empty list to
+        the driver station.
         """
-        watchdog = self.watchdog
-        watchdog.reset()
+        wpilib.RobotState.clear_opmodes()
+        self.__opmodes.clear()
 
-        self.__nt_put_mode("teleop")
-        # don't need to update this during teleop -- presumably will switch
-        # modes when ds is no longer attached
-        self.__nt_put_is_ds_attached(self.__is_ds_attached())
-
-        # initialize things
-        self._on_mode_enable_components()
+    def _discover_opmodes(self) -> None:
+        """
+        Registers all decorated opmodes, importing the ``opmodes`` package
+        next to the robot module first. Discovery works the same way as
+        :class:`wpilib.OpModeRobot`.
+        """
+        from wpilib._impl import opmode as _wpi_opmode
 
         try:
-            self.teleop_init()
-        except:
-            self.on_exception(force_report=True)
-        watchdog.add_epoch("teleop_init()")
+            robot_source = Path(inspect.getfile(type(self)))
+        except (TypeError, OSError):
+            robot_source = None
 
-        observe = hal.observe_user_program
-        refresh_data = wpilib.DriverStationBackend.refresh_data
-        get_control_word = wpilib.DriverStationBackend.get_control_word
+        if robot_source is not None:
+            package_dir = robot_source.parent / "opmodes"
+            if package_dir.is_dir():
+                robot_module = type(self).__module__
+                robot_package = (
+                    robot_module
+                    if robot_source.name == "__init__.py"
+                    else robot_module.rpartition(".")[0]
+                )
+                package_name = (
+                    f"{robot_package}.opmodes" if robot_package else "opmodes"
+                )
+                modules = _wpi_opmode._scan_modules(package_dir, package_name)
+                _wpi_opmode._import_candidates(modules, package_dir, package_name)
 
-        with NotifierDelay(self.control_loop_wait_time) as delay:
-            while not self.__done:
-                refresh_data()
-                word = get_control_word()
-                if not word.is_teleop_enabled():
-                    break
+        registered = {cls for _, cls in self.__opmodes.values()}
 
-                observe(word.get_value())
-                try:
-                    self.teleop_periodic()
-                except:
-                    self.on_exception()
-                watchdog.add_epoch("teleop_periodic()")
-
-                self._enabled_periodic()
-                # watchdog.disable()
-                watchdog.print_if_expired()
-
-                delay.wait()
-                watchdog.reset()
-
-    def _utility(self) -> None:
-        """Called when the robot is in utility mode"""
-        watchdog = self.watchdog
-        watchdog.reset()
-
-        self.__nt_put_mode("utility")
-        self.__nt_put_is_ds_attached(self.__is_ds_attached())
-
-        # initialize things
-        self._on_mode_enable_components()
-
-        try:
-            self.utility_init()
-        except:
-            self.on_exception(force_report=True)
-        watchdog.add_epoch("utility_init()")
-
-        refresh_data = wpilib.DriverStationBackend.refresh_data
-        DSControlWord = wpilib.DriverStationBackend.get_control_word
-
-        with NotifierDelay(self.control_loop_wait_time) as delay:
-            while not self.__done:
-                refresh_data()
-                cw = DSControlWord()
-                if not cw.is_utility_enabled():
-                    break
-
-                hal.observe_user_program(cw.get_value())
-                try:
-                    self.utility_periodic()
-                except:
-                    self.on_exception()
-                watchdog.add_epoch("utility_periodic()")
-
-                self._do_periodics()
-                # watchdog.disable()
-                watchdog.print_if_expired()
-
-                delay.wait()
-                watchdog.reset()
+        for cls in _wpi_opmode.decorated_opmodes():
+            metadata = cls.__dict__.get("_wpilib_opmode_metadata")
+            if metadata is None or cls in registered:
+                continue
+            registered.add(cls)
+            try:
+                self.add_opmode(
+                    cls,
+                    metadata.mode,
+                    metadata.name,
+                    metadata.group,
+                    metadata.description,
+                    metadata.text_color,
+                    metadata.background_color,
+                )
+            except Exception as e:
+                wpilib.report_error(
+                    f"Could not register OpMode {cls.__module__}.{cls.__qualname__}: {e}",
+                    True,
+                )
 
     def _on_mode_enable_components(self) -> None:
         # initialize things
@@ -651,12 +781,6 @@ class MagicRobot(wpilib.RobotBase):
             self._setup_vars(cname, component, injectables)
             self._setup_reset_vars(component)
 
-        # Do it for autonomous modes too
-        for mode in self._automodes.modes.values():
-            mode.logger = logging.getLogger(mode.MODE_NAME)
-            setup_tunables(mode, mode.MODE_NAME, "autonomous")
-            self._setup_vars(mode.MODE_NAME, mode, injectables)
-
         # And for self too
         setup_tunables(self, "robot", None)
         self._feedbacks += collect_feedbacks(self, "robot", None)
@@ -673,12 +797,9 @@ class MagicRobot(wpilib.RobotBase):
         for cname, component in components:
             self._feedbacks += collect_feedbacks(component, cname, "components")
 
-        # Call setup functions for autonomous modes
-        for mode in self._automodes.modes.values():
-            if hasattr(mode, "setup"):
-                mode.setup()
-
         self._components = components
+
+        self.__opmode_injectables = injectables
 
     def _collect_injectables(self) -> dict[str, Any]:
         injectables = {}
@@ -707,9 +828,9 @@ class MagicRobot(wpilib.RobotBase):
         type_hints = typing.get_type_hints(ctyp.__init__)
         NoneType = type(None)
         init_return_type = type_hints.pop("return", NoneType)
-        assert (
-            init_return_type is NoneType
-        ), f"{ctyp!r} __init__ had an unexpected non-None return type hint"
+        assert init_return_type is NoneType, (
+            f"{ctyp!r} __init__ had an unexpected non-None return type hint"
+        )
         requests = get_injection_requests(type_hints, name)
         injections = find_injections(requests, injectables, name)
 
