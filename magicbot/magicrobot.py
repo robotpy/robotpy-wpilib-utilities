@@ -21,6 +21,7 @@ from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 from .inject import find_injections, get_injection_requests
 from .magic_reset import collect_resets
 from .magic_tunable import collect_feedbacks, setup_tunables, tunable
+from .opmode import PeriodicOpMode as MagicBotPeriodicOpMode
 
 __all__ = ["MagicRobot"]
 
@@ -95,10 +96,9 @@ class MagicRobot(wpilib.RobotBase):
         self.__last_mode_id = -1
         self.__last_enabled_state = False
 
-        self.__opmode: wpilib.OpMode | None = None
+        self.__opmode: MagicBotPeriodicOpMode | None = None
         self.__opmode_name = ""
         self.__opmode_started = False
-        self.__opmode_injectables: dict[str, Any] = {}
 
         self.__done = False
 
@@ -448,7 +448,9 @@ class MagicRobot(wpilib.RobotBase):
         # watchdog.disable()
         watchdog.print_if_expired()
 
-    def _start_opmode(self, opmode: wpilib.OpMode, robot_mode: hal.RobotMode) -> None:
+    def _start_opmode(
+        self, opmode: MagicBotPeriodicOpMode, robot_mode: hal.RobotMode
+    ) -> None:
         self.logger.info("Starting OpMode %s", self.__opmode_name)
 
         self.__nt_put_mode(_MODE_NAMES.get(robot_mode, "unknown"))
@@ -495,33 +497,14 @@ class MagicRobot(wpilib.RobotBase):
             except:
                 self.on_exception(force_report=True)
 
-    def _create_opmode(self, name: str, opmode_cls: type) -> wpilib.OpMode | None:
-        """Creates an opmode instance and performs magic injection on it"""
+    def _create_opmode(
+        self, name: str, opmode_cls: type
+    ) -> MagicBotPeriodicOpMode | None:
+        """Creates an opmode instance"""
         self.logger.info("Creating OpMode %s", name)
 
-        injectables = self.__opmode_injectables
-
         try:
-            # inject __init__ parameters, if the user defined __init__
-            init = opmode_cls.__init__
-            if inspect.isfunction(init):
-                type_hints = typing.get_type_hints(init)
-                type_hints.pop("return", None)
-                requests = get_injection_requests(type_hints, name)
-                injections = find_injections(requests, injectables, name)
-            else:
-                injections = {}
-
-            opmode = opmode_cls(**injections)
-
-            # inject class variable annotations
-            opmode.logger = logging.getLogger(name)
-            self._setup_vars(name, opmode, injectables)
-            setup_tunables(opmode, name, "opmodes")
-
-            setup = getattr(opmode, "setup", None)
-            if setup is not None:
-                setup()
+            opmode = opmode_cls(self)
 
             if opmode.get_callbacks():
                 self.logger.warning(
@@ -539,7 +522,7 @@ class MagicRobot(wpilib.RobotBase):
         self.__opmode_started = False
         return opmode
 
-    def __opmode_disabled_periodic(self, opmode: wpilib.OpMode) -> None:
+    def __opmode_disabled_periodic(self, opmode: MagicBotPeriodicOpMode) -> None:
         try:
             opmode.disabled_periodic()
         except:
@@ -563,13 +546,12 @@ class MagicRobot(wpilib.RobotBase):
         modes are published for you.
 
         The OpMode is constructed each time it is selected on the driver
-        station. Its ``__init__`` parameters and class variable annotations
-        are injected the same way as for components.
+        station.
 
         The text_color and background_color parameters are optional, but
         setting only one has no effect.
 
-        :param opmode_cls: OpMode class; must be a subclass of :class:`wpilib.OpMode`
+        :param opmode_cls: OpMode class; must be a subclass of :class:`magicbot.PeriodicOpMode`
         :param mode: robot mode
         :param name: name of the operating mode; defaults to the class name
         :param group: group of the operating mode
@@ -577,8 +559,12 @@ class MagicRobot(wpilib.RobotBase):
         :param text_color: text color
         :param background_color: background color
         """
-        if not inspect.isclass(opmode_cls) or not issubclass(opmode_cls, wpilib.OpMode):
-            raise TypeError(f"{opmode_cls!r} is not a subclass of wpilib.OpMode")
+        if not inspect.isclass(opmode_cls) or not issubclass(
+            opmode_cls, MagicBotPeriodicOpMode
+        ):
+            raise TypeError(
+                f"{opmode_cls!r} is not a subclass of magicbot.PeriodicOpMode"
+            )
 
         if not name:
             name = opmode_cls.__name__
@@ -798,8 +784,6 @@ class MagicRobot(wpilib.RobotBase):
             self._feedbacks += collect_feedbacks(component, cname, "components")
 
         self._components = components
-
-        self.__opmode_injectables = injectables
 
     def _collect_injectables(self) -> dict[str, Any]:
         injectables = {}
