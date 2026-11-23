@@ -1,3 +1,4 @@
+import contextlib
 import importlib
 import inspect
 import logging
@@ -219,6 +220,7 @@ class AutonomousModeSelector:
         iter_fn: Union[Callable[[], None], Sequence[Callable[[], None]]] = None,
         on_exception: Callable = None,
         watchdog: Union[wpilib.Watchdog, SimpleWatchdog] = None,
+        delay: NotifierDelay | None = None,
     ) -> None:
         """
         This method implements the entire autonomous loop.
@@ -237,6 +239,7 @@ class AutonomousModeSelector:
         :param on_exception: Called when an uncaught exception is raised,
                              must take a single keyword arg "force_report"
         :param watchdog: a WPILib Watchdog to feed every iteration
+        :param delay: Optional shared loop delay, owned by the caller
         """
         if watchdog is not None:
             watchdog.reset()
@@ -278,7 +281,11 @@ class AutonomousModeSelector:
         refresh_data = wpilib.DriverStationBackend.refresh_data
         get_control_word = wpilib.DriverStationBackend.get_control_word
 
-        with NotifierDelay(control_loop_wait_time) as delay:
+        with (
+            NotifierDelay(control_loop_wait_time)
+            if delay is None
+            else contextlib.nullcontext(delay)
+        ) as delay:
             while not self.robot_exit:
                 refresh_data()
                 word = get_control_word()
