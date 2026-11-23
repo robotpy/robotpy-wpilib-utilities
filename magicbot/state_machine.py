@@ -1,12 +1,10 @@
 import inspect
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import (
     Any,
-    Callable,
     ClassVar,
     NoReturn,
-    Optional,
     Self,
     Union,
     overload,
@@ -15,6 +13,7 @@ from typing import (
 import wpilib
 
 from .magic_tunable import tunable
+from .opmode import PeriodicOpMode
 
 if wpilib.RobotBase.is_simulation():
     get_time = wpilib.Timer.get_timestamp
@@ -49,7 +48,7 @@ class _State:
         first: bool = False,
         must_finish: bool = False,
         *,
-        duration: Optional[float] = None,
+        duration: float | None = None,
         is_default: bool = False,
     ) -> None:
         name = f.__name__
@@ -99,7 +98,7 @@ class _State:
         wrapper_code = f"lambda self, tm, state_tm, initial_call: f({args_code})"
         self.run = eval(wrapper_code, varlist, varlist)
 
-        self.next_state: Optional[StateRef]
+        self.next_state: StateRef | None
 
     def __call__(self, *args, **kwargs) -> NoReturn:
         raise IllegalCallError(
@@ -150,7 +149,7 @@ class _StateData:
 def timed_state(
     *,
     duration: float,
-    next_state: Optional[StateRef] = None,
+    next_state: StateRef | None = None,
     first: bool = False,
     must_finish: bool = False,
 ) -> Callable[[StateMethod], _State]:
@@ -205,11 +204,11 @@ def state(f: StateMethod) -> _State: ...
 
 
 def state(
-    f: Optional[StateMethod] = None,
+    f: StateMethod | None = None,
     *,
     first: bool = False,
     must_finish: bool = False,
-) -> Union[Callable[[StateMethod], _State], _State]:
+) -> Callable[[StateMethod], _State] | _State:
     """
     If this decorator is applied to a function in an object that inherits
     from :class:`.StateMachine`, it indicates that the function
@@ -468,7 +467,7 @@ class StateMachine:
         self.__states = states
 
         # The currently executing state, or None if not executing
-        self.__state: Optional[_StateData] = None
+        self.__state: _StateData | None = None
 
         # The default state
         self.__default_state = default_state
@@ -486,7 +485,6 @@ class StateMachine:
         """
         magicbot component API: called when autonomous/teleop is enabled
         """
-        pass
 
     def on_disable(self) -> None:
         """
@@ -496,7 +494,7 @@ class StateMachine:
 
     def engage(
         self,
-        initial_state: Optional[StateRef] = None,
+        initial_state: StateRef | None = None,
         force: bool = False,
     ) -> None:
         """
@@ -647,7 +645,7 @@ class StateMachine:
         self.__should_engage = False
 
 
-class AutonomousStateMachine(StateMachine):
+class AutonomousOpMode(StateMachine, PeriodicOpMode):
     """
     This is a specialized version of the StateMachine that is designed
     to be used as an autonomous mode. There are a few key differences:
@@ -660,6 +658,23 @@ class AutonomousStateMachine(StateMachine):
     """
 
     VERBOSE_LOGGING = True
+
+    def __new__(cls, _) -> Self:
+        return StateMachine.__new__(cls)
+
+    def __init__(self, robot):
+        PeriodicOpMode.__init__(self, robot)
+
+    def start(self):
+        self._timer = wpilib.Timer()
+        self._timer.restart()
+        self.on_enable()
+
+    def periodic(self) -> None:
+        self.on_iteration(self._timer.get())
+
+    def end(self):
+        self.on_disable()
 
     def on_enable(self) -> None:
         super().on_enable()

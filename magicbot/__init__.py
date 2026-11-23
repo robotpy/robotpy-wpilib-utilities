@@ -2,8 +2,10 @@ from .magicrobot import MagicRobot
 from .magic_tunable import feedback, tunable
 from .magic_reset import will_reset_to
 
+from .opmode import PeriodicOpMode
+
 from .state_machine import (
-    AutonomousStateMachine,
+    AutonomousOpMode,
     StateMachine,
     default_state,
     state,
@@ -15,7 +17,8 @@ __all__ = (
     "feedback",
     "tunable",
     "will_reset_to",
-    "AutonomousStateMachine",
+    "PeriodicOpMode",
+    "AutonomousOpMode",
     "StateMachine",
     "default_state",
     "state",
