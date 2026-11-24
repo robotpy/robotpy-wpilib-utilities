@@ -76,6 +76,7 @@ class MagicRobot(wpilib.RobotBase):
         self._reset_components: list[tuple[dict[str, Any], Any]] = []
 
         self.__done = False
+        self._loop_delay = None
 
         # cache these
         self.__is_ds_attached = wpilib.RobotState.is_ds_attached
@@ -359,22 +360,32 @@ class MagicRobot(wpilib.RobotBase):
 
         self.robot_init()
 
-        # Tell the DS the robot is ready to be enabled
-        hal.observe_user_program_starting()
+        with NotifierDelay(self.control_loop_wait_time) as delay:
+            self._loop_delay = delay
+            try:
+                # Register the alarm before simulation is allowed to advance.
+                hal.observe_user_program_starting()
 
-        while not self.__done:
-            word = wpilib.DriverStationBackend.get_control_word()
+                while not self.__done:
+                    word = wpilib.DriverStationBackend.get_control_word()
 
-            if not word.is_enabled():
-                self._disabled()
-            elif word.is_autonomous():
-                self.autonomous()
-            elif word.is_utility():
-                self._utility()
-            else:
-                self._operator_control()
+                    if not word.is_enabled():
+                        self._disabled()
+                    elif word.is_autonomous():
+                        self.autonomous()
+                    elif word.is_utility():
+                        self._utility()
+                    else:
+                        self._operator_control()
+            finally:
+                self._loop_delay = None
 
     def end_competition(self) -> None:
+        """Request shutdown on the next loop tick.
+
+        When simulation timing is paused, advance time asynchronously after
+        this call so the loop can wake and free its notifier.
+        """
         self.__done = True
         self._automodes.end_competition()
 
@@ -406,6 +417,7 @@ class MagicRobot(wpilib.RobotBase):
             auto_functions,
             self.on_exception,
             watchdog=self.watchdog,
+            delay=self._loop_delay,
         )
 
     def _disabled(self) -> None:
@@ -432,30 +444,31 @@ class MagicRobot(wpilib.RobotBase):
         refresh_data = wpilib.DriverStationBackend.refresh_data
         DSControlWord = wpilib.DriverStationBackend.get_control_word
 
-        with NotifierDelay(self.control_loop_wait_time) as delay:
-            while not self.__done:
-                refresh_data()
-                cw = DSControlWord()
-                if cw.is_enabled():
-                    break
+        delay = self._loop_delay
+        assert delay is not None
+        while not self.__done:
+            refresh_data()
+            cw = DSControlWord()
+            if cw.is_enabled():
+                break
 
-                if ds_attached != cw.is_ds_attached():
-                    ds_attached = not ds_attached
-                    self.__nt_put_is_ds_attached(ds_attached)
+            if ds_attached != cw.is_ds_attached():
+                ds_attached = not ds_attached
+                self.__nt_put_is_ds_attached(ds_attached)
 
-                hal.observe_user_program(cw.get_value())
-                try:
-                    self.disabled_periodic()
-                except:
-                    self.on_exception()
-                watchdog.add_epoch("disabled_periodic()")
+            hal.observe_user_program(cw.get_value())
+            try:
+                self.disabled_periodic()
+            except:
+                self.on_exception()
+            watchdog.add_epoch("disabled_periodic()")
 
-                self._do_periodics()
-                # watchdog.disable()
-                watchdog.print_if_expired()
+            self._do_periodics()
+            # watchdog.disable()
+            watchdog.print_if_expired()
 
-                delay.wait()
-                watchdog.reset()
+            delay.wait()
+            watchdog.reset()
 
     def _operator_control(self) -> None:
         """
@@ -486,26 +499,27 @@ class MagicRobot(wpilib.RobotBase):
         refresh_data = wpilib.DriverStationBackend.refresh_data
         get_control_word = wpilib.DriverStationBackend.get_control_word
 
-        with NotifierDelay(self.control_loop_wait_time) as delay:
-            while not self.__done:
-                refresh_data()
-                word = get_control_word()
-                if not word.is_teleop_enabled():
-                    break
+        delay = self._loop_delay
+        assert delay is not None
+        while not self.__done:
+            refresh_data()
+            word = get_control_word()
+            if not word.is_teleop_enabled():
+                break
 
-                observe(word.get_value())
-                try:
-                    self.teleop_periodic()
-                except:
-                    self.on_exception()
-                watchdog.add_epoch("teleop_periodic()")
+            observe(word.get_value())
+            try:
+                self.teleop_periodic()
+            except:
+                self.on_exception()
+            watchdog.add_epoch("teleop_periodic()")
 
-                self._enabled_periodic()
-                # watchdog.disable()
-                watchdog.print_if_expired()
+            self._enabled_periodic()
+            # watchdog.disable()
+            watchdog.print_if_expired()
 
-                delay.wait()
-                watchdog.reset()
+            delay.wait()
+            watchdog.reset()
 
     def _utility(self) -> None:
         """Called when the robot is in utility mode"""
@@ -527,26 +541,27 @@ class MagicRobot(wpilib.RobotBase):
         refresh_data = wpilib.DriverStationBackend.refresh_data
         DSControlWord = wpilib.DriverStationBackend.get_control_word
 
-        with NotifierDelay(self.control_loop_wait_time) as delay:
-            while not self.__done:
-                refresh_data()
-                cw = DSControlWord()
-                if not cw.is_utility_enabled():
-                    break
+        delay = self._loop_delay
+        assert delay is not None
+        while not self.__done:
+            refresh_data()
+            cw = DSControlWord()
+            if not cw.is_utility_enabled():
+                break
 
-                hal.observe_user_program(cw.get_value())
-                try:
-                    self.utility_periodic()
-                except:
-                    self.on_exception()
-                watchdog.add_epoch("utility_periodic()")
+            hal.observe_user_program(cw.get_value())
+            try:
+                self.utility_periodic()
+            except:
+                self.on_exception()
+            watchdog.add_epoch("utility_periodic()")
 
-                self._do_periodics()
-                # watchdog.disable()
-                watchdog.print_if_expired()
+            self._do_periodics()
+            # watchdog.disable()
+            watchdog.print_if_expired()
 
-                delay.wait()
-                watchdog.reset()
+            delay.wait()
+            watchdog.reset()
 
     def _on_mode_enable_components(self) -> None:
         # initialize things
