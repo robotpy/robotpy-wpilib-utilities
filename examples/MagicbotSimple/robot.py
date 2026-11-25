@@ -5,6 +5,8 @@
 # the WPILib BSD license file in the root directory of this project.
 #
 
+from typing import override
+
 import wpilib
 from magicbot import MagicRobot
 
@@ -32,6 +34,7 @@ class MyRobot(MagicRobot):
     # You can even pass constants to components
     SOME_CONSTANT = 1
 
+    @override
     def create_objects(self):
         """Initialize all wpilib motors & sensors"""
 
@@ -47,6 +50,7 @@ class MyRobot(MagicRobot):
     # autonomous folder will automatically get added to a list
     #
 
+    @override
     def teleop_periodic(self):
         """Place code here that does things as a result of operator
         actions"""

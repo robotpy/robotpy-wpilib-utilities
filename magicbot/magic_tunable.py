@@ -4,8 +4,8 @@ import collections.abc
 import inspect
 import typing
 import warnings
-from collections.abc import Mapping, Sequence
-from typing import Callable, Generic, Self, TypeAlias, TypeVar, overload
+from collections.abc import Callable, Mapping, Sequence
+from typing import Generic, Self, TypeVar, overload
 
 import ntcore
 from ntcore import NetworkTableInstance
@@ -14,8 +14,8 @@ from wpiutil.wpistruct.typing import StructSerializable, is_wpistruct_type
 
 T = TypeVar("T")
 V = TypeVar("V", bound=ValueT | StructSerializable | Sequence[StructSerializable])
-JsonPrimitive: TypeAlias = bool | float | str
-JsonValue: TypeAlias = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
+type JsonPrimitive = bool | float | str
+type JsonValue = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
 
 
 class tunable(Generic[V]):
@@ -152,7 +152,7 @@ class tunable(Generic[V]):
         self._topic_type = topic_type
 
     @overload
-    def __get__(self, instance: None, owner=None) -> "tunable[V]": ...
+    def __get__(self, instance: None, owner=None) -> Self: ...
 
     @overload
     def __get__(self, instance, owner=None) -> V: ...

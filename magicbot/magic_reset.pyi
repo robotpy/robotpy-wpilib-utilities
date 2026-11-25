@@ -1,4 +1,4 @@
-from typing import Any, Generic, TypeVar, overload
+from typing import Any, Generic, Self, TypeVar, overload
 
 _V = TypeVar("_V")
 
@@ -9,7 +9,7 @@ class will_reset_to(Generic[_V]):
     # we don't really have __get__, but this makes code in methods using these
     # to type-check, whilst giving correct behaviour for code at the class level
     @overload
-    def __get__(self, instance: None, owner=...) -> will_reset_to: ...
+    def __get__(self, instance: None, owner=...) -> Self: ...
     @overload
     def __get__(self, instance, owner=...) -> _V: ...
     def __set__(self, instance, value: _V) -> None: ...

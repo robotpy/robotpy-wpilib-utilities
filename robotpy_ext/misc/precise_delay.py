@@ -1,3 +1,5 @@
+from typing import Self
+
 import hal
 import wpilib
 from wpiutil import sync
@@ -39,7 +41,7 @@ class NotifierDelay:
     def __del__(self):
         self.free()
 
-    def __enter__(self) -> "NotifierDelay":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

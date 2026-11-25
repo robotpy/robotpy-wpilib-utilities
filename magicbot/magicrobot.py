@@ -4,12 +4,13 @@ import logging
 import sys
 import types
 import typing
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import hal
 import toposort
-import wpilib
 import tunables
+import wpilib
 from ntcore import NetworkTableInstance
 
 from robotpy_ext.autonomous import AutonomousModeSelector
