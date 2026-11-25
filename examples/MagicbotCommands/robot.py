@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from typing import override
+
 from magicbot import MagicRobot
 from magicbot.commands import CommandRunner
 
@@ -13,8 +15,10 @@ class MyRobot(MagicRobot):
     runner: CommandRunner
     drive: Drive
 
+    @override
     def create_objects(self):
         pass  # This example needs no physical hardware.
 
+    @override
     def teleop_periodic(self):
         pass
