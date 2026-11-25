@@ -21,7 +21,6 @@ from robotpy_ext.misc.simple_watchdog import SimpleWatchdog
 from .inject import find_injections, get_injection_requests
 from .magic_reset import collect_resets
 from .magic_tunable import collect_feedbacks, setup_tunables, tunable
-from .opmode import PeriodicOpMode as MagicBotPeriodicOpMode
 
 __all__ = ["MagicRobot"]
 
@@ -36,6 +35,12 @@ _MODE_NAMES = {
     hal.RobotMode.UTILITY: "utility",
 }
 
+_OPMODE_TUNABLE_PREFIXES = {
+    hal.RobotMode.AUTONOMOUS: "autonomous",
+    hal.RobotMode.TELEOPERATED: "teleop",
+    hal.RobotMode.UTILITY: "utility",
+}
+
 
 class MagicRobot(wpilib.RobotBase):
     """
@@ -44,11 +49,10 @@ class MagicRobot(wpilib.RobotBase):
     implement the following methods:
 
     - :meth:`create_objects`
-    - :meth:`teleop_periodic`
 
-    MagicRobot uses the :class:`.AutonomousModeSelector` to allow you
-    to define multiple autonomous modes and to select one of them via
-    the SmartDashboard.
+    MagicRobot uses OpModes to allow you
+    to define multiple teleop, autonomous, and utility modes and to select one of them via
+    the Driver station.
 
     MagicRobot will set the following NetworkTables variables
     automatically:
@@ -90,13 +94,13 @@ class MagicRobot(wpilib.RobotBase):
         self._reset_components: list[tuple[dict[str, Any], Any]] = []
 
         # opmode id -> (name, class)
-        self.__opmodes: dict[int, tuple[str, type]] = {}
+        self.__opmodes: dict[int, tuple[str, type, hal.RobotMode]] = {}
 
         # opmode lifecycle state
         self.__last_mode_id = -1
         self.__last_enabled_state = False
 
-        self.__opmode: MagicBotPeriodicOpMode | None = None
+        self.__opmode: wpilib.OpMode | None = None
         self.__opmode_name = ""
         self.__opmode_started = False
 
@@ -360,7 +364,7 @@ class MagicRobot(wpilib.RobotBase):
     def end_competition(self) -> None:
         self.__done = True
 
-    def _loop_func(self):
+    def _loop_func(self) -> None:
         watchdog = self.watchdog
         watchdog.reset()
 
@@ -387,8 +391,9 @@ class MagicRobot(wpilib.RobotBase):
             else:
                 opmode = self._create_opmode(*entry)
                 if opmode is not None:
-                    self.__opmode_disabled_periodic(opmode)
-                    just_created_opmode = True
+                    if not enabled:
+                        self.__opmode_disabled_periodic(opmode)
+                        just_created_opmode = True
 
         just_called_disabled_init = False
         if self.__last_enabled_state != enabled:
@@ -402,6 +407,7 @@ class MagicRobot(wpilib.RobotBase):
                 if self.__opmode is not None:
                     self._end_opmode()
                     self.__last_mode_id = -1
+                self._on_mode_disable_components()
                 self.disabled_init()
                 watchdog.add_epoch("disabled_init()")
             self.__last_enabled_state = enabled
@@ -448,9 +454,7 @@ class MagicRobot(wpilib.RobotBase):
         # watchdog.disable()
         watchdog.print_if_expired()
 
-    def _start_opmode(
-        self, opmode: MagicBotPeriodicOpMode, robot_mode: hal.RobotMode
-    ) -> None:
+    def _start_opmode(self, opmode: wpilib.OpMode, robot_mode: hal.RobotMode) -> None:
         self.logger.info("Starting OpMode %s", self.__opmode_name)
 
         self.__nt_put_mode(_MODE_NAMES.get(robot_mode, "unknown"))
@@ -498,13 +502,17 @@ class MagicRobot(wpilib.RobotBase):
                 self.on_exception(force_report=True)
 
     def _create_opmode(
-        self, name: str, opmode_cls: type
-    ) -> MagicBotPeriodicOpMode | None:
+        self, name: str, opmode_cls: type, mode: hal.RobotMode
+    ) -> wpilib.OpMode | None:
         """Creates an opmode instance"""
         self.logger.info("Creating OpMode %s", name)
 
         try:
             opmode = opmode_cls(self)
+
+            # inject class variable annotations
+            opmode.logger = logging.getLogger(name)
+            setup_tunables(opmode, name, "opmodes")
 
             if opmode.get_callbacks():
                 self.logger.warning(
@@ -522,7 +530,7 @@ class MagicRobot(wpilib.RobotBase):
         self.__opmode_started = False
         return opmode
 
-    def __opmode_disabled_periodic(self, opmode: MagicBotPeriodicOpMode) -> None:
+    def __opmode_disabled_periodic(self, opmode: wpilib.OpMode) -> None:
         try:
             opmode.disabled_periodic()
         except:
@@ -551,7 +559,7 @@ class MagicRobot(wpilib.RobotBase):
         The text_color and background_color parameters are optional, but
         setting only one has no effect.
 
-        :param opmode_cls: OpMode class; must be a subclass of :class:`magicbot.PeriodicOpMode`
+        :param opmode_cls: OpMode class; must be a subclass of :class:`wpilib.OpMode`
         :param mode: robot mode
         :param name: name of the operating mode; defaults to the class name
         :param group: group of the operating mode
@@ -559,12 +567,8 @@ class MagicRobot(wpilib.RobotBase):
         :param text_color: text color
         :param background_color: background color
         """
-        if not inspect.isclass(opmode_cls) or not issubclass(
-            opmode_cls, MagicBotPeriodicOpMode
-        ):
-            raise TypeError(
-                f"{opmode_cls!r} is not a subclass of magicbot.PeriodicOpMode"
-            )
+        if not inspect.isclass(opmode_cls) or not issubclass(opmode_cls, wpilib.OpMode):
+            raise TypeError(f"{opmode_cls!r} is not a subclass of wpilib.OpMode")
 
         if not name:
             name = opmode_cls.__name__
@@ -582,11 +586,10 @@ class MagicRobot(wpilib.RobotBase):
             )
             return
 
-        self.__opmodes[opmode_id] = (name, opmode_cls)
+        self.__opmodes[opmode_id] = (name, opmode_cls, mode)
         self.logger.info(
             "-> OpMode %s (%s, class: %s)", name, mode.name, opmode_cls.__name__
         )
-        self.publish_opmodes()
 
     def remove_opmode(self, mode: hal.RobotMode, name: str) -> None:
         """
@@ -619,6 +622,7 @@ class MagicRobot(wpilib.RobotBase):
         next to the robot module first. Discovery works the same way as
         :class:`wpilib.OpModeRobot`.
         """
+        # TODO: Clean up when discovry func is in mostrobotpy
         from wpilib._impl import opmode as _wpi_opmode
 
         try:

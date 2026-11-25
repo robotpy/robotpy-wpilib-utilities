@@ -13,7 +13,7 @@ from typing import (
 import wpilib
 
 from .magic_tunable import tunable
-from .opmode import PeriodicOpMode
+from .magicrobot import MagicRobot
 
 if wpilib.RobotBase.is_simulation():
     get_time = wpilib.Timer.get_timestamp
@@ -645,7 +645,7 @@ class StateMachine:
         self.__should_engage = False
 
 
-class AutonomousOpMode(StateMachine, PeriodicOpMode):
+class AutonomousStateMachine(StateMachine, wpilib.PeriodicOpMode):
     """
     This is a specialized version of the StateMachine that is designed
     to be used as an autonomous mode. There are a few key differences:
@@ -659,11 +659,12 @@ class AutonomousOpMode(StateMachine, PeriodicOpMode):
 
     VERBOSE_LOGGING = True
 
-    def __new__(cls, _) -> Self:
-        return StateMachine.__new__(cls)
+    def __new__(cls, *args, **kwargs) -> Self:
+        return super().__new__(cls)
 
-    def __init__(self, robot):
-        PeriodicOpMode.__init__(self, robot)
+    def __init__(self, robot: MagicRobot):
+        super().__init__()
+        self.robot = robot
 
     def start(self):
         self._timer = wpilib.Timer()

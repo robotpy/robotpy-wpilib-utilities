@@ -51,7 +51,9 @@ class tunable(Generic[V]):
     object the decorated method belongs to:
 
     * A component: ``/components/COMPONENTNAME/VARNAME``
-    * An autonomous mode: ``/autonomous/MODENAME/VARNAME``
+    * An autonomous OpMode: ``/autonomous/MODENAME/VARNAME``
+    * A teleoperated OpMode: ``/teleop/MODENAME/VARNAME``
+    * A utility OpMode: ``/utility/MODENAME/VARNAME``
     * Your main robot class: ``/robot/VARNAME``
 
     .. note:: When executing unit tests on objects that create tunables,

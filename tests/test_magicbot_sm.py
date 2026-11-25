@@ -1,22 +1,20 @@
+import ntcore
+import pytest
+
+from magicbot.magic_tunable import setup_tunables
+from magicbot.magicrobot import MagicRobot
 from magicbot.state_machine import (
+    AutonomousStateMachine,
+    IllegalCallError,
+    InvalidStateName,
+    MultipleDefaultStatesError,
+    MultipleFirstStatesError,
+    NoFirstStateError,
+    StateMachine,
     default_state,
     state,
     timed_state,
-    AutonomousOpMode,
-    StateMachine,
-    IllegalCallError,
-    NoFirstStateError,
-    MultipleFirstStatesError,
-    MultipleDefaultStatesError,
-    InvalidStateName,
 )
-
-from magicbot.magic_tunable import setup_tunables
-
-from magicbot.magicrobot import MagicRobot
-
-import ntcore
-import pytest
 
 
 def test_no_timed_state_duration():
@@ -241,7 +239,7 @@ def test_must_finish(wpitime):
 
 
 def test_autonomous_sm():
-    class _TM(AutonomousOpMode):
+    class _TM(AutonomousStateMachine):
         i = 0
         VERBOSE_LOGGING = False
 
@@ -273,7 +271,7 @@ def test_autonomous_sm():
 
 
 def test_autonomous_sm_end_timed_state(wpitime):
-    class _TM(AutonomousOpMode):
+    class _TM(AutonomousStateMachine):
         i = 0
         j = 0
         VERBOSE_LOGGING = False

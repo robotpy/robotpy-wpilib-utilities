@@ -5,7 +5,7 @@ from .magic_reset import will_reset_to
 from .opmode import PeriodicOpMode
 
 from .state_machine import (
-    AutonomousOpMode,
+    AutonomousStateMachine,
     StateMachine,
     default_state,
     state,
@@ -18,7 +18,7 @@ __all__ = (
     "tunable",
     "will_reset_to",
     "PeriodicOpMode",
-    "AutonomousOpMode",
+    "AutonomousStateMachine",
     "StateMachine",
     "default_state",
     "state",
