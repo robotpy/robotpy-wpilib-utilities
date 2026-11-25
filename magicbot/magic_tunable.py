@@ -5,7 +5,7 @@ import inspect
 import typing
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Generic, Self, TypeAlias, TypeVar, overload
+from typing import Generic, Self, TypeVar, overload
 
 import ntcore
 from ntcore import NetworkTableInstance
@@ -14,8 +14,8 @@ from wpiutil.wpistruct.typing import StructSerializable, is_wpistruct_type
 
 T = TypeVar("T")
 V = TypeVar("V", bound=ValueT | StructSerializable | Sequence[StructSerializable])
-JsonPrimitive: TypeAlias = bool | float | str
-JsonValue: TypeAlias = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
+type JsonPrimitive = bool | float | str
+type JsonValue = JsonPrimitive | list[JsonPrimitive] | tuple[JsonPrimitive, ...]
 
 
 class tunable(Generic[V]):
