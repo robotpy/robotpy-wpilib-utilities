@@ -7,7 +7,7 @@ name = "robotpy-wpilib-utilities"
 dynamic = ["version"]
 description = "Useful utility functions/objects for RobotPy"
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 classifiers = [
