@@ -4,8 +4,8 @@ import collections.abc
 import inspect
 import typing
 import warnings
-from collections.abc import Mapping, Sequence
-from typing import Callable, Generic, Self, TypeAlias, TypeVar, overload
+from collections.abc import Callable, Mapping, Sequence
+from typing import Generic, Self, TypeAlias, TypeVar, overload
 
 import ntcore
 from ntcore import NetworkTableInstance
