@@ -1,3 +1,7 @@
+import ntcore
+import pytest
+
+from magicbot.magic_tunable import setup_tunables
 from magicbot.state_machine import (
     default_state,
     state,
@@ -10,11 +14,6 @@ from magicbot.state_machine import (
     MultipleDefaultStatesError,
     InvalidStateName,
 )
-
-from magicbot.magic_tunable import setup_tunables
-
-import ntcore
-import pytest
 
 
 def test_no_timed_state_duration():
@@ -164,6 +163,23 @@ def test_sm_inheritance():
 
     sm.execute()
     assert sm.current_state == ""
+
+
+def test_injectable() -> None:
+    """magicbot can dependency inject into __init__ like other components."""
+
+    class _TM(StateMachine):
+        def __init__(self, foo: int):
+            self.foo = foo
+
+        @state(first=True)
+        def first_state(self) -> None:
+            self.done()
+
+    sm = _TM(foo=1)
+    setup_tunables(sm, "test_injectable")
+
+    assert sm.foo == 1
 
 
 def test_must_finish(wpitime):
