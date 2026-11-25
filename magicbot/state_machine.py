@@ -662,10 +662,6 @@ class AutonomousStateMachine(StateMachine, wpilib.PeriodicOpMode):
     def __new__(cls, *args, **kwargs) -> Self:
         return super().__new__(cls)
 
-    def __init__(self, robot: MagicRobot):
-        super().__init__()
-        self.robot = robot
-
     def start(self):
         self._timer = wpilib.Timer.create_started()
         self.on_enable()

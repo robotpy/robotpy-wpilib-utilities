@@ -8,15 +8,15 @@ import wpilib
 from robot import MyRobot
 from wpilib import PeriodicOpMode, teleop
 
+from components.component2 import Component2
+
 
 @teleop
 class NormalOperation(PeriodicOpMode):
-    robot: MyRobot
 
-    def __init__(self, robot: MyRobot) -> None:
-        super().__init__()
-        self.robot = robot
+    joystick: wpilib.Joystick
+    component2: Component2
 
     def periodic(self) -> None:
-        if self.robot.joystick.get_trigger():
-            self.robot.component2.do_something()
+        if self.joystick.get_trigger():
+            self.component2.do_something()

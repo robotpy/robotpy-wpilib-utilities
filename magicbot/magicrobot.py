@@ -103,6 +103,7 @@ class MagicRobot(wpilib.RobotBase):
         self.__opmode: wpilib.OpMode | None = None
         self.__opmode_name = ""
         self.__opmode_started = False
+        self.__opmode_injectables: dict[str, Any] = {}
 
         self.__done = False
 
@@ -507,12 +508,29 @@ class MagicRobot(wpilib.RobotBase):
         """Creates an opmode instance"""
         self.logger.info("Creating OpMode %s", name)
 
+        injectables = self.__opmode_injectables
+
         try:
-            opmode = opmode_cls(self)
+            # inject __init__ parameters, if the user defined __init__
+            init = opmode_cls.__init__
+            if inspect.isfunction(init):
+                type_hints = typing.get_type_hints(init)
+                type_hints.pop("return", None)
+                requests = get_injection_requests(type_hints, name)
+                injections = find_injections(requests, injectables, name)
+            else:
+                injections = {}
+
+            opmode = opmode_cls(**injections)
 
             # inject class variable annotations
             opmode.logger = logging.getLogger(name)
+            self._setup_vars(name, opmode, injectables)
             setup_tunables(opmode, name, "opmodes")
+
+            setup = getattr(opmode, "setup", None)
+            if setup is not None:
+                setup()
 
             if opmode.get_callbacks():
                 self.logger.warning(
@@ -529,6 +547,7 @@ class MagicRobot(wpilib.RobotBase):
         self.__opmode_name = name
         self.__opmode_started = False
         return opmode
+        
 
     def __opmode_disabled_periodic(self, opmode: wpilib.OpMode) -> None:
         try:
@@ -788,6 +807,7 @@ class MagicRobot(wpilib.RobotBase):
             self._feedbacks += collect_feedbacks(component, cname, "components")
 
         self._components = components
+        self.__opmode_injectables = injectables
 
     def _collect_injectables(self) -> dict[str, Any]:
         injectables = {}

@@ -68,3 +68,6 @@ robotpy_ext/version.py
 .deploy_cfg
 networktables.json
 simgui*.json
+
+# VsCode Workspace settings
+.vscode/

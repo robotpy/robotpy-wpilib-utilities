@@ -6,19 +6,10 @@
 #
 
 import wpilib
-from components.component1 import Component1
-from components.component2 import Component2
+from examples.MagicBotOpModes.components.component1 import Component1
+from examples.MagicBotOpModes.components.component2 import Component2
 
 from magicbot import MagicRobot
-
-
-class Talon(wpilib.PWMMotorController):
-    """PWM Talon configuration (pulse widths in microseconds)."""
-
-    def __init__(self, channel):
-        super().__init__(channel)
-        self._set_bounds(2037, 1539, 1513, 1487, 989)
-        self.set_throttle(0)
 
 
 class MyRobot(MagicRobot):
@@ -37,7 +28,7 @@ class MyRobot(MagicRobot):
 
         # TODO: create button example here
 
-        self.component1_motor = Talon(1)
-        self.some_motor = Talon(2)
+        self.component1_motor = wpilib.PWMMotorController(1)
+        self.some_motor = wpilib.PWMMotorController(2)
 
         self.joystick = wpilib.Joystick(0)
